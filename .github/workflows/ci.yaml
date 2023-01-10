@@ -59,4 +59,4 @@ jobs:
         with:
           name: firmware
           path: build/*.elf
-          retention-days: 5
+          retention-days: 7
