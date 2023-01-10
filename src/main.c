@@ -17,10 +17,15 @@ static void __delay(uint64_t cycles) {
 }
 
 static void spinlock(void) {
+  // Setup PB5 as Output high (source)
+  PORTB = (1<<PB5);
+  DDRB = (1<<DDB5);
+  // sync nop
+  _NOP();
   while (1) {
+    // blink SCK
     PORTB ^= (1 << PORTB5);
-    __delay(10000);
-    _NOP();
+    __delay(100000);
   }
 }
 
