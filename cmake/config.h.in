@@ -1,0 +1,11 @@
+#ifndef __CONFIG_H__
+#define __CONFIG_H__
+
+// clang-format off
+#define raptor_VERSION_MAJOR @raptor_VERSION_MAJOR@
+#define raptor_VERSION_MINOR @raptor_VERSION_MINOR@
+
+#define F_CPU @F_CPU@
+// clang-format on
+
+#endif // __CONFIG_H__
