@@ -1,0 +1,61 @@
+---
+name: ci
+on:
+  push:
+    paths-ignore:
+      - "README.md"
+      - "LICENSE"
+    branches:
+      - master
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches:
+      - master
+
+jobs:
+  clang-fmt:
+    name: static analysis
+    runs-on: ubuntu-latest
+    steps:
+    - name: checkout source
+      uses: actions/checkout@v3 
+    - name: update and install apt dependancies
+      run: |
+        sudo apt update -y
+        sudo apt install -y clang-format
+      env:
+        DEBIAN_FRONTEND: noninteractive
+    - name: run clang formatter
+      run: find src include -iname *.c -o -iname *.h | xargs clang-format -n -Werror
+  build:
+    name: build firmware
+    needs: clang-fmt
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout source
+        uses: actions/checkout@v3
+      - name: update and install apt dependancies
+        run: |
+          sudo apt update -y
+          sudo apt install -y gcc-avr avrdude avr-libc
+        env:
+          DEBIAN_FRONTEND: noninteractive
+      - name: setup cmake
+        uses: jwlawson/actions-setup-cmake@v1.13
+        with:
+          cmake-version: '3.22.x'
+      - name: build
+        run: |
+          mkdir $GITHUB_WORKSPACE/build
+          cd build
+          cmake ..
+          make -j`nproc`
+      - name: binary object dump
+        working-directory: build 
+        run: make objdump
+      - name: archive binary 
+        uses: actions/upload-artifact@v3
+        with:
+          name: firmware
+          path: build/*.elf
+          retention-days: 5
