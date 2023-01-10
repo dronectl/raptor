@@ -52,15 +52,16 @@ message(STATUS "LOCK_BIT: " ${LOCK_BIT})
 # # AVR Chip Configuration
 set(F_CPU 16000000UL)
 set(MCU atmega328p)
+set(AVRDUDE_MCU_CODE m328p)
 
 # Default Baudrate for UART, read avr include/util/setbaud.h for usage
 set(BAUDRATE 115200)
 
 # The programmer to use, read avrdude manual for list
-set(AVRDUDE_PROG_TYPE "wiring")
+set(AVRDUDE_PROG_TYPE "arduino")
 
 # set serial usb device for flashing
-set(SERIAL_PORT "")
+set(SERIAL_PORT "/dev/tty.usbserial-A6024AOD")
 
 message(STATUS "--------------------------------------------------------------")
 message(STATUS "MCU Settings:")
@@ -95,7 +96,7 @@ add_custom_target(size ALL ${AVR_SIZE} ${PROJECT_NAME}.elf DEPENDS ${PROJECT_NAM
 add_custom_target(objdump ${AVR_OBJDUMP} -S ${PROJECT_NAME}.elf DEPENDS ${PROJECT_NAME})
 
 # Upload the firmware with avrdude
-add_custom_target(flash ${AVRDUDE} -c ${AVRDUDE_PROG_TYPE} -p${MCU} -P${SERIAL_PORT} -b${BAUDRATE} -D -Uflash:w:${PROJECT_NAME}.hex:i DEPENDS hex)
+add_custom_target(flash ${AVRDUDE} -c${AVRDUDE_PROG_TYPE} -p${MCU} -P${SERIAL_PORT} -b${BAUDRATE} -D -Uflash:w:${PROJECT_NAME}.hex:i DEPENDS hex)
 
 # Burn fuses
 add_custom_target(fuses ${AVRDUDE} -c${AVRDUDE_PROG_TYPE} -p${MCU} -P${SERIAL_PORT} -b${BAUDRATE} -Ulfuse:w:${L_FUSE}:m -U hfuse:w:${H_FUSE}:m -U efuse:w:${E_FUSE}:m -U lock:w:${LOCK_BIT}:m)
