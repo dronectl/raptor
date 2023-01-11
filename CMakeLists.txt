@@ -34,6 +34,7 @@ message(STATUS "Adding source files")
 add_executable(
   ${PROJECT_NAME}
   src/main.c
+  src/spi.c
 )
 
 # AVR Fuses
