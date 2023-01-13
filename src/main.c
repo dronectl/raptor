@@ -9,14 +9,9 @@
  *
  */
 
+#include "utils.h"
 #include <avr/cpufunc.h>
 #include <avr/io.h>
-
-static void __delay(uint64_t cycles) {
-  for (uint64_t i = 0; i < cycles; i++) {
-    _NOP();
-  };
-}
 
 static void spinlock(void) {
   // Setup PB5 as Output high (source)
@@ -27,7 +22,7 @@ static void spinlock(void) {
   while (1) {
     // blink SCK
     PORTB ^= (1 << PORTB5);
-    __delay(100000);
+    delay_cycles(100000);
   }
 }
 
