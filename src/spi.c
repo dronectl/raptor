@@ -67,7 +67,7 @@ void spi_begin(spi_config_t spi_config) {
   // pack and write spi config control register
   SPCR = (spi_config.endian == LITTLE_ENDIAN ? 1 : 0 << DORD) | (1 << SPE) |
          (1 << MSTR) | (spi_config.mode & SPCR_SPI_MODE_MASK) |
-         (clock_div >> 1) & SPCR_SPI_CLK_MASK;
+         ((clock_div >> 1) & SPCR_SPI_CLK_MASK);
   /**
    * @brief Setup SPI pins. Doing this AFTER enabling SPI, avoids clocking in a
    * single bit since the lines go directly from "input" to SPI control.
@@ -86,6 +86,7 @@ void spi_begin(spi_config_t spi_config) {
 /**
  * @brief Write buffer to SPI bus and receive data and copy into buffer
  * TODO: enable capability to write array of instructions sequentially
+ *
  * @param buffer pointer to single buffer element
  */
 void spi_transact(uint8_t *buffer) {
@@ -96,10 +97,23 @@ void spi_transact(uint8_t *buffer) {
 }
 
 /**
+ * @brief Write buffer byte to SPI bus and receive from bus and return
+ *
+ * @param buffer const byte
+ * @return uint8_t receive byte from SPI bus
+ */
+uint8_t spi_transact_byte(const uint8_t buffer) {
+  SPDR = buffer;
+  _NOP();
+  while (!(SPSR & (1 << SPIF))) _NOP();
+  return SPDR;
+}
+
+/**
  * @brief Disable SPI subsystem.
  *
  */
-void spi_end() {
+void spi_end(void) {
   uint8_t sreg = SREG;
   cli();
   // disable spi

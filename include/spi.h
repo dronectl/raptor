@@ -49,6 +49,19 @@ typedef struct spi_config_t {
 
 void spi_begin(spi_config_t spi_config);
 void spi_transact(uint8_t *buffer);
-void spi_end();
+uint8_t spi_transact_byte(const uint8_t buffer);
+
+/**
+ * @brief Set SS low
+ *
+ */
+inline void spi_enable_ss(void) { PORTB &= ~(1 << PB2); }
+/**
+ * @brief Reset SS high
+ *
+ */
+inline void spi_disable_ss(void) { PORTB |= (1 << PB2); }
+
+void spi_end(void);
 
 #endif // __SPI_H__
