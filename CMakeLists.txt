@@ -35,6 +35,8 @@ add_executable(
   ${PROJECT_NAME}
   src/main.c
   src/spi.c
+  src/w5100.c
+  src/utils.c
 )
 
 # AVR Fuses
@@ -78,7 +80,7 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/config.h.in config.h @ONLY)
 set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME ${PROJECT_NAME}.elf)
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 target_include_directories(${PROJECT_NAME} PRIVATE "include")
-target_compile_options(${PROJECT_NAME} PRIVATE -mmcu=${MCU} -Wno-main -Wundef -Wstrict-prototypes -Werror -Wfatal-errors -gdwarf-2 -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums -fno-split-wide-types -fno-tree-scev-cprop)
+target_compile_options(${PROJECT_NAME} PRIVATE -mmcu=${MCU} -Wno-main -Wundef -Wstrict-prototypes -Wfatal-errors -gdwarf-2 -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums -fno-split-wide-types -fno-tree-scev-cprop)
 target_link_options(${PROJECT_NAME} PRIVATE -mmcu=${MCU} -u vfprintf -lprintf_flt -lm)
 
 target_compile_definitions(${PROJECT_NAME} PRIVATE -DF_CPU=${F_CPU})
