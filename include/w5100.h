@@ -21,7 +21,15 @@
 #define W5100_MAX_SOCK_NUM 4
 #endif
 
-#define MR_RST (uint8_t)(1 << 8)
+/**
+ * @brief Mode Register Bits
+ * 4.1 Common Registers
+ */
+#define MR_RST (uint8_t)(1 << 7)   // S/W Reset
+#define MR_PB (uint8_t)(1 << 4)    // Ping Block Mode
+#define MR_PPPOE (uint8_t)(1 << 3) // PPPoE Mode
+#define MR_AI (uint8_t)(1 << 1)    // Address Auto-Increment in Indirect Bus I/F
+#define MR_IND (uint8_t)(1 << 0)   // Indirect Bus I/F mode
 
 #define __GP_REGISTER8(name, address)                                          \
   static inline void write##name(uint8_t _data) {                              \

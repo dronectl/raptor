@@ -68,8 +68,12 @@ uint16_t w5100_read_bytes(uint16_t addr, uint8_t *buffer, uint16_t len) {
 }
 
 static uint8_t verify_w5100(void) {
-  write_mr(0x00);
-  return 0;
+  if (!w5100_soft_reset())
+    return 0;
+  write_mr(MR_PB);
+  if (read_mr() != MR_PB)
+    return 0;
+  return 1;
 }
 
 uint8_t w5100_soft_reset(void) {
@@ -91,5 +95,6 @@ void w5100_init(void) {
       .clock = 14000000, .endian = BIG_ENDIAN, .mode = SPI_MODE0};
   spi_begin(config);
   spi_disable_ss();
-  verify_w5100();
+  if (!verify_w5100())
+    return;
 }
