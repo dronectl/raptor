@@ -23,6 +23,17 @@
 #define SPCR_SPI_CLK_MASK 0x03
 
 /**
+ * @brief Set SS low
+ *
+ */
+void spi_enable_ss(void) { PORTB &= ~(1 << PB2); }
+/**
+ * @brief Reset SS high
+ *
+ */
+void spi_disable_ss(void) { PORTB |= (1 << PB2); }
+
+/**
  * @brief Setup SPI subsystem and gain access to SPI bus.
  *
  * @param spi_config spi bus configuration
