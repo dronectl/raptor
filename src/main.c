@@ -9,11 +9,15 @@
  *
  */
 
+#include "spi.h"
 #include "utils.h"
+#include "w5100.h"
 #include <avr/cpufunc.h>
 #include <avr/io.h>
 
 static void spinlock(void) {
+  // status LED tied to SCK requires release of spi subsystem before use
+  spi_end();
   // Setup PB5 as Output high (source)
   PORTB = (1 << PB5);
   DDRB = (1 << DDB5);
@@ -27,6 +31,7 @@ static void spinlock(void) {
 }
 
 int main(void) {
+  w5100_init();
   spinlock();
   return 0;
 }
