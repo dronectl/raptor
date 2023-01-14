@@ -9,9 +9,9 @@
  *
  */
 
+#include "ethernet.h"
 #include "spi.h"
 #include "utils.h"
-#include "w5100.h"
 #include <avr/cpufunc.h>
 #include <avr/io.h>
 
@@ -31,7 +31,11 @@ static void spinlock(void) {
 }
 
 int main(void) {
-  w5100_init();
+  ethernet_init();
+  ipv4_address_t gw;
+  gw.dword = 0xfefefefe;
+  ethernet_set_gateway(gw);
+  ethernet_get_gateway(&gw);
   spinlock();
   return 0;
 }
