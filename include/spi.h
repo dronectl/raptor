@@ -52,7 +52,6 @@ void spi_transact(uint8_t *buffer);
 uint8_t spi_transact_byte(const uint8_t buffer);
 void spi_enable_ss(void);
 void spi_disable_ss(void);
-
 void spi_end(void);
 
 #endif // __SPI_H__
