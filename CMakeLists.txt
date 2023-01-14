@@ -37,6 +37,7 @@ add_executable(
   src/spi.c
   src/w5100.c
   src/utils.c
+  src/ethernet.c
 )
 
 # AVR Fuses
