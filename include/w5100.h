@@ -100,11 +100,11 @@ w5100_status_t w5100_reset(void);
  *
  * 4.1 Common Registers
  */
-__CREGISTER8(mr, 0x0000)      // mode register
-__CREGISTER_N(gar, 0x0001, 4) // gateway address register
-// __CREGISTER_N(subr, 0x0005, 4) // subnet mask address register
-// __CREGISTER_N(shar, 0x0009, 6) // source hardware address register
-// __CREGISTER_N(sipr, 0x000F, 4) // source ip address register
+__CREGISTER8(mr, 0x0000)       // mode register
+__CREGISTER_N(gar, 0x0001, 4)  // gateway address register
+__CREGISTER_N(subr, 0x0005, 4) // subnet mask address register
+__CREGISTER_N(shar, 0x0009, 6) // source hardware address register
+__CREGISTER_N(sipr, 0x000F, 4) // source ip address register
 // __CREGISTER8(ir, 0x0015)       // interrupt register
 // __CREGISTER8(imr, 0x0016)      // interrupt mask register
 // __CREGISTER_N(rtr, 0x0017, 2)  // retry time-value register
