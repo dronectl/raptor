@@ -9,7 +9,6 @@
  */
 
 #include "w5100.h"
-#include "spi.h"
 #include "utils.h"
 
 /**
@@ -27,7 +26,7 @@
  * @param addr W5100 register address
  * @param buffer data byte
  */
-void w5100_write_byte(uint16_t addr, const uint8_t buffer) {
+void _write_byte(uint16_t addr, const uint8_t buffer) {
   spi_enable_ss();
   spi_transact_byte(WRITE_OPCODE);
   spi_transact_byte((addr >> 8)); // write address MSB first
@@ -44,7 +43,7 @@ void w5100_write_byte(uint16_t addr, const uint8_t buffer) {
  * @param addr W5100 register address
  * @param buffer byte data buffer
  */
-void w5100_read_byte(uint16_t addr, uint8_t *buffer) {
+void _read_byte(uint16_t addr, uint8_t *buffer) {
   spi_enable_ss();
   spi_transact_byte(READ_OPCODE);
   spi_transact_byte((addr >> 8)); // write address MSB first
@@ -53,48 +52,52 @@ void w5100_read_byte(uint16_t addr, uint8_t *buffer) {
   spi_disable_ss();
 }
 
-uint16_t w5100_write_bytes(uint16_t addr, const uint8_t *buffer, uint16_t len) {
+uint16_t _write_bytes(uint16_t addr, const uint8_t *buffer, uint16_t len) {
   for (uint16_t i = 0; i < len; i++) {
-    w5100_write_byte(addr + i, buffer[i]);
+    _write_byte(addr + i, buffer[i]);
   }
   return len;
 }
 
-uint16_t w5100_read_bytes(uint16_t addr, uint8_t *buffer, uint16_t len) {
+uint16_t _read_bytes(uint16_t addr, uint8_t *buffer, uint16_t len) {
   for (uint16_t i = 0; i < len; i++) {
-    w5100_read_byte(addr + i, buffer + i);
+    _read_byte(addr + i, buffer + i);
   }
   return len;
 }
 
-static uint8_t verify_w5100(void) {
-  if (!w5100_soft_reset())
-    return 0;
-  write_mr(MR_PB);
-  if (read_mr() != MR_PB)
-    return 0;
-  return 1;
+/**
+ * @brief W5100 hardware verification function.
+ *
+ * @return w5100_status_t W5100_ERR if device could not be identified, W5100_OK
+ * if success.
+ */
+w5100_status_t w5100_verify_hw(void) {
+  if (w5100_reset() != W5100_OK)
+    return W5100_ERR;
+  w5100_write_mr(MR_PB);
+  if (w5100_read_mr() != MR_PB)
+    return W5100_ERR;
+  return W5100_OK;
 }
 
-uint8_t w5100_soft_reset(void) {
+/**
+ * @brief Perform software reset of w5100 ethernet phy. This function blocks
+ * until the reset is complete
+ *
+ * @return w5100_status_t W5100_ERR if device failed to respond after reset
+ * W5100_OK if success.
+ */
+w5100_status_t w5100_reset(void) {
   uint8_t counter = 0;
   // write to mode register reset bit
-  write_mr(MR_RST);
+  w5100_write_mr(MR_RST);
   // wait for soft reset to complete
   do {
-    uint8_t mr = read_mr();
+    uint8_t mr = w5100_read_mr();
     if (mr == 0x0)
-      return 1;
+      return W5100_OK;
     delay_cycles(1000);
   } while (++counter < 20);
-  return 0;
-}
-
-void w5100_init(void) {
-  spi_config_t config = {
-      .clock = 14000000, .endian = BIG_ENDIAN, .mode = SPI_MODE0};
-  spi_begin(config);
-  spi_disable_ss();
-  if (!verify_w5100())
-    return;
+  return W5100_ERR;
 }
