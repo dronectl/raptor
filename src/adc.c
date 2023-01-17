@@ -31,7 +31,7 @@ void adc_init(void) {
 }
 
 /**
- * @brief for random number generation.
+ * @brief for random number generation. BUG: Sampling not working.
  *
  * @return uint8_t
  */

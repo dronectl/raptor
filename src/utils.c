@@ -17,7 +17,7 @@ void delay_cycles(uint64_t cycles) {
 /**
  * @brief Generate a random number by sampling the ADC.
  * NOTE: This should only be used at program startup to avoid interfering with
- * ADC operation
+ * ADC operation.
  *
  * @return uint8_t randomly generated number
  */
