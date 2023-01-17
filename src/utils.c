@@ -24,7 +24,7 @@ void delay_cycles(uint64_t cycles) {
 uint8_t generate_random(void) {
   adc_init();
   delay_cycles(51);
-  uint8_t rand = adc_sample_lower();
+  uint8_t rand = adc_sample_lower(ADC_CH1);
   adc_shutdown();
   return rand;
 }
