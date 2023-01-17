@@ -123,6 +123,39 @@ void ethernet_get_mac_addr(uint8_t *mac_addr, uint16_t *len) {
   assert(len != NULL);
   assert(mac_addr != NULL);
   spi_begin(w5100_spi_config);
-  *len = w5100_read_sipr(mac_addr);
+  *len = w5100_read_shar(mac_addr);
+  spi_end();
+}
+
+/**
+ * @brief Set ethernet phy retransmission timeout time (ms)
+ *
+ * @param ms retransmission timeout (ms)
+ */
+void ethernet_set_retransmit_timeout(const uint8_t *ms) {
+  assert(ms != NULL);
+  spi_begin(w5100_spi_config);
+  w5100_write_rtr(ms);
+  spi_end();
+}
+
+/**
+ * @brief Set ethernet phy retransmission counter
+ *
+ * @param retry retry count
+ */
+void ethernet_set_retransmit_count(uint8_t retry) {
+  spi_begin(w5100_spi_config);
+  w5100_write_rcr(retry);
+  spi_end();
+}
+
+/**
+ * @brief Reset ethernet phy
+ *
+ */
+void ethernet_reset(void) {
+  spi_begin(w5100_spi_config);
+  w5100_reset();
   spi_end();
 }
