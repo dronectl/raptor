@@ -11,7 +11,18 @@
 #include "ethernet.h"
 #include "assert.h"
 #include "spi.h"
+#include "utils.h"
 #include "w5100.h"
+
+static void generate_mac_address(uint8_t *mac_addr) {
+  assert(mac_addr != NULL);
+  for (int i = 0; i < 6; i++) {
+    mac_addr[i] = generate_random() % 0xFF;
+  }
+  // set mac address to locally administered (NIC set by MFN). See IEEE 802 MAC
+  // address standard.
+  mac_addr[0] |= 0x02;
+}
 
 /**
  * @brief Initialize ethernet phy chip.
@@ -24,6 +35,24 @@ enet_status_t ethernet_phy_init(void) {
     status = ENET_ERR;
   spi_end();
   return status;
+}
+
+/**
+ * @brief Configure device ethernet phy
+ *
+ * @param config ethernet parameters
+ * @return enet_status_t
+ */
+enet_status_t ethernet_configure(const enet_config_t *config) {
+  uint8_t mac_addr[6];
+  // generate locally administered mac address
+  generate_mac_address(mac_addr);
+  // set phy properties
+  ethernet_set_gateway(config->gateway);
+  ethernet_set_subnet_mask(config->subnet_mask);
+  ethernet_set_ip_addr(config->ip_addr);
+  ethernet_set_mac_addr(mac_addr);
+  return ENET_OK;
 }
 
 /**
