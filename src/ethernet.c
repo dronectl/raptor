@@ -109,7 +109,7 @@ void ethernet_get_ip_addr(ipv4_address_t *ip_addr, uint16_t *len) {
 void ethernet_set_mac_addr(const uint8_t *mac_addr) {
   assert(mac_addr != NULL);
   spi_begin(w5100_spi_config);
-  w5100_write_sipr(mac_addr);
+  w5100_write_shar(mac_addr);
   spi_end();
 }
 
