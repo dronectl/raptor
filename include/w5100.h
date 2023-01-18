@@ -67,7 +67,7 @@ static const spi_config_t w5100_spi_config = {
  * target sockets.
  *
  */
-enum W5100SockChannel { CH0 = 0, CH1 = 1, CH2 = 2, CH3 = 3 };
+enum W5100SCH { CH0 = 0, CH1 = 1, CH2 = 2, CH3 = 3 };
 
 enum W5100Proto {
   PROTO_CLOSED = 0x0,
@@ -156,11 +156,11 @@ uint16_t _write_bytes(uint16_t addr, const uint8_t *buffer, uint16_t len);
  *
  */
 #define __SREGISTER8(name, address)                                            \
-  static void w5100_write_sn_##name(const enum W5100SockChannel _s,            \
+  static void w5100_write_sn_##name(const enum W5100SCH _s,            \
                                     const uint8_t _data) {                     \
     _write_byte(W5100_MEMAP_SREG_BASE(_s), _data);                             \
   }                                                                            \
-  static uint8_t w5100_read_sn_##name(enum W5100SockChannel _s) {              \
+  static uint8_t w5100_read_sn_##name(enum W5100SCH _s) {              \
     uint8_t buffer;                                                            \
     _read_byte(W5100_MEMAP_SREG_BASE(_s), &buffer);                            \
     return buffer;                                                             \
@@ -171,17 +171,17 @@ uint16_t _write_bytes(uint16_t addr, const uint8_t *buffer, uint16_t len);
  *
  */
 #define __SREGISTER_N(name, address, size)                                     \
-  static uint16_t w5100_write_sn_##name(const enum W5100SockChannel _s,        \
+  static uint16_t w5100_write_sn_##name(const enum W5100SCH _s,        \
                                         const uint8_t *_buff) {                \
     return _write_bytes(W5100_MEMAP_SREG_BASE(_s), _buff, size);               \
   }                                                                            \
-  static uint16_t w5100_read_sn_##name(enum W5100SockChannel _s,               \
+  static uint16_t w5100_read_sn_##name(enum W5100SCH _s,               \
                                        uint8_t *_buff) {                       \
     return _read_bytes(W5100_MEMAP_SREG_BASE(_s), _buff, size);                \
   }
 
 w5100_status_t w5100_verify_hw(void);
-void w5100_exec_sock_cmd(const enum W5100SockChannel sock,
+void w5100_exec_sock_cmd(const enum W5100SCH sock,
                          const enum W5100SockCmds cmd);
 w5100_status_t w5100_reset(void);
 

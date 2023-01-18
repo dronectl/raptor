@@ -37,6 +37,7 @@ typedef struct enet_config_t {
 } enet_config_t;
 
 enet_status_t ethernet_phy_init(void);
+uint8_t ethernet_phy_state(void);
 enet_status_t ethernet_configure(const enet_config_t *config);
 void ethernet_reset(void);
 enet_status_t ethernet_set_gateway(const ipv4_address_t gateway);

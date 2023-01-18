@@ -102,7 +102,7 @@ w5100_status_t w5100_reset(void) {
   return W5100_ERR;
 }
 
-void w5100_exec_sock_cmd(const enum W5100SockChannel sock,
+void w5100_exec_sock_cmd(const enum W5100SCH sock,
                          const enum W5100SockCmds cmd) {
   w5100_write_sn_cr(sock, cmd);
   // after command completion SnCR will autoclear
