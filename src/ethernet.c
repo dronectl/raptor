@@ -17,15 +17,6 @@
 // ethernet phy initialized flag (used as guard check)
 static uint8_t phy_initialized = 0;
 
-typedef struct socket_state_t {
-  uint16_t rx_rsr; // number of bytes received
-  uint16_t rx_rd;  // address to read
-  uint16_t tx_fsr; // free space ready for transmit
-  uint8_t rx_inc;  // rx_rd increment counter
-} socket_state_t;
-
-static socket_state_t socket_state[W5100_MAX_SOCK_NUM];
-
 static void generate_mac_address(uint8_t *mac_addr) {
   assert(mac_addr != NULL);
   for (int i = 0; i < 6; i++) {
@@ -35,6 +26,8 @@ static void generate_mac_address(uint8_t *mac_addr) {
   // address standard.
   mac_addr[0] |= 0x02;
 }
+
+uint8_t ethernet_phy_state(void) { return phy_initialized; }
 
 /**
  * @brief Initialize ethernet phy chip.
@@ -70,55 +63,6 @@ enet_status_t ethernet_configure(const enet_config_t *config) {
   ethernet_set_ip_addr(config->ip_addr);
   ethernet_set_mac_addr(mac_addr);
   return ENET_OK;
-}
-
-/**
- * @brief Find an available socket to configure with target protocol and source
- * port.
- *
- * @param protocol
- * @param port
- * @return uint8_t
- */
-uint8_t ethernet_socket_begin(uint8_t protocol, uint16_t port) {
-  uint8_t sock_idx;
-  enum W5100State socket_status[W5100_MAX_SOCK_NUM];
-  if (!phy_initialized) {
-    return W5100_MAX_SOCK_NUM;
-  }
-  // find an unused socket and attempt to provision first available
-  spi_begin(w5100_spi_config);
-  for (sock_idx = 0; sock_idx < W5100_MAX_SOCK_NUM; sock_idx++) {
-    socket_status[sock_idx] = (enum W5100State)w5100_read_sn_sr(sock_idx);
-    if (socket_status[sock_idx] == SNSR_CLOSED)
-      goto make;
-  }
-  // attempt to forcibly close socket in closing state
-  for (sock_idx = 0; sock_idx < W5100_MAX_SOCK_NUM; sock_idx++) {
-    if (socket_status[sock_idx] == SNSR_LAST_ACK)
-      goto closemake;
-    if (socket_status[sock_idx] == SNSR_TIME_WAIT)
-      goto closemake;
-    if (socket_status[sock_idx] == SNSR_FIN_WAIT)
-      goto closemake;
-    if (socket_status[sock_idx] == SNSR_CLOSING)
-      goto closemake;
-  }
-  spi_end();
-  // failed to provision socket
-  return W5100_MAX_SOCK_NUM;
-closemake:
-  w5100_exec_sock_cmd(sock_idx, SOCK_CLOSE);
-make:
-  w5100_write_sn_mr(sock_idx, protocol);
-  w5100_write_sn_ir(sock_idx, 0xFF); // clear interrupt register
-  w5100_write_sn_port(sock_idx, (const uint8_t *)&port);
-  socket_state[sock_idx].rx_inc = 0;
-  socket_state[sock_idx].rx_rd = 0;
-  socket_state[sock_idx].rx_rsr = 0;
-  socket_state[sock_idx].tx_fsr = 0;
-  spi_end();
-  return sock_idx;
 }
 
 /**
