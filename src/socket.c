@@ -10,7 +10,6 @@
 
 #include "socket.h"
 #include "assert.h"
-#include "ethernet.h"
 
 typedef struct socket_state_t {
   uint16_t rx_rsr; // number of bytes received
@@ -29,7 +28,7 @@ static socket_state_t socket_state[W5100_MAX_SOCK_NUM];
  * @param port
  * @return uint8_t
  */
-socket_status_t socket_begin(uint8_t protocol, uint16_t port,
+socket_status_t socket_begin(enum W5100Proto protocol, uint16_t port,
                              enum W5100SCH *channel) {
   uint8_t sock_idx;
   enum W5100State socket_status[W5100_MAX_SOCK_NUM];
@@ -63,13 +62,105 @@ socket_status_t socket_begin(uint8_t protocol, uint16_t port,
 closemake:
   w5100_exec_sock_cmd(sock_idx, SOCK_CLOSE);
 make:
-  w5100_write_sn_mr(sock_idx, protocol);
+  w5100_write_sn_mr(sock_idx, (const uint8_t)protocol);
   w5100_write_sn_ir(sock_idx, 0xFF); // clear interrupt register
   w5100_write_sn_port(sock_idx, (const uint8_t *)&port);
+  w5100_exec_sock_cmd(sock_idx, SOCK_OPEN);
   socket_state[sock_idx].rx_inc = 0;
   socket_state[sock_idx].rx_rd = 0;
   socket_state[sock_idx].rx_rsr = 0;
   socket_state[sock_idx].tx_fsr = 0;
   spi_end();
   return sock_idx;
+}
+
+/**
+ * @brief Close target socket
+ *
+ * @param channel target socket
+ * @return socket_status_t
+ */
+socket_status_t socket_close(enum W5100SCH channel) {
+  if (!ethernet_phy_state()) {
+    return SOCKET_ERR;
+  }
+  spi_begin(w5100_spi_config);
+  w5100_exec_sock_cmd(channel, SOCK_CLOSE);
+  spi_end();
+  return SOCKET_OK;
+}
+
+/**
+ * @brief Set socket to listen (server) mode. Socket must be INIT state to
+ * transition to LISTEN.
+ *
+ * @param channel target socket
+ * @return socket_status_t
+ */
+socket_status_t socket_listen(enum W5100SCH channel) {
+  if (!ethernet_phy_state()) {
+    return SOCKET_ERR;
+  }
+  // socket must be init state to transistion to listen
+  if (socket_get_status(channel) != SNSR_INIT) {
+    return SOCKET_ERR;
+  }
+  spi_begin(w5100_spi_config);
+  w5100_exec_sock_cmd(channel, SOCK_LISTEN);
+  spi_end();
+  return SOCKET_OK;
+}
+
+/**
+ * @brief Get state of target socket
+ *
+ * @param channel target socket
+ * @return enum W5100State
+ */
+enum W5100State socket_get_status(enum W5100SCH channel) {
+  if (!ethernet_phy_state()) {
+    return SOCKET_ERR;
+  }
+  spi_begin(w5100_spi_config);
+  enum W5100State state = (enum W5100State)w5100_read_sn_sr(channel);
+  spi_end();
+  return state;
+}
+
+/**
+ * @brief Connect target socket. Establish a TCP connection in active (client)
+ * mode
+ *
+ * @param channel target socket
+ * @param addr destination ip address
+ * @param port destination port
+ * @return socket_status_t
+ */
+socket_status_t socket_connect(enum W5100SCH channel,
+                               const ipv4_address_t *addr, uint16_t port) {
+  if (!ethernet_phy_state()) {
+    return SOCKET_ERR;
+  }
+  spi_begin(w5100_spi_config);
+  w5100_write_sn_dipr(channel, addr->bytes);
+  w5100_write_sn_dport(channel, (const uint8_t *)&port);
+  w5100_exec_sock_cmd(channel, SOCK_CONNECT);
+  spi_end();
+  return SOCKET_OK;
+}
+
+/**
+ * @brief Disconnect target socket
+ *
+ * @param channel target socket
+ * @return socket_status_t
+ */
+socket_status_t socket_disconnect(enum W5100SCH channel) {
+  if (!ethernet_phy_state()) {
+    return SOCKET_ERR;
+  }
+  spi_begin(w5100_spi_config);
+  w5100_exec_sock_cmd(channel, SOCK_DISCON);
+  spi_end();
+  return SOCKET_OK;
 }
