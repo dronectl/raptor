@@ -179,6 +179,8 @@ uint16_t _write_bytes(uint16_t addr, const uint8_t *buffer, uint16_t len);
     return _read_bytes(W5100_MEMAP_SREG_BASE(_s) + address, _buff, size);      \
   }
 
+uint16_t w5100_read_tx_fsr(enum W5100SCH _s, uint16_t *_buff);
+uint16_t w5100_read_rx_rsr(enum W5100SCH _s, uint16_t *_buff);
 w5100_status_t w5100_verify_hw(void);
 void w5100_exec_sock_cmd(const enum W5100SCH sock,
                          const enum W5100SockCmds cmd);
@@ -213,25 +215,23 @@ __CREGISTER_N(uport, 0x002E, 2) // unreachable port register (UDP Mode)
  *
  * 4.2 Socket Registers
  */
-__SREGISTER8(mr, 0x0000)         // Mode
-__SREGISTER8(cr, 0x0001)         // Command
-__SREGISTER8(ir, 0x0002)         // Interrupt
-__SREGISTER8(sr, 0x0003)         // Status
-__SREGISTER_N(port, 0x0004, 2)   // Source Port
-__SREGISTER_N(dhar, 0x0006, 6)   // Destination Hardw Addr
-__SREGISTER_N(dipr, 0x000C, 4)   // Destination IP Addr
-__SREGISTER_N(dport, 0x0010, 2)  // Destination Port
-__SREGISTER_N(mssr, 0x0012, 2)   // Max Segment Size
-__SREGISTER8(proto, 0x0014)      // Protocol in IP RAW Mode
-__SREGISTER8(tos, 0x0015)        // IP TOS
-__SREGISTER8(ttl, 0x0016)        // IP TTL
-__SREGISTER8(rx_size, 0x001E)    // RX Memory Size (W5200 only)
-__SREGISTER8(tx_size, 0x001F)    // RX Memory Size (W5200 only)
-__SREGISTER_N(tx_fsr, 0x0020, 2) // TX Free Size
-__SREGISTER_N(tx_rd, 0x0022, 2)  // TX Read Pointer
-__SREGISTER_N(tx_wr, 0x0024, 2)  // TX Write Pointer
-__SREGISTER_N(rx_rsr, 0x0026, 2) // RX Free Size
-__SREGISTER_N(rx_rd, 0x0028, 2)  // RX Read Pointer
-__SREGISTER_N(rx_wr, 0x002A, 2)  // RX Write Pointer (supported?)
+__SREGISTER8(mr, 0x0000)        // Mode
+__SREGISTER8(cr, 0x0001)        // Command
+__SREGISTER8(ir, 0x0002)        // Interrupt
+__SREGISTER8(sr, 0x0003)        // Status
+__SREGISTER_N(port, 0x0004, 2)  // Source Port
+__SREGISTER_N(dhar, 0x0006, 6)  // Destination Hardw Addr
+__SREGISTER_N(dipr, 0x000C, 4)  // Destination IP Addr
+__SREGISTER_N(dport, 0x0010, 2) // Destination Port
+__SREGISTER_N(mssr, 0x0012, 2)  // Max Segment Size
+__SREGISTER8(proto, 0x0014)     // Protocol in IP RAW Mode
+__SREGISTER8(tos, 0x0015)       // IP TOS
+__SREGISTER8(ttl, 0x0016)       // IP TTL
+__SREGISTER8(rx_size, 0x001E)   // RX Memory Size (W5200 only)
+__SREGISTER8(tx_size, 0x001F)   // RX Memory Size (W5200 only)
+__SREGISTER_N(tx_rd, 0x0022, 2) // TX Read Pointer
+__SREGISTER_N(tx_wr, 0x0024, 2) // TX Write Pointer
+__SREGISTER_N(rx_rd, 0x0028, 2) // RX Read Pointer
+__SREGISTER_N(rx_wr, 0x002A, 2) // RX Write Pointer (supported?)
 
 #endif // __W5100_H__

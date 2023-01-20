@@ -52,6 +52,42 @@ void _read_byte(uint16_t addr, uint8_t *buffer) {
   spi_disable_ss();
 }
 
+/**
+ * @brief Custom read function for 16 bit SN_RX_RSR (RX Received Size register).
+ * The datasheet indicates the register must be read starting with the MSB to
+ * the LSB. See section 4.2 RX_RSR.
+ *
+ * @param _s target socket
+ * @param _buff read buffer
+ * @return uint16_t number of bytes read (for consistency with other expanded
+ * functions)
+ */
+uint16_t w5100_read_rx_rsr(enum W5100SCH _s, uint16_t *_buff) {
+  // read from 16 bit register MSB first.
+  for (uint16_t i = 1; i >= 0; i--) {
+    _read_byte(W5100_MEMAP_SREG_BASE(_s) + 0x0026 + i, (uint8_t *)_buff + i);
+  }
+  return 2;
+}
+
+/**
+ * @brief Custom read function for 16 bit SN_TX_FSR (socket tx free size
+ * register). The datasheet indicates the register must be read starting with
+ * the MSB to the LSB. See section 4.2 SN_TX_FSR.
+ *
+ * @param _s target socket
+ * @param _buff read buffer
+ * @return uint16_t number of bytes read (for consistency with other expanded
+ * functions)
+ */
+uint16_t w5100_read_tx_fsr(enum W5100SCH _s, uint16_t *_buff) {
+  // read from 16 bit register MSB first.
+  for (uint16_t i = 1; i >= 0; i--) {
+    _read_byte(W5100_MEMAP_SREG_BASE(_s) + 0x0020 + i, (uint8_t *)_buff + i);
+  }
+  return 2;
+}
+
 uint16_t _write_bytes(uint16_t addr, const uint8_t *buffer, uint16_t len) {
   for (uint16_t i = 0; i < len; i++) {
     _write_byte(addr + i, buffer[i]);
