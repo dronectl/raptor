@@ -82,7 +82,7 @@ make:
  */
 socket_status_t socket_close(enum W5100SCH channel) {
   if (!ethernet_phy_state()) {
-    return SOCKET_ERR;
+    return SOCKET_UNINITIALIZED;
   }
   spi_begin(w5100_spi_config);
   w5100_exec_sock_cmd(channel, SOCK_CLOSE);
@@ -99,7 +99,7 @@ socket_status_t socket_close(enum W5100SCH channel) {
  */
 socket_status_t socket_listen(enum W5100SCH channel) {
   if (!ethernet_phy_state()) {
-    return SOCKET_ERR;
+    return SOCKET_UNINITIALIZED;
   }
   // socket must be init state to transistion to listen
   if (socket_get_status(channel) != SNSR_INIT) {
@@ -119,7 +119,7 @@ socket_status_t socket_listen(enum W5100SCH channel) {
  */
 enum W5100State socket_get_status(enum W5100SCH channel) {
   if (!ethernet_phy_state()) {
-    return SOCKET_ERR;
+    return SOCKET_UNINITIALIZED;
   }
   spi_begin(w5100_spi_config);
   enum W5100State state = (enum W5100State)w5100_read_sn_sr(channel);
@@ -139,7 +139,7 @@ enum W5100State socket_get_status(enum W5100SCH channel) {
 socket_status_t socket_connect(enum W5100SCH channel,
                                const ipv4_address_t *addr, uint16_t port) {
   if (!ethernet_phy_state()) {
-    return SOCKET_ERR;
+    return SOCKET_UNINITIALIZED;
   }
   spi_begin(w5100_spi_config);
   w5100_write_sn_dipr(channel, addr->bytes);
@@ -157,10 +157,93 @@ socket_status_t socket_connect(enum W5100SCH channel,
  */
 socket_status_t socket_disconnect(enum W5100SCH channel) {
   if (!ethernet_phy_state()) {
-    return SOCKET_ERR;
+    return SOCKET_UNINITIALIZED;
   }
   spi_begin(w5100_spi_config);
   w5100_exec_sock_cmd(channel, SOCK_DISCON);
   spi_end();
   return SOCKET_OK;
+}
+
+// TODO: Remove if rsr is validated
+#if 0
+static uint16_t get_rx_rsr(enum W5100SCH channel) {
+  uint16_t val, prev;
+  w5100_read_sn_rx_rsr(channel, (uint8_t *)&prev);
+  while (1) {
+    w5100_read_sn_rx_rsr(channel, (uint8_t *)&val);
+    if (val == prev) {
+      return val;
+    }
+    prev = val;
+  }
+}
+#endif
+
+/**
+ * @brief Request recieve data from target socket. If the available bytes is
+ * less than the requested size return SOCKET_NO_DATA or SOCKET_EOF
+ *
+ * @param channel target socket
+ * @param buffer data buffer
+ * @param size size in bytes
+ * @return socket_status_t
+ */
+socket_status_t socket_recv(enum W5100SCH channel, uint8_t *buffer,
+                            uint16_t size) {
+  assert(buffer != NULL);
+  if (!ethernet_phy_state()) {
+    return SOCKET_UNINITIALIZED;
+  }
+  socket_status_t state = SOCKET_OK;
+  uint16_t rx_buf_size = socket_state[channel].rx_rsr;
+  spi_begin(w5100_spi_config);
+  if (rx_buf_size < size) {
+    uint16_t rsr;
+    w5100_read_rx_rsr(channel, &rsr);
+    // compute unread rx buffer size
+    rx_buf_size = rsr - socket_state[channel].rx_inc;
+    // update state
+    socket_state[channel].rx_rsr = rx_buf_size;
+  }
+  // now check unread rx buffer size
+  if (rx_buf_size == 0) {
+    // no unread data is available. Check status of socket
+    enum W5100State status = (enum W5100State)w5100_read_sn_sr(channel);
+    if (status == SNSR_LISTEN || status == SNSR_CLOSED ||
+        status == SNSR_CLOSE_WAIT) {
+      // the remote has closed its connection
+      state = SOCKET_EOF;
+    } else {
+      // connection up but no data is available
+      state = SOCKET_NO_DATA;
+    }
+  }
+  spi_end();
+  return state;
+}
+
+/**
+ * @brief Get number of unread bytes available in the RX buffer.
+ *
+ * @param channel target socket channel
+ * @return socket_status_t
+ */
+socket_status_t socket_get_unread_rx_bytes(enum W5100SCH channel) {
+  uint16_t rx_buf_size = socket_state[channel].rx_rsr;
+  if (!ethernet_phy_state()) {
+    return SOCKET_UNINITIALIZED;
+  }
+  // if local state copy reports 0 get new bytes from device
+  if (rx_buf_size == 0) {
+    spi_begin(w5100_spi_config);
+    uint16_t rsr;
+    w5100_read_rx_rsr(channel, &rsr);
+    spi_end();
+    // subtract the total number of bytes already read
+    rx_buf_size = rsr - socket_state[channel].rx_inc;
+    // update state rx bytes
+    socket_state[channel].rx_rsr = rx_buf_size;
+  }
+  return rx_buf_size;
 }
