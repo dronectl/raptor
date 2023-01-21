@@ -247,3 +247,12 @@ socket_status_t socket_get_unread_rx_bytes(enum W5100SCH channel) {
   }
   return rx_buf_size;
 }
+
+socket_status_t socket_peek(enum W5100SCH channel, uint8_t *buffer) {
+  if (!ethernet_phy_state()) {
+    return SOCKET_UNINITIALIZED;
+  }
+  assert(buffer != NULL);
+  spi_begin(w5100_spi_config);
+  spi_end();
+}
