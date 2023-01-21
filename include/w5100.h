@@ -29,6 +29,18 @@
 #define W5100_MEMAP_SREG_BASE(n)                                               \
   (W5100_SOCK_BASE + (W5100_SOCK_REG_MEM_SIZE * n))
 
+typedef struct socket_mem_t {
+  uint16_t mask;
+  uint16_t offset;
+} socket_mem_t;
+
+typedef struct w5100_mem_t {
+  socket_mem_t tx_mem; // transmission memory access fields
+  socket_mem_t rx_mem; // receive memory access fields
+} w5100_mem_t;
+
+w5100_mem_t socket_buffers[4];
+
 /**
  * @brief W5100 API Status Codes
  *
@@ -179,6 +191,7 @@ uint16_t _write_bytes(uint16_t addr, const uint8_t *buffer, uint16_t len);
     return _read_bytes(W5100_MEMAP_SREG_BASE(_s) + address, _buff, size);      \
   }
 
+w5100_status_t w5100_configure(void);
 uint16_t w5100_read_tx_fsr(enum W5100SCH _s, uint16_t *_buff);
 uint16_t w5100_read_rx_rsr(enum W5100SCH _s, uint16_t *_buff);
 w5100_status_t w5100_verify_hw(void);

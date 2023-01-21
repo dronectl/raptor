@@ -18,6 +18,11 @@
 #define WRITE_OPCODE 0xF0
 #define READ_OPCODE 0x0F
 
+#define MEMSIZE_CONF_8192 (uint8_t)0x3
+#define MEMSIZE_CONF_4096 (uint8_t)0x2
+#define MEMSIZE_CONF_2048 (uint8_t)0x1
+#define MEMSIZE_CONF_1024 (uint8_t)0x0
+
 /**
  * @brief Write a byte to W5100 ethernet controller using SPI bus. SPI data
  * bytes need to be written in 32-bit units in big endian format: OP-Code (1
@@ -50,6 +55,37 @@ void _read_byte(uint16_t addr, uint8_t *buffer) {
   spi_transact_byte((addr & 0xFF));
   spi_transact(buffer);
   spi_disable_ss();
+}
+
+/**
+ * @brief Configure socket RX and TX buffer sizes.
+ *
+ * SOCK |  SO     S1      S2     S3
+ * -----------------------------------
+ * RX   | 2048   1024    4096   1024
+ * TX   | 2048   4096    1024   1024
+ * DESC | C&C    HSU     DSU    AUX
+ *
+ * @return w5100_status_t
+ */
+w5100_status_t w5100_configure(void) {
+  // set RMSR
+  spi_begin(w5100_spi_config);
+  // config bit ordering [ 7 6 ] [ 5 4 ] [ 3]
+  uint8_t size_config = (6 << MEMSIZE_CONF_1024) | (4 << MEMSIZE_CONF_4096) |
+                        (2 << MEMSIZE_CONF_1024) | (MEMSIZE_CONF_2048);
+  w5100_write_rmsr(size_config);
+  // set TMSR
+  size_config = (6 << MEMSIZE_CONF_1024) | (4 << MEMSIZE_CONF_1024) |
+                (2 << MEMSIZE_CONF_4096) | (MEMSIZE_CONF_2048);
+  w5100_write_tmsr(size_config);
+  // set socket tx and rx memory mask and basec
+  socket_buffers[1].rx_mem.mask = 0x0;
+  socket_buffers[2].rx_mem.mask = 0x0;
+  socket_buffers[3].rx_mem.mask = 0x0;
+  socket_buffers[4].rx_mem.mask = 0x0;
+  spi_end();
+  return W5100_OK;
 }
 
 /**
@@ -138,6 +174,12 @@ w5100_status_t w5100_reset(void) {
   return W5100_ERR;
 }
 
+/**
+ * @brief Execute socket command on device and block until completion.
+ *
+ * @param sock socket
+ * @param cmd socket command
+ */
 void w5100_exec_sock_cmd(const enum W5100SCH sock,
                          const enum W5100SockCmds cmd) {
   w5100_write_sn_cr(sock, cmd);
