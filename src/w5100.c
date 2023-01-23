@@ -115,7 +115,7 @@ w5100_status_t w5100_configure(w5100_mem_t *sb) {
  */
 uint16_t w5100_read_rx_rsr(enum W5100SCH _s, uint16_t *_buff) {
   // read from 16 bit register MSB first.
-  for (uint16_t i = 1; i >= 0; i--) {
+  for (int i = 1; i >= 0; i--) {
     _read_byte(W5100_MEMAP_SREG_BASE(_s) + 0x0026 + i, (uint8_t *)_buff + i);
   }
   return 2;
@@ -133,7 +133,7 @@ uint16_t w5100_read_rx_rsr(enum W5100SCH _s, uint16_t *_buff) {
  */
 uint16_t w5100_read_tx_fsr(enum W5100SCH _s, uint16_t *_buff) {
   // read from 16 bit register MSB first.
-  for (uint16_t i = 1; i >= 0; i--) {
+  for (int i = 1; i >= 0; i--) {
     _read_byte(W5100_MEMAP_SREG_BASE(_s) + 0x0020 + i, (uint8_t *)_buff + i);
   }
   return 2;

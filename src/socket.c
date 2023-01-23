@@ -255,4 +255,5 @@ socket_status_t socket_peek(enum W5100SCH channel, uint8_t *buffer) {
   assert(buffer != NULL);
   spi_begin(w5100_spi_config);
   spi_end();
+  return ENET_OK;
 }

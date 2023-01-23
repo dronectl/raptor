@@ -10,6 +10,7 @@
 #ifndef __ETHERNET_H__
 #define __ETHERNET_H__
 
+#include "w5100.h"
 #include <stdint.h>
 
 /**

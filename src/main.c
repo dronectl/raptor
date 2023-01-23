@@ -31,7 +31,6 @@ static void spinlock(void) {
 }
 
 int main(void) {
-  uint16_t len;
   // initialize phy
   ethernet_phy_init();
   ipv4_address_t gw;
