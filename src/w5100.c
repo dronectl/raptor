@@ -9,6 +9,7 @@
  */
 
 #include "w5100.h"
+#include "assert.h"
 #include "utils.h"
 
 /**
@@ -22,6 +23,10 @@
 #define MEMSIZE_CONF_4096 (uint8_t)0x2
 #define MEMSIZE_CONF_2048 (uint8_t)0x1
 #define MEMSIZE_CONF_1024 (uint8_t)0x0
+
+// REVIEW: Hardcoded rx and tx buffer allocation sizes per socket. idx=sock num
+static const uint16_t rx_alloc_sizes[4] = {0x800, 0x400, 0x1000, 0x400};
+static const uint16_t tx_alloc_sizes[4] = {0x800, 0x1000, 0x400, 0x400};
 
 /**
  * @brief Write a byte to W5100 ethernet controller using SPI bus. SPI data
@@ -68,7 +73,8 @@ void _read_byte(uint16_t addr, uint8_t *buffer) {
  *
  * @return w5100_status_t
  */
-w5100_status_t w5100_configure(void) {
+w5100_status_t w5100_configure(w5100_mem_t *sb) {
+  assert(sb != NULL);
   // set RMSR
   spi_begin(w5100_spi_config);
   // config bit ordering [ 7 6 ] [ 5 4 ] [ 3]
@@ -81,20 +87,18 @@ w5100_status_t w5100_configure(void) {
   w5100_write_tmsr(size_config);
   spi_end();
   // set socket tx and rx memory mask and base
-  uint16_t rx_alloc_sizes[4] = {0x800, 0x400, 0x1000, 0x400};
-  uint16_t tx_alloc_sizes[4] = {0x800, 0x1000, 0x400, 0x400};
   for (int i = 0; i <= 3; i++) {
     if (i == 0) {
-      socket_buffers[i].rx_mem.offset = W5100_RX_BUFFER_BASE;
-      socket_buffers[i].tx_mem.offset = W5100_TX_BUFFER_BASE;
+      sb[i].rx_mem.offset = W5100_RX_BUFFER_BASE;
+      sb[i].tx_mem.offset = W5100_TX_BUFFER_BASE;
     } else {
-      socket_buffers[i].rx_mem.offset = socket_buffers[i - 1].rx_mem.offset +
-                                        socket_buffers[i - 1].rx_mem.mask + 0x1;
-      socket_buffers[i].tx_mem.offset = socket_buffers[i - 1].tx_mem.offset +
-                                        socket_buffers[i - 1].tx_mem.mask + 0x1;
+      sb[i].rx_mem.offset =
+          sb[i - 1].rx_mem.offset + sb[i - 1].rx_mem.mask + 0x1;
+      sb[i].tx_mem.offset =
+          sb[i - 1].tx_mem.offset + sb[i - 1].tx_mem.mask + 0x1;
     }
-    socket_buffers[i].rx_mem.mask = rx_alloc_sizes[i] - 0x1;
-    socket_buffers[i].tx_mem.mask = tx_alloc_sizes[i] - 0x1;
+    sb[i].rx_mem.mask = rx_alloc_sizes[i] - 0x1;
+    sb[i].tx_mem.mask = tx_alloc_sizes[i] - 0x1;
   }
   return W5100_OK;
 }
