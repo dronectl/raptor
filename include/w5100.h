@@ -44,8 +44,6 @@ typedef struct w5100_mem_t {
   socket_mem_t rx_mem; // receive memory access fields
 } w5100_mem_t;
 
-w5100_mem_t socket_buffers[4];
-
 /**
  * @brief W5100 API Status Codes
  *
@@ -196,7 +194,7 @@ uint16_t _write_bytes(uint16_t addr, const uint8_t *buffer, uint16_t len);
     return _read_bytes(W5100_MEMAP_SREG_BASE(_s) + address, _buff, size);      \
   }
 
-w5100_status_t w5100_configure(void);
+w5100_status_t w5100_configure(w5100_mem_t *sb);
 uint16_t w5100_read_tx_fsr(enum W5100SCH _s, uint16_t *_buff);
 uint16_t w5100_read_rx_rsr(enum W5100SCH _s, uint16_t *_buff);
 w5100_status_t w5100_verify_hw(void);
@@ -209,6 +207,8 @@ w5100_status_t w5100_reset(void);
  *
  * 4.1 Common Registers
  */
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-function"
 __CREGISTER8(mr, 0x0000)       // mode register
 __CREGISTER_N(gar, 0x0001, 4)  // gateway address register
 __CREGISTER_N(subr, 0x0005, 4) // subnet mask address register
@@ -251,5 +251,6 @@ __SREGISTER_N(tx_rd, 0x0022, 2) // TX Read Pointer
 __SREGISTER_N(tx_wr, 0x0024, 2) // TX Write Pointer
 __SREGISTER_N(rx_rd, 0x0028, 2) // RX Read Pointer
 __SREGISTER_N(rx_wr, 0x002A, 2) // RX Write Pointer (supported?)
+#pragma GCC diagnostic pop
 
 #endif // __W5100_H__
