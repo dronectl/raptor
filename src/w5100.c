@@ -79,12 +79,23 @@ w5100_status_t w5100_configure(void) {
   size_config = (6 << MEMSIZE_CONF_1024) | (4 << MEMSIZE_CONF_1024) |
                 (2 << MEMSIZE_CONF_4096) | (MEMSIZE_CONF_2048);
   w5100_write_tmsr(size_config);
-  // set socket tx and rx memory mask and basec
-  socket_buffers[1].rx_mem.mask = 0x0;
-  socket_buffers[2].rx_mem.mask = 0x0;
-  socket_buffers[3].rx_mem.mask = 0x0;
-  socket_buffers[4].rx_mem.mask = 0x0;
   spi_end();
+  // set socket tx and rx memory mask and base
+  uint16_t rx_alloc_sizes[4] = {0x800, 0x400, 0x1000, 0x400};
+  uint16_t tx_alloc_sizes[4] = {0x800, 0x1000, 0x400, 0x400};
+  for (int i = 0; i <= 3; i++) {
+    if (i == 0) {
+      socket_buffers[i].rx_mem.offset = W5100_RX_BUFFER_BASE;
+      socket_buffers[i].tx_mem.offset = W5100_TX_BUFFER_BASE;
+    } else {
+      socket_buffers[i].rx_mem.offset = socket_buffers[i - 1].rx_mem.offset +
+                                        socket_buffers[i - 1].rx_mem.mask + 0x1;
+      socket_buffers[i].tx_mem.offset = socket_buffers[i - 1].tx_mem.offset +
+                                        socket_buffers[i - 1].tx_mem.mask + 0x1;
+    }
+    socket_buffers[i].rx_mem.mask = rx_alloc_sizes[i] - 0x1;
+    socket_buffers[i].tx_mem.mask = tx_alloc_sizes[i] - 0x1;
+  }
   return W5100_OK;
 }
 
