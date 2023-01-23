@@ -29,6 +29,11 @@
 #define W5100_MEMAP_SREG_BASE(n)                                               \
   (W5100_SOCK_BASE + (W5100_SOCK_REG_MEM_SIZE * n))
 
+#define W5100_RX_BUFFER_BASE (uint16_t)0x6000
+#define W5100_TX_BUFFER_BASE (uint16_t)0x4000
+// TX and RX buffer sizes are the same (bytes)
+#define W5100_SOCKET_BUFFER_SIZE (W5100_RX_MEM_BASE - W5100_TX_MEM_BASE)
+
 typedef struct socket_mem_t {
   uint16_t mask;
   uint16_t offset;
