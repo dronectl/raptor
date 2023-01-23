@@ -38,8 +38,8 @@ typedef struct enet_config_t {
 
 enet_status_t ethernet_phy_init(void);
 uint8_t ethernet_phy_state(void);
+w5100_mem_t *ethernet_phy_get_memmap(void);
 enet_status_t ethernet_configure(const enet_config_t *config);
-void ethernet_reset(void);
 enet_status_t ethernet_set_gateway(const ipv4_address_t gateway);
 enet_status_t ethernet_get_gateway(ipv4_address_t *gateway, uint16_t *len);
 enet_status_t ethernet_set_subnet_mask(const ipv4_address_t subnet_mask);
@@ -51,5 +51,6 @@ enet_status_t ethernet_set_ip_addr(const ipv4_address_t ip_addr);
 enet_status_t ethernet_get_ip_addr(ipv4_address_t *ip_addr, uint16_t *len);
 enet_status_t ethernet_set_retransmit_timeout(const uint8_t *ms);
 enet_status_t ethernet_set_retransmit_count(uint8_t retry);
+void ethernet_reset(void);
 
 #endif // __ETHERNET_H__

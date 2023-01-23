@@ -13,9 +13,11 @@
 #include "spi.h"
 #include "utils.h"
 #include "w5100.h"
+#include <string.h>
 
 // ethernet phy initialized flag (used as guard check)
 static uint8_t phy_initialized = 0;
+static w5100_mem_t phy_buffer_memmap[4];
 
 static void generate_mac_address(uint8_t *mac_addr) {
   assert(mac_addr != NULL);
@@ -27,6 +29,8 @@ static void generate_mac_address(uint8_t *mac_addr) {
   mac_addr[0] |= 0x02;
 }
 
+w5100_mem_t *ethernet_phy_get_memmap(void) { return phy_buffer_memmap; }
+
 uint8_t ethernet_phy_state(void) { return phy_initialized; }
 
 /**
@@ -35,10 +39,15 @@ uint8_t ethernet_phy_state(void) { return phy_initialized; }
  */
 enet_status_t ethernet_phy_init(void) {
   enet_status_t status = ENET_OK;
+  w5100_mem_t memory[4];
   spi_begin(w5100_spi_config);
   if (w5100_verify_hw() != W5100_OK)
     status = ENET_ERR;
+  if (w5100_configure(&memory) != W5100_OK)
+    status = ENET_ERR;
   spi_end();
+  // set memory map
+  memcpy(phy_buffer_memmap, memory, sizeof(memory) * 4);
   // set initialization status
   phy_initialized = status == ENET_OK ? 1 : 0;
   return status;
