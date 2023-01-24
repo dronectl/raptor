@@ -21,13 +21,31 @@ typedef struct socket_state_t {
 static socket_state_t socket_state[W5100_MAX_SOCK_NUM];
 
 /**
- * @brief Find an available socket to configure with target protocol and source
- * port.
+ * @brief Read data from target circular socket RX buffer.
  *
- * @param protocol
- * @param port
- * @return uint8_t
+ * @param channel target socket channel
+ * @param src read pointer index
+ * @param dst read buffer
+ * @param len size of read (bytes)
  */
+static void read_data(enum W5100SCH channel, uint16_t src, uint8_t *dst,
+                      uint16_t len) {
+  uint16_t size = w5100_get_rx_size(channel);
+  uint16_t src_mask = src & w5100_get_rx_mask(channel);
+  uint16_t src_ptr = w5100_get_rx_offset(channel) + src_mask;
+  // check if we need to roll over to the front of the buffer
+  if (src_mask + len <= size) {
+    // no rollover required. read to len
+    w5100_read_bytes(src_ptr, dst, len);
+  } else {
+    // rollover required. first read to end of buffer
+    size = size - src_mask;
+    w5100_read_bytes(src_ptr, dst, size);
+    // then read the remaining bytes in len
+    dst += size;
+    w5100_read_bytes(w5100_get_rx_offset(channel), dst, len - size);
+  }
+}
 
 /**
  * @brief Provision a socket for communication.
@@ -200,29 +218,52 @@ socket_status_t socket_recv(enum W5100SCH channel, uint8_t *buffer,
     return SOCKET_UNINITIALIZED;
   }
   socket_status_t state = SOCKET_OK;
-  uint16_t rx_buf_size = socket_state[channel].rx_rsr;
+  // bytes received
+  uint16_t rx_rsr = socket_state[channel].rx_rsr;
   spi_begin(w5100_spi_config);
-  if (rx_buf_size < size) {
+  if (rx_rsr < size) {
     uint16_t rsr;
     w5100_read_rx_rsr(channel, &rsr);
     // compute unread rx buffer size
-    rx_buf_size = rsr - socket_state[channel].rx_inc;
-    // update state
-    socket_state[channel].rx_rsr = rx_buf_size;
+    rx_rsr = rsr - socket_state[channel].rx_inc;
+    // update rsr state to reflect unread rx buffer size
+    socket_state[channel].rx_rsr = rx_rsr;
   }
   // now check unread rx buffer size
-  if (rx_buf_size == 0) {
-    // no unread data is available. Check status of socket
+  if (rx_rsr == 0) {
+    // no unread data is available. Check status of socket and categorize error
     enum W5100State status = (enum W5100State)w5100_read_sn_sr(channel);
     if (status == SNSR_LISTEN || status == SNSR_CLOSED ||
         status == SNSR_CLOSE_WAIT) {
       // the remote has closed its connection
       state = SOCKET_EOF;
+      goto cleanup;
     } else {
       // connection up but no data is available
       state = SOCKET_NO_DATA;
+      goto cleanup;
     }
   }
+  // clamp rx receive bytes to `size` (do not receive more than requested)
+  if (rx_rsr > size)
+    rx_rsr = size;
+  read_data(channel, socket_state[channel].rx_rd, buffer, size);
+  // incremement read address by bytes read
+  socket_state[channel].rx_rd += rx_rsr;
+  // decrement read bytes by number of bytes read
+  socket_state[channel].rx_rsr -= rx_rsr;
+  uint16_t inc = socket_state[channel].rx_inc + rx_rsr;
+  // REVIEW: clamp incremement count to 250?
+  if (inc >= 250 || socket_state[channel].rx_rsr == 0) {
+    // receive step complete set socket to SOCK_RECV and reset increment
+    socket_state[channel].rx_inc = 0;
+    // move socket read pointer
+    w5100_write_sn_rx_rd(channel, socket_state[channel].rx_rd);
+    w5100_exec_sock_cmd(channel, SOCK_RECV);
+  } else {
+    socket_state[channel].rx_inc = inc;
+  }
+cleanup:
   spi_end();
   return state;
 }
