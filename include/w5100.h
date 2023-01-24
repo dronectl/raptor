@@ -36,7 +36,8 @@
 
 typedef struct socket_mem_t {
   uint16_t mask;
-  uint16_t offset;
+  uint16_t offset; // offset calculated from buffer base (bytes)
+  uint16_t size;   // socket memory size (bytes)
 } socket_mem_t;
 
 typedef struct w5100_mem_t {
@@ -200,6 +201,8 @@ uint16_t w5100_get_tx_offset(enum W5100SCH _s);
 uint16_t w5100_get_rx_offset(enum W5100SCH _s);
 uint16_t w5100_get_tx_mask(enum W5100SCH _s);
 uint16_t w5100_get_rx_mask(enum W5100SCH _s);
+uint16_t w5100_get_tx_size(enum W5100SCH _s);
+uint16_t w5100_get_rx_size(enum W5100SCH _s);
 uint16_t w5100_read_tx_fsr(enum W5100SCH _s, uint16_t *_buff);
 uint16_t w5100_read_rx_rsr(enum W5100SCH _s, uint16_t *_buff);
 w5100_status_t w5100_verify_hw(void);

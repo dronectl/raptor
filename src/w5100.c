@@ -29,14 +29,15 @@ static const uint16_t rx_alloc_sizes[4] = {0x800, 0x400, 0x1000, 0x400};
 static const uint16_t tx_alloc_sizes[4] = {0x800, 0x1000, 0x400, 0x400};
 
 // socket memory map for tx and rx buffers
-static w5100_mem_t smem_map[4] = {{.rx_mem = {.mask = 0x0, .offset = 0x0},
-                                   .tx_mem = {.mask = 0x0, .offset = 0x0}},
-                                  {.rx_mem = {.mask = 0x0, .offset = 0x0},
-                                   .tx_mem = {.mask = 0x0, .offset = 0x0}},
-                                  {.rx_mem = {.mask = 0x0, .offset = 0x0},
-                                   .tx_mem = {.mask = 0x0, .offset = 0x0}},
-                                  {.rx_mem = {.mask = 0x0, .offset = 0x0},
-                                   .tx_mem = {.mask = 0x0, .offset = 0x0}}
+static w5100_mem_t smem_map[4] = {
+    {.rx_mem = {.mask = 0x0, .offset = 0x0, .size = 0x0},
+     .tx_mem = {.mask = 0x0, .offset = 0x0, .size = 0x0}},
+    {.rx_mem = {.mask = 0x0, .offset = 0x0, .size = 0x0},
+     .tx_mem = {.mask = 0x0, .offset = 0x0, .size = 0x0}},
+    {.rx_mem = {.mask = 0x0, .offset = 0x0, .size = 0x0},
+     .tx_mem = {.mask = 0x0, .offset = 0x0, .size = 0x0}},
+    {.rx_mem = {.mask = 0x0, .offset = 0x0, .size = 0x0},
+     .tx_mem = {.mask = 0x0, .offset = 0x0, .size = 0x0}}
 
 };
 
@@ -128,6 +129,14 @@ uint16_t w5100_get_tx_mask(enum W5100SCH _s) {
 
 uint16_t w5100_get_rx_mask(enum W5100SCH _s) {
   return smem_map[_s].rx_mem.mask;
+}
+
+uint16_t w5100_get_tx_size(enum W5100SCH _s) {
+  return smem_map[_s].rx_mem.size;
+}
+
+uint16_t w5100_get_rx_size(enum W5100SCH _s) {
+  return smem_map[_s].tx_mem.size;
 }
 
 /**
