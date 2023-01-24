@@ -135,10 +135,10 @@ enum W5100State {
   SNSR_ARP = 0x01
 };
 
-void _read_byte(uint16_t addr, uint8_t *buffer);
-void _write_byte(uint16_t addr, const uint8_t buffer);
-uint16_t _read_bytes(uint16_t addr, uint8_t *buffer, uint16_t len);
-uint16_t _write_bytes(uint16_t addr, const uint8_t *buffer, uint16_t len);
+void w5100_read_byte(uint16_t addr, uint8_t *buffer);
+void w5100_write_byte(uint16_t addr, const uint8_t buffer);
+uint16_t w5100_read_bytes(uint16_t addr, uint8_t *buffer, uint16_t len);
+uint16_t w5100_write_bytes(uint16_t addr, const uint8_t *buffer, uint16_t len);
 
 /**
  * @brief Common 8 bit register read and write functions
@@ -146,11 +146,11 @@ uint16_t _write_bytes(uint16_t addr, const uint8_t *buffer, uint16_t len);
  */
 #define __CREGISTER8(name, address)                                            \
   static void w5100_write_##name(const uint8_t _data) {                        \
-    _write_byte(address, _data);                                               \
+    w5100_write_byte(address, _data);                                          \
   }                                                                            \
   static uint8_t w5100_read_##name(void) {                                     \
     uint8_t data;                                                              \
-    _read_byte(address, &data);                                                \
+    w5100_read_byte(address, &data);                                           \
     return data;                                                               \
   }
 
@@ -160,10 +160,10 @@ uint16_t _write_bytes(uint16_t addr, const uint8_t *buffer, uint16_t len);
  */
 #define __CREGISTER_N(name, address, size)                                     \
   static uint16_t w5100_write_##name(const uint8_t *_buffer) {                 \
-    return _write_bytes(address, _buffer, size);                               \
+    return w5100_write_bytes(address, _buffer, size);                          \
   }                                                                            \
   static uint16_t w5100_read_##name(uint8_t *_buffer) {                        \
-    return _read_bytes(address, _buffer, size);                                \
+    return w5100_read_bytes(address, _buffer, size);                           \
   }
 
 /**
@@ -173,11 +173,11 @@ uint16_t _write_bytes(uint16_t addr, const uint8_t *buffer, uint16_t len);
 #define __SREGISTER8(name, address)                                            \
   static void w5100_write_sn_##name(const enum W5100SCH _s,                    \
                                     const uint8_t _data) {                     \
-    _write_byte(W5100_MEMAP_SREG_BASE(_s) + address, _data);                   \
+    w5100_write_byte(W5100_MEMAP_SREG_BASE(_s) + address, _data);              \
   }                                                                            \
   static uint8_t w5100_read_sn_##name(enum W5100SCH _s) {                      \
     uint8_t buffer;                                                            \
-    _read_byte(W5100_MEMAP_SREG_BASE(_s) + address, &buffer);                  \
+    w5100_read_byte(W5100_MEMAP_SREG_BASE(_s) + address, &buffer);             \
     return buffer;                                                             \
   }
 
@@ -188,13 +188,18 @@ uint16_t _write_bytes(uint16_t addr, const uint8_t *buffer, uint16_t len);
 #define __SREGISTER_N(name, address, size)                                     \
   static uint16_t w5100_write_sn_##name(const enum W5100SCH _s,                \
                                         const uint8_t *_buff) {                \
-    return _write_bytes(W5100_MEMAP_SREG_BASE(_s) + address, _buff, size);     \
+    return w5100_write_bytes(W5100_MEMAP_SREG_BASE(_s) + address, _buff,       \
+                             size);                                            \
   }                                                                            \
   static uint16_t w5100_read_sn_##name(enum W5100SCH _s, uint8_t *_buff) {     \
-    return _read_bytes(W5100_MEMAP_SREG_BASE(_s) + address, _buff, size);      \
+    return w5100_read_bytes(W5100_MEMAP_SREG_BASE(_s) + address, _buff, size); \
   }
 
-w5100_status_t w5100_configure(w5100_mem_t *sb);
+w5100_status_t w5100_configure();
+uint16_t w5100_get_tx_offset(enum W5100SCH _s);
+uint16_t w5100_get_rx_offset(enum W5100SCH _s);
+uint16_t w5100_get_tx_mask(enum W5100SCH _s);
+uint16_t w5100_get_rx_mask(enum W5100SCH _s);
 uint16_t w5100_read_tx_fsr(enum W5100SCH _s, uint16_t *_buff);
 uint16_t w5100_read_rx_rsr(enum W5100SCH _s, uint16_t *_buff);
 w5100_status_t w5100_verify_hw(void);
