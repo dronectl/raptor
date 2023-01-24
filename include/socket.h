@@ -23,13 +23,13 @@ typedef uint8_t socket_status_t;
 
 #define SOCKET_OK (socket_status_t)0      // success code
 #define SOCKET_ERR (socket_status_t)1     // generic failure
-#define SOCKET_FULL (socket_status_t)2    // no available socket
+#define SOCKET_BUSY (socket_status_t)2    // requested socket is already active
 #define SOCKET_NO_DATA (socket_status_t)3 // no data available in RX buffer
 #define SOCKET_EOF (socket_status_t)4     // socket closed during operation
 #define SOCKET_UNINITIALIZED (socket_status_t)5 // socket uninitialized
 
-socket_status_t socket_begin(enum W5100Proto protocol, uint16_t port,
-                             enum W5100SCH *channel);
+socket_status_t socket_begin(enum W5100SCH channel, enum W5100Proto protocol,
+                             uint16_t port);
 socket_status_t socket_close(enum W5100SCH channel);
 enum W5100State socket_get_status(enum W5100SCH channel);
 socket_status_t socket_connect(enum W5100SCH channel,
