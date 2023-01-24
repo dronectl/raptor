@@ -104,6 +104,8 @@ w5100_status_t w5100_configure() {
       smem_map[i].rx_mem.offset = W5100_RX_BUFFER_BASE;
       smem_map[i].tx_mem.offset = W5100_TX_BUFFER_BASE;
     } else {
+      smem_map[i].rx_mem.size = rx_alloc_sizes[i];
+      smem_map[i].tx_mem.size = tx_alloc_sizes[i];
       smem_map[i].rx_mem.offset =
           smem_map[i - 1].rx_mem.offset + smem_map[i - 1].rx_mem.mask + 0x1;
       smem_map[i].tx_mem.offset =
