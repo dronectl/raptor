@@ -28,6 +28,18 @@
 static const uint16_t rx_alloc_sizes[4] = {0x800, 0x400, 0x1000, 0x400};
 static const uint16_t tx_alloc_sizes[4] = {0x800, 0x1000, 0x400, 0x400};
 
+// socket memory map for tx and rx buffers
+static w5100_mem_t smem_map[4] = {{.rx_mem = {.mask = 0x0, .offset = 0x0},
+                                   .tx_mem = {.mask = 0x0, .offset = 0x0}},
+                                  {.rx_mem = {.mask = 0x0, .offset = 0x0},
+                                   .tx_mem = {.mask = 0x0, .offset = 0x0}},
+                                  {.rx_mem = {.mask = 0x0, .offset = 0x0},
+                                   .tx_mem = {.mask = 0x0, .offset = 0x0}},
+                                  {.rx_mem = {.mask = 0x0, .offset = 0x0},
+                                   .tx_mem = {.mask = 0x0, .offset = 0x0}}
+
+};
+
 /**
  * @brief Write a byte to W5100 ethernet controller using SPI bus. SPI data
  * bytes need to be written in 32-bit units in big endian format: OP-Code (1
@@ -36,7 +48,7 @@ static const uint16_t tx_alloc_sizes[4] = {0x800, 0x1000, 0x400, 0x400};
  * @param addr W5100 register address
  * @param buffer data byte
  */
-void _write_byte(uint16_t addr, const uint8_t buffer) {
+void w5100_write_byte(uint16_t addr, const uint8_t buffer) {
   spi_enable_ss();
   spi_transact_byte(WRITE_OPCODE);
   spi_transact_byte((addr >> 8)); // write address MSB first
@@ -53,7 +65,7 @@ void _write_byte(uint16_t addr, const uint8_t buffer) {
  * @param addr W5100 register address
  * @param buffer byte data buffer
  */
-void _read_byte(uint16_t addr, uint8_t *buffer) {
+void w5100_read_byte(uint16_t addr, uint8_t *buffer) {
   spi_enable_ss();
   spi_transact_byte(READ_OPCODE);
   spi_transact_byte((addr >> 8)); // write address MSB first
@@ -63,7 +75,7 @@ void _read_byte(uint16_t addr, uint8_t *buffer) {
 }
 
 /**
- * @brief Configure socket RX and TX buffer sizes.
+ * @brief Configure socket RX and TX buffer sizes and save to local struct array
  *
  * SOCK |  SO     S1      S2     S3
  * -----------------------------------
@@ -73,8 +85,7 @@ void _read_byte(uint16_t addr, uint8_t *buffer) {
  *
  * @return w5100_status_t
  */
-w5100_status_t w5100_configure(w5100_mem_t *sb) {
-  assert(sb != NULL);
+w5100_status_t w5100_configure() {
   // set RMSR
   spi_begin(w5100_spi_config);
   // config bit ordering [ 7 6 ] [ 5 4 ] [ 3]
@@ -89,18 +100,34 @@ w5100_status_t w5100_configure(w5100_mem_t *sb) {
   // set socket tx and rx memory mask and base
   for (int i = 0; i <= 3; i++) {
     if (i == 0) {
-      sb[i].rx_mem.offset = W5100_RX_BUFFER_BASE;
-      sb[i].tx_mem.offset = W5100_TX_BUFFER_BASE;
+      smem_map[i].rx_mem.offset = W5100_RX_BUFFER_BASE;
+      smem_map[i].tx_mem.offset = W5100_TX_BUFFER_BASE;
     } else {
-      sb[i].rx_mem.offset =
-          sb[i - 1].rx_mem.offset + sb[i - 1].rx_mem.mask + 0x1;
-      sb[i].tx_mem.offset =
-          sb[i - 1].tx_mem.offset + sb[i - 1].tx_mem.mask + 0x1;
+      smem_map[i].rx_mem.offset =
+          smem_map[i - 1].rx_mem.offset + smem_map[i - 1].rx_mem.mask + 0x1;
+      smem_map[i].tx_mem.offset =
+          smem_map[i - 1].tx_mem.offset + smem_map[i - 1].tx_mem.mask + 0x1;
     }
-    sb[i].rx_mem.mask = rx_alloc_sizes[i] - 0x1;
-    sb[i].tx_mem.mask = tx_alloc_sizes[i] - 0x1;
+    smem_map[i].rx_mem.mask = rx_alloc_sizes[i] - 0x1;
+    smem_map[i].tx_mem.mask = tx_alloc_sizes[i] - 0x1;
   }
   return W5100_OK;
+}
+
+uint16_t w5100_get_tx_offset(enum W5100SCH _s) {
+  return smem_map[_s].tx_mem.offset;
+}
+
+uint16_t w5100_get_rx_offset(enum W5100SCH _s) {
+  return smem_map[_s].rx_mem.offset;
+}
+
+uint16_t w5100_get_tx_mask(enum W5100SCH _s) {
+  return smem_map[_s].tx_mem.mask;
+}
+
+uint16_t w5100_get_rx_mask(enum W5100SCH _s) {
+  return smem_map[_s].rx_mem.mask;
 }
 
 /**
@@ -116,7 +143,8 @@ w5100_status_t w5100_configure(w5100_mem_t *sb) {
 uint16_t w5100_read_rx_rsr(enum W5100SCH _s, uint16_t *_buff) {
   // read from 16 bit register MSB first.
   for (int i = 1; i >= 0; i--) {
-    _read_byte(W5100_MEMAP_SREG_BASE(_s) + 0x0026 + i, (uint8_t *)_buff + i);
+    w5100_read_byte(W5100_MEMAP_SREG_BASE(_s) + 0x0026 + i,
+                    (uint8_t *)_buff + i);
   }
   return 2;
 }
@@ -134,21 +162,22 @@ uint16_t w5100_read_rx_rsr(enum W5100SCH _s, uint16_t *_buff) {
 uint16_t w5100_read_tx_fsr(enum W5100SCH _s, uint16_t *_buff) {
   // read from 16 bit register MSB first.
   for (int i = 1; i >= 0; i--) {
-    _read_byte(W5100_MEMAP_SREG_BASE(_s) + 0x0020 + i, (uint8_t *)_buff + i);
+    w5100_read_byte(W5100_MEMAP_SREG_BASE(_s) + 0x0020 + i,
+                    (uint8_t *)_buff + i);
   }
   return 2;
 }
 
-uint16_t _write_bytes(uint16_t addr, const uint8_t *buffer, uint16_t len) {
+uint16_t w5100_write_bytes(uint16_t addr, const uint8_t *buffer, uint16_t len) {
   for (uint16_t i = 0; i < len; i++) {
-    _write_byte(addr + i, buffer[i]);
+    w5100_write_byte(addr + i, buffer[i]);
   }
   return len;
 }
 
-uint16_t _read_bytes(uint16_t addr, uint8_t *buffer, uint16_t len) {
+uint16_t w5100_read_bytes(uint16_t addr, uint8_t *buffer, uint16_t len) {
   for (uint16_t i = 0; i < len; i++) {
-    _read_byte(addr + i, buffer + i);
+    w5100_read_byte(addr + i, buffer + i);
   }
   return len;
 }
