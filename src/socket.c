@@ -28,50 +28,54 @@ static socket_state_t socket_state[W5100_MAX_SOCK_NUM];
  * @param port
  * @return uint8_t
  */
-socket_status_t socket_begin(enum W5100Proto protocol, uint16_t port,
-                             enum W5100SCH *channel) {
-  uint8_t sock_idx;
-  enum W5100State socket_status[W5100_MAX_SOCK_NUM];
-  assert(channel != NULL);
+
+/**
+ * @brief Provision a socket for communication.
+ *
+ * @param channel socket channel [0-3]
+ * @param protocol socket protocol
+ * @param port socket port
+ * @return socket_status_t SOCKET_BUSY if socket failed to be provisioned.
+ * SOCKET_UNINITIALIZED if ethernet phy is uninitialized and SOCKET_OK on
+ * success
+ */
+socket_status_t socket_begin(enum W5100SCH channel, enum W5100Proto protocol,
+                             uint16_t port) {
+  enum W5100State socket_status;
   if (!ethernet_phy_state()) {
-    *channel = W5100_MAX_SOCK_NUM;
-    return SOCKET_ERR;
+    return SOCKET_UNINITIALIZED;
   }
   // find an unused socket and attempt to provision first available
   spi_begin(w5100_spi_config);
-  for (sock_idx = 0; sock_idx < W5100_MAX_SOCK_NUM; sock_idx++) {
-    socket_status[sock_idx] = (enum W5100State)w5100_read_sn_sr(sock_idx);
-    if (socket_status[sock_idx] == SNSR_CLOSED)
+  socket_status = (enum W5100State)w5100_read_sn_sr(channel);
+  switch (socket_status) {
+    case SNSR_CLOSED:
       goto make;
-  }
-  // attempt to forcibly close socket in closing state
-  for (sock_idx = 0; sock_idx < W5100_MAX_SOCK_NUM; sock_idx++) {
-    if (socket_status[sock_idx] == SNSR_LAST_ACK)
+    case SNSR_LAST_ACK:
       goto closemake;
-    if (socket_status[sock_idx] == SNSR_TIME_WAIT)
+    case SNSR_TIME_WAIT:
       goto closemake;
-    if (socket_status[sock_idx] == SNSR_FIN_WAIT)
+    case SNSR_FIN_WAIT:
       goto closemake;
-    if (socket_status[sock_idx] == SNSR_CLOSING)
+    case SNSR_CLOSING:
       goto closemake;
   }
   spi_end();
   // failed to provision socket
-  *channel = W5100_MAX_SOCK_NUM;
-  return SOCKET_FULL;
+  return SOCKET_BUSY;
 closemake:
-  w5100_exec_sock_cmd(sock_idx, SOCK_CLOSE);
+  w5100_exec_sock_cmd(channel, SOCK_CLOSE);
 make:
-  w5100_write_sn_mr(sock_idx, (const uint8_t)protocol);
-  w5100_write_sn_ir(sock_idx, 0xFF); // clear interrupt register
-  w5100_write_sn_port(sock_idx, (const uint8_t *)&port);
-  w5100_exec_sock_cmd(sock_idx, SOCK_OPEN);
-  socket_state[sock_idx].rx_inc = 0;
-  socket_state[sock_idx].rx_rd = 0;
-  socket_state[sock_idx].rx_rsr = 0;
-  socket_state[sock_idx].tx_fsr = 0;
+  w5100_write_sn_mr(channel, (const uint8_t)protocol);
+  w5100_write_sn_ir(channel, 0xFF); // clear interrupt register
+  w5100_write_sn_port(channel, (const uint8_t *)&port);
+  w5100_exec_sock_cmd(channel, SOCK_OPEN);
+  socket_state[channel].rx_inc = 0;
+  socket_state[channel].rx_rd = 0;
+  socket_state[channel].rx_rsr = 0;
+  socket_state[channel].tx_fsr = 0;
   spi_end();
-  return sock_idx;
+  return SOCKET_OK;
 }
 
 /**
@@ -248,12 +252,23 @@ socket_status_t socket_get_unread_rx_bytes(enum W5100SCH channel) {
   return rx_buf_size;
 }
 
+/**
+ * @brief Get first byte in receive queue
+ *
+ * @param channel target socket channel
+ * @param buffer byte buffer
+ * @return socket_status_t
+ */
 socket_status_t socket_peek(enum W5100SCH channel, uint8_t *buffer) {
   if (!ethernet_phy_state()) {
     return SOCKET_UNINITIALIZED;
   }
   assert(buffer != NULL);
+  uint16_t ptr = socket_state[channel].rx_rd;
+  uint16_t mask = w5100_get_rx_mask(channel);
+  uint16_t offset = w5100_get_rx_offset(channel);
   spi_begin(w5100_spi_config);
+  w5100_read_byte((ptr & mask) + offset, buffer);
   spi_end();
-  return ENET_OK;
+  return SOCKET_OK;
 }
