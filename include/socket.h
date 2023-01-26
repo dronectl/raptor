@@ -39,5 +39,7 @@ socket_status_t socket_recv(enum W5100SCH channel, uint8_t *buffer,
                             uint16_t size);
 socket_status_t socket_get_unread_rx_bytes(enum W5100SCH channel);
 socket_status_t socket_peek(enum W5100SCH channel, uint8_t *buffer);
+socket_status_t socket_send(enum W5100SCH channel, const uint8_t *buffer,
+                            uint16_t len);
 
 #endif // __SOCKET_H__
