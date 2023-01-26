@@ -35,7 +35,6 @@ uint8_t ethernet_phy_state(void) { return phy_initialized; }
  */
 enet_status_t ethernet_phy_init(void) {
   enet_status_t status = ENET_OK;
-  w5100_mem_t memory[4];
   spi_begin(w5100_spi_config);
   if (w5100_verify_hw() != W5100_OK)
     status = ENET_ERR;

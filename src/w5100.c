@@ -86,7 +86,7 @@ void w5100_read_byte(uint16_t addr, uint8_t *buffer) {
  *
  * @return w5100_status_t
  */
-w5100_status_t w5100_configure() {
+w5100_status_t w5100_configure(void) {
   // set RMSR
   spi_begin(w5100_spi_config);
   // config bit ordering [ 7 6 ] [ 5 4 ] [ 3]

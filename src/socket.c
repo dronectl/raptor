@@ -110,6 +110,8 @@ socket_status_t socket_begin(enum W5100SCH channel, enum W5100Proto protocol,
       goto closemake;
     case SNSR_CLOSING:
       goto closemake;
+    default:
+      return SOCKET_ERR;
   }
   spi_end();
   // failed to provision socket
@@ -291,7 +293,7 @@ socket_status_t socket_recv(enum W5100SCH channel, uint8_t *buffer,
     // receive step complete set socket to SOCK_RECV and reset increment
     socket_state[channel].rx_inc = 0;
     // move socket read pointer
-    w5100_write_sn_rx_rd(channel, socket_state[channel].rx_rd);
+    w5100_write_sn_rx_rd(channel, (uint8_t *)socket_state[channel].rx_rd);
     w5100_exec_sock_cmd(channel, SOCK_RECV);
   } else {
     socket_state[channel].rx_inc = inc;
@@ -382,7 +384,7 @@ socket_status_t socket_send(enum W5100SCH channel, const uint8_t *buffer,
   } while (freesize < len);
 
   // write data
-  write_data(channel, 0, buffer, len);
+  send_data(channel, 0, buffer, len);
   w5100_exec_sock_cmd(channel, SOCK_SEND);
 
   // read interrupt register to verify send operation completion

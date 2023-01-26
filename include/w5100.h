@@ -196,7 +196,7 @@ uint16_t w5100_write_bytes(uint16_t addr, const uint8_t *buffer, uint16_t len);
     return w5100_read_bytes(W5100_MEMAP_SREG_BASE(_s) + address, _buff, size); \
   }
 
-w5100_status_t w5100_configure();
+w5100_status_t w5100_configure(void);
 uint16_t w5100_get_tx_offset(enum W5100SCH _s);
 uint16_t w5100_get_rx_offset(enum W5100SCH _s);
 uint16_t w5100_get_tx_mask(enum W5100SCH _s);
