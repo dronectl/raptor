@@ -152,6 +152,7 @@ uint16_t w5100_get_rx_size(enum W5100SCH _s) {
  * functions)
  */
 uint16_t w5100_read_rx_rsr(enum W5100SCH _s, uint16_t *_buff) {
+  assert(_buff != NULL);
   // read from 16 bit register MSB first.
   for (int i = 1; i >= 0; i--) {
     w5100_read_byte(W5100_MEMAP_SREG_BASE(_s) + 0x0026 + i,
@@ -171,6 +172,7 @@ uint16_t w5100_read_rx_rsr(enum W5100SCH _s, uint16_t *_buff) {
  * functions)
  */
 uint16_t w5100_read_tx_fsr(enum W5100SCH _s, uint16_t *_buff) {
+  assert(_buff != NULL);
   // read from 16 bit register MSB first.
   for (int i = 1; i >= 0; i--) {
     w5100_read_byte(W5100_MEMAP_SREG_BASE(_s) + 0x0020 + i,
@@ -180,6 +182,7 @@ uint16_t w5100_read_tx_fsr(enum W5100SCH _s, uint16_t *_buff) {
 }
 
 uint16_t w5100_write_bytes(uint16_t addr, const uint8_t *buffer, uint16_t len) {
+  assert(buffer != NULL);
   for (uint16_t i = 0; i < len; i++) {
     w5100_write_byte(addr + i, buffer[i]);
   }
@@ -187,6 +190,7 @@ uint16_t w5100_write_bytes(uint16_t addr, const uint8_t *buffer, uint16_t len) {
 }
 
 uint16_t w5100_read_bytes(uint16_t addr, uint8_t *buffer, uint16_t len) {
+  assert(buffer != NULL);
   for (uint16_t i = 0; i < len; i++) {
     w5100_read_byte(addr + i, buffer + i);
   }
