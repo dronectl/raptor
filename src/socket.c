@@ -21,6 +21,39 @@ typedef struct socket_state_t {
 static socket_state_t socket_state[W5100_MAX_SOCK_NUM];
 
 /**
+ * @brief Write data to taret circular socket tx buffer.
+ *
+ * @param channel target socket channel
+ * @param data_offset write pointer offset
+ * @param buffer data to be written
+ * @param len size of data to be written
+ */
+static void send_data(enum W5100SCH channel, uint16_t data_offset,
+                      const uint8_t *buffer, uint16_t len) {
+  uint16_t ptr;
+  uint16_t offset;
+  uint16_t dst_addr;
+  uint16_t size = w5100_read_sn_tx_size(channel);
+  w5100_read_sn_tx_wr(channel, (uint8_t *)&ptr);
+  ptr += data_offset;
+  offset = ptr & w5100_get_tx_mask(channel);
+  dst_addr = offset + w5100_get_tx_offset(channel);
+  // check if we need to rollover to front of cbuf
+  if (data_offset + len <= size) {
+    w5100_write_bytes(dst_addr, buffer, len);
+  } else {
+    // rollover op required. first read to end of buffer
+    size = size - offset;
+    w5100_write_bytes(dst_addr, buffer, size);
+    // increment data buffer by number of bytes written by the former write
+    w5100_write_bytes(w5100_get_tx_offset(channel), buffer + size, len - size);
+  }
+  // increment write pointer by number of bytes written
+  ptr += len;
+  w5100_write_sn_tx_wr(channel, (uint8_t *)&ptr);
+}
+
+/**
  * @brief Read data from target circular socket RX buffer.
  *
  * @param channel target socket channel
@@ -31,15 +64,15 @@ static socket_state_t socket_state[W5100_MAX_SOCK_NUM];
 static void read_data(enum W5100SCH channel, uint16_t src, uint8_t *dst,
                       uint16_t len) {
   uint16_t size = w5100_get_rx_size(channel);
-  uint16_t src_mask = src & w5100_get_rx_mask(channel);
-  uint16_t src_ptr = w5100_get_rx_offset(channel) + src_mask;
+  uint16_t data_offset = src & w5100_get_rx_mask(channel);
+  uint16_t src_ptr = w5100_get_rx_offset(channel) + data_offset;
   // check if we need to roll over to the front of the buffer
-  if (src_mask + len <= size) {
+  if (data_offset + len <= size) {
     // no rollover required. read to len
     w5100_read_bytes(src_ptr, dst, len);
   } else {
     // rollover required. first read to end of buffer
-    size = size - src_mask;
+    size = size - data_offset;
     w5100_read_bytes(src_ptr, dst, size);
     // then read the remaining bytes in len
     dst += size;
@@ -312,4 +345,57 @@ socket_status_t socket_peek(enum W5100SCH channel, uint8_t *buffer) {
   w5100_read_byte((ptr & mask) + offset, buffer);
   spi_end();
   return SOCKET_OK;
+}
+
+/**
+ * @brief Send data to target socket. Blocks until target socket tx buffer has
+ * the space to write the buffer and verifies the data dispatch was successful.
+ *
+ * @param channel target socket channel
+ * @param buffer buffer to write
+ * @param len size of buffer
+ * @return socket_status_t
+ */
+socket_status_t socket_send(enum W5100SCH channel, const uint8_t *buffer,
+                            uint16_t len) {
+  uint16_t freesize;
+  enum W5100State state;
+  socket_status_t status = SOCKET_OK;
+  assert(buffer != NULL);
+  uint16_t max_size = w5100_get_tx_size(channel);
+
+  // clamp bytes to send by max tx buffer size
+  if (len > max_size) {
+    len = max_size;
+  }
+
+  // only start write once free buffer space is available
+  // TODO: do not hold spi bus while waiting for FSR
+  spi_begin(w5100_spi_config);
+  do {
+    w5100_read_tx_fsr(channel, &freesize);
+    state = (enum W5100State)w5100_read_sn_sr(channel);
+    if ((state != SNSR_ESTABLISHED) && (state != SNSR_CLOSE_WAIT)) {
+      // REVIEW: close if in bad state?
+      goto cleanup;
+    }
+  } while (freesize < len);
+
+  // write data
+  write_data(channel, 0, buffer, len);
+  w5100_exec_sock_cmd(channel, SOCK_SEND);
+
+  // read interrupt register to verify send operation completion
+  while ((w5100_read_sn_ir(channel) & SNIR_SENDOK) != SNIR_SENDOK) {
+    // check if the socket closed during transaction
+    if (w5100_read_sn_sr(channel) == SNSR_CLOSED) {
+      status = SOCKET_EOF;
+      goto cleanup;
+    }
+  }
+  // clear SEND_OK interrupt flag
+  w5100_write_sn_ir(channel, SNIR_SENDOK);
+cleanup:
+  spi_end();
+  return status;
 }
