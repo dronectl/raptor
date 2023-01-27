@@ -38,6 +38,8 @@ add_executable(
   src/w5100.c
   src/utils.c
   src/ethernet.c
+  src/socket.c
+  src/adc.c
 )
 
 # AVR Fuses
