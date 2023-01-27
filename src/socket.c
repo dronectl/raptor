@@ -401,3 +401,88 @@ cleanup:
   spi_end();
   return status;
 }
+
+/**
+ * @brief Get number of bytes available for transmission on target socket. If
+ * the socket is not in ESTABLISHED or CLOSE_WAIT return 0
+ *
+ * @param channel target socket
+ * @return uint16_t number of bytes available for transmit
+ */
+uint16_t socket_send_available(enum W5100SCH channel) {
+  enum W5100State state;
+  uint16_t freesize;
+  spi_begin(w5100_spi_config);
+  w5100_read_tx_fsr(channel, &freesize);
+  state = (enum W5100State)w5100_read_sn_sr(channel);
+  spi_end();
+  if ((state == SNSR_ESTABLISHED) || (state == SNSR_CLOSE_WAIT)) {
+    return freesize;
+  }
+  return 0;
+}
+
+/**
+ * @brief Configure target socket to communicate to destination using UDP.
+ *
+ * @param channel target socket
+ * @param addr destination ipv4 address
+ * @param port destination port
+ * @return socket_status_t
+ */
+socket_status_t socket_start_udp(enum W5100SCH channel,
+                                 const ipv4_address_t *addr, uint16_t port) {
+  assert(addr != NULL);
+  spi_begin(w5100_spi_config);
+  w5100_write_sn_dipr(channel, addr->bytes);
+  w5100_write_sn_dport(channel, (uint8_t *)&port);
+  spi_end();
+  return SOCKET_OK;
+}
+
+/**
+ * @brief Initiate a UDP send on target socket
+ *
+ * @param channel target socket
+ * @return socket_status_t
+ */
+socket_status_t socket_send_udp(enum W5100SCH channel) {
+  socket_status_t status = SOCKET_OK;
+  spi_begin(w5100_spi_config);
+  w5100_exec_sock_cmd(channel, SOCK_SEND);
+  uint8_t ir;
+  do {
+    ir = w5100_read_sn_ir(channel);
+    if (ir & SNIR_TIMEOUT) {
+      w5100_write_sn_ir(channel, SNIR_SENDOK | SNIR_TIMEOUT);
+      status = SOCKET_EOF;
+      goto cleanup;
+    }
+  } while ((ir & SNIR_SENDOK) != SNIR_SENDOK);
+cleanup:
+  spi_end();
+  return status;
+}
+
+/**
+ * @brief UDP socket buffer for send.
+ *
+ * @param channel target socket
+ * @param offset data offset
+ * @param buffer data to transmit
+ * @param len length of data (bytes)
+ * @return socket_status_t
+ */
+socket_status_t socket_buffer_data(enum W5100SCH channel, uint16_t offset,
+                                   const uint8_t *buffer, uint16_t len) {
+  uint16_t freesize;
+  spi_begin(w5100_spi_config);
+  w5100_read_tx_fsr(channel, &freesize);
+  // clamp length by instantantaneous fsr
+  if (len > freesize) {
+    len = freesize;
+  }
+  send_data(channel, offset, buffer, len);
+  spi_end();
+  return SOCKET_OK;
+}
