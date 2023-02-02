@@ -11,6 +11,7 @@
 #include "cbuffer.h"
 #include <stdarg.h>
 #include <string.h>
+#include <time.h>
 
 // program log level (disable by default)
 static enum logger_level _level = LOGGER_DISABLE;
