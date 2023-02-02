@@ -40,6 +40,9 @@ add_executable(
   src/ethernet.c
   src/socket.c
   src/adc.c
+  src/logger.c
+  src/cbuffer.c
+  src/usart.c
 )
 
 # AVR Fuses
