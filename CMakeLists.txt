@@ -42,6 +42,7 @@ add_executable(
   src/adc.c
   src/logger.c
   src/cbuffer.c
+  src/usart.c
 )
 
 # AVR Fuses
