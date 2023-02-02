@@ -24,7 +24,7 @@ static inline uint8_t is_empty(cbuffer_t *cb) { return cb->tail == cb->head; }
 
 void cbuffer_init(cbuffer_t *cbuffer, void *buffer, size_t elem_size,
                   size_t size) {
-  // assert(cbuffer && buffer);
+  assert(cbuffer && buffer);
   cbuffer->head = 0;
   cbuffer->tail = 0;
   cbuffer->buffer = buffer;
