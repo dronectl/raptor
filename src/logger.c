@@ -10,11 +10,13 @@
 #include "logger.h"
 #include "cbuffer.h"
 #include <stdarg.h>
+#include <string.h>
 
 // program log level (disable by default)
 static enum logger_level _level = LOGGER_DISABLE;
 
-static cbuffer_t log_cbuf;
+static char buffer[MAX_LOGGING_CBUFFER_SIZE][MAX_LOGGING_LINE_LEN];
+static cbuffer_t cb;
 
 /**
  * @brief Get the string representation of log level enum
@@ -22,7 +24,7 @@ static cbuffer_t log_cbuf;
  * @param level log level enum
  * @return char*
  */
-static char *_get_level_str(enum logger_level level) {
+static const char *_get_level_str(enum logger_level level) {
   switch (level) {
     case LOGGER_TRACE:
       return "TRACE";
@@ -39,9 +41,8 @@ static char *_get_level_str(enum logger_level level) {
 
 void logger_init(void) {
   // initialize cbuffer
-  log_cbuf.elem_size = MAX_CBUFFER_SIZE;
-  log_cbuf.head = 0;
-  log_cbuf.tail = 0;
+  cbuffer_init(&cb, buffer, MAX_LOGGING_LINE_LEN, MAX_LOGGING_CBUFFER_SIZE);
+  logger_set_level((enum logger_level)LOGGING_LEVEL);
 }
 
 /**
@@ -70,16 +71,28 @@ enum logger_level logger_get_level(void) { return _level; }
  */
 void logger_out(const enum logger_level level, const char *func, const int line,
                 const char *fmt, ...) {
-  char buffer[MAX_LOGGING_LINE_LEN];
+  int inc;
   va_list args;
+  char buffer[MAX_LOGGING_LINE_LEN];
   // filter output by log level
   if (logger_get_level() > level) {
     return;
   }
-  sprintf(buffer, "[%s]\t %s:%i ", _get_level_str(level), func, line);
+  const char *level_str = _get_level_str(level);
+  inc = snprintf(buffer, MAX_LOGGING_LINE_LEN, "[ %5s ] %s:%i\t", level_str,
+                 func, line);
   va_start(args, fmt);
-  usart_println(buffer);
-  vsprintf(buffer, fmt, args);
+  // write from header index
+  // TODO: implement buffer overflow handler (add truncating)
+  vsnprintf(buffer + inc, MAX_LOGGING_LINE_LEN - inc, fmt, args);
   va_end(args);
-  printf(buffer);
+  // write to buffer
+  cbuffer_write(&cb, buffer);
+}
+
+void logger_flush(void) {
+  char *next;
+  while ((next = (char *)cbuffer_get(&cb)) != NULL) {
+    printf("%s\n", next);
+  }
 }

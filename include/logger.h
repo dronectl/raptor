@@ -16,6 +16,13 @@
 #ifndef MAX_LOGGING_LINE_LEN
 #define MAX_LOGGING_LINE_LEN 100
 #endif
+#ifndef MAX_LOGGING_CBUFFER_SIZE
+#define MAX_LOGGING_CBUFFER_SIZE 10
+#endif
+
+#ifndef LOGGING_LEVEL
+#define LOGGING_LEVEL 0
+#endif
 
 // logging levels
 enum logger_level {
@@ -27,10 +34,12 @@ enum logger_level {
   LOGGER_DISABLE
 };
 
+void logger_init(void);
 enum logger_level logger_get_level(void);
 void logger_set_level(enum logger_level level);
 void logger_out(enum logger_level level, const char *func, int line,
                 const char *fmt, ...);
+void logger_flush(void);
 
 #ifndef critical
 #define critical(...) __CRITICAL(__VA_ARGS__, "")
