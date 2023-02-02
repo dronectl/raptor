@@ -7,7 +7,7 @@
 
 #define F_CPU @F_CPU@
 #define MAX_LOGGING_LINE_LEN @MAX_LOGGING_LINE_LEN@
-#define MAX_CBUFFER_SIZE @MAX_CBUFFER_SIZE@
+#define MAX_LOGGING_CBUFFER_SIZE @MAX_LOGGING_CBUFFER_SIZE@
 // clang-format on
 
 #endif // __CONFIG_H__
