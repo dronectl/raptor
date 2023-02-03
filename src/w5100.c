@@ -206,8 +206,9 @@ uint16_t w5100_read_bytes(uint16_t addr, uint8_t *buffer, uint16_t len) {
 w5100_status_t w5100_verify_hw(void) {
   if (w5100_reset() != W5100_OK)
     return W5100_ERR;
-  w5100_write_mr(MR_PB);
-  if (w5100_read_mr() != MR_PB)
+  // just write initial MR state
+  w5100_write_mr(0x0);
+  if (w5100_read_mr() != 0x0)
     return W5100_ERR;
   return W5100_OK;
 }
