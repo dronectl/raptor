@@ -9,6 +9,8 @@
  */
 #include "logger.h"
 #include "cbuffer.h"
+#include "socket.h"
+#include "w5100.h"
 #include <stdarg.h>
 #include <string.h>
 #include <time.h>
@@ -44,6 +46,12 @@ void logger_init(void) {
   // initialize cbuffer
   cbuffer_init(&cb, buffer, MAX_LOGGING_LINE_LEN, MAX_LOGGING_CBUFFER_SIZE);
   logger_set_level((enum logger_level)LOGGING_LEVEL);
+  // setup logging UDP server
+  // ipv4_address_t addr;
+  // uint16_t port = 0;
+  // socket_begin(CH3, PROTO_UDP, 3000);
+  // socket_parse_dest_udp_addr(CH3, &addr, &port);
+  // socket_start_udp(CH3, (const ipv4_address_t *)&addr, port);
 }
 
 /**
@@ -92,8 +100,21 @@ void logger_out(const enum logger_level level, const char *func, const int line,
 }
 
 void logger_flush(void) {
+  // the logging socket is currently configured to use exactly 1K bytes which is
+  // the max size allocated for the logging circular buffer. Here we can simply
+  // empty the entire contents of the buffer to the socket
+  // int inc = 0;
   char *next;
   while ((next = (char *)cbuffer_get(&cb)) != NULL) {
+    // add a newline
+    // int len = strlen(next);
+    // next[len] = '\n';
+    // next[len + 1] = '\0';
+    // // +1 for \n
+    // inc += snprintf(buffer + inc, MAX_LOGGING_LINE_LEN + 1, next);
     printf("%s\n", next);
   }
+  // socket_buffer_data(CH3, w5100_get_tx_offset(CH3), (const uint8_t *)buffer,
+  //                    1000);
+  // socket_send_udp(CH3);
 }

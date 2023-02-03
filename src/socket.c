@@ -464,6 +464,27 @@ cleanup:
   return status;
 }
 
+socket_status_t socket_parse_dest_udp_addr(enum W5100SCH channel,
+                                           ipv4_address_t *addr,
+                                           uint16_t *port) {
+  assert(addr != NULL);
+  assert(port != NULL);
+  // TODO: Should be flushing bytes from previous packet here
+  if (socket_get_unread_rx_bytes(channel) > 0) {
+    uint8_t temp[8];
+    socket_status_t ret = socket_recv(channel, temp, 8);
+    if (ret == SOCKET_OK) {
+      addr->bytes[0] = temp[0];
+      addr->bytes[1] = temp[1];
+      addr->bytes[2] = temp[2];
+      addr->bytes[3] = temp[3];
+      *port = (uint16_t)temp[4];
+    }
+    return ret;
+  }
+  return SOCKET_ERR;
+}
+
 /**
  * @brief UDP socket buffer for send.
  *

@@ -42,6 +42,7 @@ static void spinlock(void) {
 int main(void) {
   usart_init();
   logger_init();
+  // info("Raptor Firmware - Copyright © 2023 dronectl");
   // initialize phy
   ethernet_phy_init();
   ipv4_address_t gw;
