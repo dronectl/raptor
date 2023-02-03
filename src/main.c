@@ -9,7 +9,7 @@
  *
  */
 
-// #include "ethernet.h"
+#include "ethernet.h"
 #include "logger.h"
 #include "spi.h"
 #include "usart.h"
@@ -43,25 +43,25 @@ int main(void) {
   usart_init();
   logger_init();
   // initialize phy
-  // ethernet_phy_init();
-  // ipv4_address_t gw;
-  // gw.bytes[0] = 192;
-  // gw.bytes[1] = 168;
-  // gw.bytes[2] = 2;
-  // gw.bytes[3] = 1;
-  // ipv4_address_t mask;
-  // mask.bytes[0] = 255;
-  // mask.bytes[1] = 255;
-  // mask.bytes[2] = 0;
-  // mask.bytes[3] = 0;
-  // ipv4_address_t ip_addr;
-  // ip_addr.bytes[0] = 0;
-  // ip_addr.bytes[1] = 0;
-  // ip_addr.bytes[2] = 0;
-  // ip_addr.bytes[3] = 0;
-  // enet_config_t configuration = {
-  //     .gateway = gw, .subnet_mask = mask, .ip_addr = ip_addr};
-  // ethernet_configure(&configuration);
+  ethernet_phy_init();
+  ipv4_address_t gw;
+  gw.bytes[0] = 192;
+  gw.bytes[1] = 168;
+  gw.bytes[2] = 2;
+  gw.bytes[3] = 1;
+  ipv4_address_t mask;
+  mask.bytes[0] = 255;
+  mask.bytes[1] = 255;
+  mask.bytes[2] = 255;
+  mask.bytes[3] = 0;
+  ipv4_address_t ip_addr;
+  ip_addr.bytes[0] = 192;
+  ip_addr.bytes[1] = 168;
+  ip_addr.bytes[2] = 2;
+  ip_addr.bytes[3] = 150;
+  enet_config_t configuration = {
+      .gateway = gw, .subnet_mask = mask, .ip_addr = ip_addr};
+  ethernet_configure(&configuration);
   spinlock();
   return 0;
 }

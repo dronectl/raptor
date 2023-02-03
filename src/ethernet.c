@@ -19,9 +19,15 @@ static uint8_t phy_initialized = 0;
 
 static void generate_mac_address(uint8_t *mac_addr) {
   assert(mac_addr != NULL);
-  for (int i = 0; i < 6; i++) {
-    mac_addr[i] = generate_random() % 0xFF;
-  }
+  // for (int i = 0; i < 6; i++) {
+  //   mac_addr[i] = generate_random() % 0xFF;
+  // }
+  mac_addr[5] = 0xfa;
+  mac_addr[4] = 0x3d;
+  mac_addr[3] = 0xe4;
+  mac_addr[2] = 0x56;
+  mac_addr[1] = 0x67;
+  mac_addr[0] = 0x53;
   // set mac address to locally administered (NIC set by MFN). See IEEE 802 MAC
   // address standard.
   mac_addr[0] |= 0x02;
