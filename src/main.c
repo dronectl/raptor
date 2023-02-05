@@ -1,68 +1,49 @@
-/**
- * @file main.c
- * @author Christian Sargusingh (christian911@sympatico.ca)
- * @brief
- * @version 0.1
- * @date 2023-01
- *
- * @copyright Copyright © 2023 dronectl
- *
- */
 
-#include "ethernet.h"
-#include "logger.h"
-#include "spi.h"
-#include "usart.h"
-#include "utils.h"
-#include <avr/cpufunc.h>
-#include <avr/io.h>
+#include "stm32f4xx.h"
 
-static void spinlock(void) {
-  // status LED tied to SCK requires release of spi subsystem before use
-  spi_end();
-  // Setup PB5 as Output high (source)
-  PORTB = (1 << PB5);
-  DDRB = (1 << DDB5);
-  // sync nop
-  _NOP();
-  critical("Entering spinlock.");
-  while (1) {
-    logger_flush();
-    // blink SCK
-    PORTB ^= (1 << PORTB5);
-    delay_cycles(100000);
-    info("info log test");
-    trace("trace log test");
-    warning("warning log test");
-    error("error log test");
-    critical("critical log test");
-  }
+static void __delay(uint32_t cnt) {
+  for (uint32_t i = 0; i < cnt; i++) {
+    __NOP();
+  }; // Loop repeats 2,000,000 implementing a delay
 }
 
 int main(void) {
-  usart_init();
-  logger_init();
-  // info("Raptor Firmware - Copyright © 2023 dronectl");
-  // initialize phy
-  ethernet_phy_init();
-  ipv4_address_t gw;
-  gw.bytes[0] = 192;
-  gw.bytes[1] = 168;
-  gw.bytes[2] = 2;
-  gw.bytes[3] = 1;
-  ipv4_address_t mask;
-  mask.bytes[0] = 255;
-  mask.bytes[1] = 255;
-  mask.bytes[2] = 255;
-  mask.bytes[3] = 0;
-  ipv4_address_t ip_addr;
-  ip_addr.bytes[0] = 192;
-  ip_addr.bytes[1] = 168;
-  ip_addr.bytes[2] = 2;
-  ip_addr.bytes[3] = 150;
-  enet_config_t configuration = {
-      .gateway = gw, .subnet_mask = mask, .ip_addr = ip_addr};
-  ethernet_configure(&configuration);
-  spinlock();
-  return 0;
+
+  // Configue LEDs
+  RCC->AHB1ENR |= RCC_AHB1ENR_GPIODEN; // Enable the clock of port D of the GPIO
+
+  GPIOD->MODER |= GPIO_MODER_MODER12_0; // Green LED, set pin 12 as output
+  GPIOD->MODER |= GPIO_MODER_MODER13_0; // Orange LED, set pin 13 as output
+  GPIOD->MODER |= GPIO_MODER_MODER14_0; // Red LED, set pin 14 as output
+  GPIOD->MODER |= GPIO_MODER_MODER15_0; // Blue LED, set pin 15 as output
+
+  while (1) {
+    // Turn on LEDs
+    GPIOD->BSRR = 1 << 12; // Set the BSRR bit 12 to 1 to turn respective LED on
+    __delay(100000);
+    GPIOD->BSRR = 1 << 13; // Set the BSRR bit 13 to 1 to turn respective LED on
+    __delay(100000);
+    GPIOD->BSRR = 1 << 14; // Set the BSRR bit 14 to 1 to turn respective LED on
+    __delay(100000);
+    GPIOD->BSRR = 1 << 15; // Set the BSRR bit 15 to 1 to turn respective LED on
+
+    __delay(100000);
+    // Turn off LEDs
+    GPIOD->BSRR =
+        1 << (12 +
+              16); // Set the BSRR bit 12 + 16 to 1 to turn respective LED off
+    __delay(100000);
+    GPIOD->BSRR =
+        1 << (13 +
+              16); // Set the BSRR bit 13 + 16 to 1 to turn respective LED off
+    __delay(100000);
+    GPIOD->BSRR =
+        1 << (14 +
+              16); // Set the BSRR bit 14 + 16 to 1 to turn respective LED off
+    __delay(100000);
+    GPIOD->BSRR =
+        1 << (15 +
+              16); // Set the BSRR bit 15 + 16 to 1 to turn respective LED off
+    __delay(300000);
+  }
 }

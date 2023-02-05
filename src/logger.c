@@ -9,8 +9,6 @@
  */
 #include "logger.h"
 #include "cbuffer.h"
-#include "socket.h"
-#include "w5100.h"
 #include <stdarg.h>
 #include <string.h>
 #include <time.h>
