@@ -6,10 +6,16 @@ set(CMAKE_SYSTEM_NAME Generic)
 set(CMAKE_SYSTEM_VERSION 1)
 set(CMAKE_SYSTEM_PROCESSOR arm-eabi)
 set(TOOLCHAIN_PREFIX arm-none-eabi)
-
 # get the binary search command for the host platform and set toolchain extensions
 if(MINGW OR CYGWIN OR WIN32)
-  set(UTIL_SEARCH_CMD where)
+  find_program(
+    CMAKE_MAKE_PROGRAM
+    NAMES make
+          make.exe
+    DOC "Find a suitable make program for building under Windows/MinGW"
+    HINTS c:/MinGW-32/bin
+  )
+  set(UTIL_SEARCH_CMD where.exe)
   set(TOOLCHAIN_EXT ".exe" )
 elseif(UNIX OR APPLE)
   set(UTIL_SEARCH_CMD which)
