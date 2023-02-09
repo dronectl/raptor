@@ -11,6 +11,7 @@ set(CMAKE_C_EXTENSIONS OFF)
 set(CMAKE_C_STANDARD 99)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 
+
 # cmake build guard
 if(PROJECT_SOURCE_DIR STREQUAL PROJECT_BINARY_DIR)
   message(FATAL_ERROR "In-source builds not allowed. Please make a new directory (called a build directory) and run CMake from there.")
@@ -35,6 +36,33 @@ project(
   VERSION 0.1.0
   DESCRIPTION "Hardware in the loop test executor and reporting aggregation system."
 )
+
+# Include the FreeRTOS source code
+include(FetchContent)
+set(FREERTOS_CONFIG_FILE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include CACHE STRING "")
+message(STATUS "Fetching FreeRTOS")
+FetchContent_Declare(
+  freertos_kernel
+  GIT_REPOSITORY https://github.com/FreeRTOS/FreeRTOS-Kernel.git
+  GIT_TAG V10.5.1
+)
+
+message(STATUS "Configuring config.h header")
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/config.h.in config.h @ONLY)
+
+add_library(freertos_config INTERFACE)
+target_include_directories(freertos_config SYSTEM INTERFACE include)
+target_compile_definitions(freertos_config INTERFACE projCOVERAGE_TEST=0)
+set(FREERTOS_HEAP "4" CACHE STRING "" FORCE)
+# Select the native compile PORT
+set(FREERTOS_PORT "GCC_POSIX" CACHE STRING "" FORCE)
+# Select the cross-compile PORT
+if (CMAKE_CROSSCOMPILING)
+  set(FREERTOS_PORT "GCC_ARM_CM4F" CACHE STRING "" FORCE)
+endif()
+FetchContent_MakeAvailable(freertos_kernel)
+
+
 
 # set chip specific definitions
 set(MCU STM32F411xE)
