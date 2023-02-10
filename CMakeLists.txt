@@ -37,6 +37,11 @@ project(
   DESCRIPTION "Hardware in the loop test executor and reporting aggregation system."
 )
 
+
+
+message(STATUS "Configuring config.h header")
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/config.h.in config.h @ONLY)
+
 # Include the FreeRTOS source code
 include(FetchContent)
 set(FREERTOS_CONFIG_FILE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include CACHE STRING "")
@@ -46,23 +51,16 @@ FetchContent_Declare(
   GIT_REPOSITORY https://github.com/FreeRTOS/FreeRTOS-Kernel.git
   GIT_TAG V10.5.1
 )
-
-message(STATUS "Configuring config.h header")
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/config.h.in config.h @ONLY)
-
 add_library(freertos_config INTERFACE)
-target_include_directories(freertos_config SYSTEM INTERFACE include)
 target_compile_definitions(freertos_config INTERFACE projCOVERAGE_TEST=0)
 set(FREERTOS_HEAP "4" CACHE STRING "" FORCE)
 # Select the native compile PORT
-set(FREERTOS_PORT "GCC_POSIX" CACHE STRING "" FORCE)
+set(FREERTOS_PORT "GCC_ARM_CM4F" CACHE STRING "" FORCE)
 # Select the cross-compile PORT
 if (CMAKE_CROSSCOMPILING)
   set(FREERTOS_PORT "GCC_ARM_CM4F" CACHE STRING "" FORCE)
 endif()
 FetchContent_MakeAvailable(freertos_kernel)
-
-
 
 # set chip specific definitions
 set(MCU STM32F411xE)
@@ -104,10 +102,14 @@ add_executable(
 )
 set_target_properties(${EXECUTABLE} PROPERTIES OUTPUT_NAME ${EXECUTABLE}.elf)
 target_include_directories(${EXECUTABLE} PUBLIC include)
+target_link_libraries(${EXECUTABLE} PRIVATE freertos_kernel)
 target_include_directories(${EXECUTABLE} PUBLIC ${STM32CUBEF4_INCLUDE})
 target_compile_definitions(${EXECUTABLE} PRIVATE ${STM32F411XE_COMPILE_DEFINITIONS})
 target_compile_options(${EXECUTABLE} PRIVATE ${STM32F411XE_C_FLAGS})
 target_link_options(${EXECUTABLE} PRIVATE ${STM32F411XE_LINKER_FLAGS})
+
+
+
 
 message(STATUS "Adding custom targets")
 add_custom_target(size ALL ${ARM_SIZE} -B -d --target=binary ${EXECUTABLE}.elf DEPENDS ${EXECUTABLE})
