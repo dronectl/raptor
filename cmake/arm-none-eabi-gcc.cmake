@@ -51,11 +51,11 @@ set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
 # -fdata-sections       Place each data item into its own section in the output file.
 # -fomit-frame-pointer  Omit the frame pointer in functions that don’t need one.
 # -mabi=aapcs           Defines enums to be a variable sized type.
-set(OBJECT_GEN_FLAGS "-O0 -mthumb -Wno-unused-parameter -Wpedantic -fno-builtin -Wall -Wextra -ffunction-sections -fdata-sections -fomit-frame-pointer -mabi=aapcs")
+set(OBJECT_GEN_FLAGS "-flto -mthumb -Wno-unused-parameter -Wpedantic -fno-builtin -Wall -Wextra -ffunction-sections -fdata-sections -fomit-frame-pointer -mabi=aapcs")
 
-set(CMAKE_C_FLAGS   "${OBJECT_GEN_FLAGS} -std=gnu11 " CACHE INTERNAL "C Compiler options")
-set(CMAKE_CXX_FLAGS "${OBJECT_GEN_FLAGS} -std=c++11 " CACHE INTERNAL "C++ Compiler options")
-set(CMAKE_ASM_FLAGS "${OBJECT_GEN_FLAGS} -x assembler-with-cpp " CACHE INTERNAL "ASM Compiler options")
+set(CMAKE_C_FLAGS   "${OBJECT_GEN_FLAGS}" CACHE INTERNAL "C Compiler options")
+set(CMAKE_CXX_FLAGS "${OBJECT_GEN_FLAGS}" CACHE INTERNAL "C++ Compiler options")
+set(CMAKE_ASM_FLAGS "${OBJECT_GEN_FLAGS}" CACHE INTERNAL "ASM Compiler options")
 
 # -Wl,--gc-sections     Perform the dead code elimination.
 # --specs=nano.specs    Link with newlib-nano.
@@ -66,17 +66,17 @@ set(CMAKE_EXE_LINKER_FLAGS "-Wl,--print-memory-usage -Wl,--gc-sections --specs=n
 # -Og   Enables optimizations that do not interfere with debugging.
 # -g    Produce debugging information in the operating system’s native format.
 set(CMAKE_C_FLAGS_DEBUG "-Og -g" CACHE INTERNAL "C Compiler options for debug build type")
-set(CMAKE_CXX_FLAGS_DEBUG "-Og -g" CACHE INTERNAL "C++ Compiler options for debug build type")
+set(CMAKE_CXX_FLAGS_DEBUG "-Og -g " CACHE INTERNAL "C++ Compiler options for debug build type")
 set(CMAKE_ASM_FLAGS_DEBUG "-g" CACHE INTERNAL "ASM Compiler options for debug build type")
 set(CMAKE_EXE_LINKER_FLAGS_DEBUG "" CACHE INTERNAL "Linker options for debug build type")
 
 # Options for RELEASE build
 # -Os   Optimize for size. -Os enables all -O2 optimizations.
 # -flto Runs the standard link-time optimizer.
-set(CMAKE_C_FLAGS_RELEASE "-Os -flto" CACHE INTERNAL "C Compiler options for release build type")
-set(CMAKE_CXX_FLAGS_RELEASE "-Os -flto" CACHE INTERNAL "C++ Compiler options for release build type")
+set(CMAKE_C_FLAGS_RELEASE "-Os" CACHE INTERNAL "C Compiler options for release build type")
+set(CMAKE_CXX_FLAGS_RELEASE "-Os" CACHE INTERNAL "C++ Compiler options for release build type")
 set(CMAKE_ASM_FLAGS_RELEASE "" CACHE INTERNAL "ASM Compiler options for release build type")
-set(CMAKE_EXE_LINKER_FLAGS_RELEASE "-flto" CACHE INTERNAL "Linker options for release build type")
+set(CMAKE_EXE_LINKER_FLAGS_RELEASE "" CACHE INTERNAL "Linker options for release build type")
 
 # set cmake compilers
 message(STATUS "Setting compilers.")
