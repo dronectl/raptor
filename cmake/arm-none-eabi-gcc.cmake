@@ -51,16 +51,24 @@ set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
 # -fdata-sections       Place each data item into its own section in the output file.
 # -fomit-frame-pointer  Omit the frame pointer in functions that don’t need one.
 # -mabi=aapcs           Defines enums to be a variable sized type.
-set(OBJECT_GEN_FLAGS "-flto -mthumb -Wno-unused-parameter -Wpedantic -fno-builtin -Wall -Wextra -ffunction-sections -fdata-sections -fomit-frame-pointer -mabi=aapcs")
+# set compile flags for STM32F411XE 
+message(STATUS "Exporting linker script path")
+get_filename_component(LINKER_SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/tools/STM32F411VETx_FLASH.ld ABSOLUTE)
+message(DEBUG "Linker script: ${LINKER_SCRIPT}")
+message(STATUS "Exporting OpenOCD configuration path")
+get_filename_component(OPENOCD_CONFIG ${CMAKE_CURRENT_SOURCE_DIR}/tools/stlink.cfg ABSOLUTE)
+message(DEBUG "OpenOCD configuration: ${OPENOCD_CONFIG}")
+# set chip specific definitions
+set(MCU STM32F411xE)
 
+set(OBJECT_GEN_FLAGS "-D${MCU} -DSTM32F411VETx -DSTM32F411E_DISCO -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wno-unused-parameter -Wpedantic -fno-builtin -Wall -Wextra -ffunction-sections -fdata-sections -fomit-frame-pointer -mabi=aapcs")
 set(CMAKE_C_FLAGS   "${OBJECT_GEN_FLAGS}" CACHE INTERNAL "C Compiler options")
-set(CMAKE_CXX_FLAGS "${OBJECT_GEN_FLAGS}" CACHE INTERNAL "C++ Compiler options")
 set(CMAKE_ASM_FLAGS "${OBJECT_GEN_FLAGS}" CACHE INTERNAL "ASM Compiler options")
 
 # -Wl,--gc-sections     Perform the dead code elimination.
 # --specs=nano.specs    Link with newlib-nano.
 # --specs=nosys.specs   No syscalls, provide empty implementations for the POSIX system calls.
-set(CMAKE_EXE_LINKER_FLAGS "-Wl,--print-memory-usage -Wl,--gc-sections --specs=nano.specs -mthumb -mabi=aapcs -Wl,-Map=${CMAKE_PROJECT_NAME}.map,--cref" CACHE INTERNAL "Linker options")
+set(CMAKE_EXE_LINKER_FLAGS "-T${LINKER_SCRIPT} -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard -Wl,--print-memory-usage -Wl,--gc-sections --specs=nano.specs -mthumb -mabi=aapcs -Wl,-Map=${CMAKE_PROJECT_NAME}.map,--cref" CACHE INTERNAL "Linker options")
 
 # Options for DEBUG build
 # -Og   Enables optimizations that do not interfere with debugging.

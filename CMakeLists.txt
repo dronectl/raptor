@@ -38,15 +38,8 @@ project(
 
 message(STATUS "Configuring config.h header")
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/config.h.in config.h @ONLY)
-# set chip specific definitions
-set(MCU STM32F411xE)
 
-message(STATUS "Exporting linker script path")
-get_filename_component(LINKER_SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/tools/STM32F411VETx_FLASH.ld ABSOLUTE)
-message(DEBUG "Linker script: ${LINKER_SCRIPT}")
-message(STATUS "Exporting OpenOCD configuration path")
-get_filename_component(OPENOCD_CONFIG ${CMAKE_CURRENT_SOURCE_DIR}/tools/stlink.cfg ABSOLUTE)
-message(DEBUG "OpenOCD configuration: ${OPENOCD_CONFIG}")
+
 
 # set STM32F4xx include paths
 set(
@@ -93,9 +86,6 @@ target_link_libraries(${EXECUTABLE} LINK_PUBLIC freertos_kernel)
 set_target_properties(${EXECUTABLE} PROPERTIES OUTPUT_NAME ${EXECUTABLE}.elf)
 target_include_directories(${EXECUTABLE} PRIVATE include)
 target_include_directories(${EXECUTABLE} PRIVATE ${STM32CUBEF4_INCLUDE})
-target_compile_definitions(${EXECUTABLE} PRIVATE ${STM32F411XE_COMPILE_DEFINITIONS})
-target_compile_options(${EXECUTABLE} PRIVATE ${STM32F411XE_C_FLAGS})
-target_link_options(${EXECUTABLE} PRIVATE ${STM32F411XE_LINKER_FLAGS})
 
 message(STATUS "Configuring config.h header")
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/config.h.in config.h @ONLY)
