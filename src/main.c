@@ -97,40 +97,24 @@ void vApplicationGetTimerTaskMemory(StaticTask_t **ppxTimerTaskTCBBuffer,
   *pulTimerTaskStackSize = configTIMER_TASK_STACK_DEPTH;
 }
 
-static void __delay(void) {
-  for (int i = 0; i < 1000000; i++) {
-  }
-}
-
 void vspinlock(void *pv_params) {
-  // configASSERT(((uint32_t)pv_params) > 10);
-  // uint32_t x_delay = (uint32_t)pv_params;
   for (;;) {
-    // Turn on LEDs
     GPIOD->BSRR = 1 << 12;
-    __delay();
-    // vTaskDelay(pdMS_TO_TICKS(100));
+    vTaskDelay(pdMS_TO_TICKS(100));
     GPIOD->BSRR = 1 << 13;
-    __delay();
-    // vTaskDelay(pdMS_TO_TICKS(100));
+    vTaskDelay(pdMS_TO_TICKS(100));
     GPIOD->BSRR = 1 << 14;
-    __delay();
-    // vTaskDelay(pdMS_TO_TICKS(100));
+    vTaskDelay(pdMS_TO_TICKS(100));
     GPIOD->BSRR = 1 << 15;
-    __delay();
-    // vTaskDelay(pdMS_TO_TICKS(100));
+    vTaskDelay(pdMS_TO_TICKS(100));
     GPIOD->BSRR = 1 << (12 + 16);
-    __delay();
-    // vTaskDelay(pdMS_TO_TICKS(100));
+    vTaskDelay(pdMS_TO_TICKS(100));
     GPIOD->BSRR = 1 << (13 + 16);
-    __delay();
-    // vTaskDelay(pdMS_TO_TICKS(100));
+    vTaskDelay(pdMS_TO_TICKS(100));
     GPIOD->BSRR = 1 << (14 + 16);
-    __delay();
-    // vTaskDelay(pdMS_TO_TICKS(100));
+    vTaskDelay(pdMS_TO_TICKS(100));
     GPIOD->BSRR = 1 << (15 + 16);
-    __delay();
-    // vTaskDelay(pdMS_TO_TICKS(100));
+    vTaskDelay(pdMS_TO_TICKS(100));
   }
 }
 
