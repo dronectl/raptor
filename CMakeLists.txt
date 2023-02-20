@@ -97,11 +97,25 @@ message(STATUS "Discovering cgt executables.")
 find_program(ARM_OBJCPY NAMES ${TOOLCHAIN_PREFIX}-objcopy${TOOLCHAIN_EXT} PATHS ${TOOLCHAIN_DIR} NO_DEFAULT_PATH)
 find_program(ARM_OBJDUMP NAMES ${TOOLCHAIN_PREFIX}-objdump${TOOLCHAIN_EXT} PATHS ${TOOLCHAIN_DIR} NO_DEFAULT_PATH)
 find_program(ARM_SIZE NAMES ${TOOLCHAIN_PREFIX}-size${TOOLCHAIN_EXT} PATHS ${TOOLCHAIN_DIR} NO_DEFAULT_PATH)
-find_program(OPENOCD NAMES openocd${TOOLCHAIN_EXT} PATHS ${TOOLCHAIN_DIR} NO_DEFAULT_PATH)
+message(STATUS "Finding OpenOCD executable")
+# Find the host's openocd program
+find_program(
+  OPENOCD_EXECUTABLE
+  NAMES openocd
+  PATHS "/usr/local/bin"
+        "/usr/bin"
+        "$ENV{PROGRAMFILES}/OpenOCD"
+  DOC "Path to the openocd program"
+)
+
+# Check if the program was found
+if (NOT OPENOCD_EXECUTABLE)
+  message(FATAL_ERROR "Could not find openocd program")
+endif()
 
 message(STATUS "Adding custom targets")
 add_custom_target(size ALL ${ARM_SIZE} -B -d --target=binary ${EXECUTABLE}.elf DEPENDS ${EXECUTABLE})
 add_custom_target(hex ALL ${ARM_OBJCPY} -O ihex ${EXECUTABLE}.elf ${EXECUTABLE}.hex DEPENDS ${EXECUTABLE})
 add_custom_target(bin ALL ${ARM_OBJCPY} -O binary -S ${EXECUTABLE}.elf ${EXECUTABLE}.bin DEPENDS ${EXECUTABLE})
 add_custom_target(objdump ${ARM_OBJDUMP} -S ${EXECUTABLE}.elf DEPENDS ${EXECUTABLE})
-add_custom_target(flash DEPENDS size COMMAND ${OPENOCD} -finterface/stlink.cfg -ftarget/stm32f4x.cfg -c "program raptor.elf verify reset exit")
+add_custom_target(flash DEPENDS size COMMAND ${OPENOCD_EXECUTABLE} -finterface/stlink.cfg -ftarget/stm32f4x.cfg -c "program raptor.elf verify reset exit")
