@@ -80,7 +80,8 @@ add_executable(
   ${EXECUTABLE}
   src/main.c
   src/system_stm32f4xx.c
-  src/startup_stm32f411vetx.s
+  src/stm32f4xx_it.c
+  startup/startup_stm32f411vetx.s
 )
 target_link_libraries(${EXECUTABLE} LINK_PUBLIC freertos_kernel)
 set_target_properties(${EXECUTABLE} PROPERTIES OUTPUT_NAME ${EXECUTABLE}.elf)
