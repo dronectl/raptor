@@ -3,6 +3,9 @@
 #include "stm32f4xx.h"
 #include "task.h"
 
+// task parameters
+static uint16_t delay_ms = 100;
+
 /* configUSE_STATIC_ALLOCATION is set to 1, so the application must provide an
  * implementation of vApplicationGetIdleTaskMemory() to provide the memory that
  * is used by the Idle task. */
@@ -55,10 +58,6 @@ void vApplicationStackOverflowHook(TaskHandle_t pxTask, char *pcTaskName) {
 static void prvSetupHardware(void) {
   /* Setup STM32 system (clock, PLL and Flash configuration) */
   SystemInit();
-
-  /* Ensure all priority bits are assigned as preemption priority bits. */
-  // NVIC_PriorityGroupConfig(NVIC_PriorityGroup_4);
-
   // Configue LEDs
   RCC->AHB1ENR |= RCC_AHB1ENR_GPIODEN; // Enable the clock of port D of the
   GPIOD->MODER |= GPIO_MODER_MODER12_0;
@@ -98,23 +97,24 @@ void vApplicationGetTimerTaskMemory(StaticTask_t **ppxTimerTaskTCBBuffer,
 }
 
 void vspinlock(void *pv_params) {
+  uint16_t delay = *((uint16_t *)pv_params);
   for (;;) {
     GPIOD->BSRR = 1 << 12;
-    vTaskDelay(pdMS_TO_TICKS(100));
+    vTaskDelay(pdMS_TO_TICKS(delay));
     GPIOD->BSRR = 1 << 13;
-    vTaskDelay(pdMS_TO_TICKS(100));
+    vTaskDelay(pdMS_TO_TICKS(delay));
     GPIOD->BSRR = 1 << 14;
-    vTaskDelay(pdMS_TO_TICKS(100));
+    vTaskDelay(pdMS_TO_TICKS(delay));
     GPIOD->BSRR = 1 << 15;
-    vTaskDelay(pdMS_TO_TICKS(100));
+    vTaskDelay(pdMS_TO_TICKS(delay));
     GPIOD->BSRR = 1 << (12 + 16);
-    vTaskDelay(pdMS_TO_TICKS(100));
+    vTaskDelay(pdMS_TO_TICKS(delay));
     GPIOD->BSRR = 1 << (13 + 16);
-    vTaskDelay(pdMS_TO_TICKS(100));
+    vTaskDelay(pdMS_TO_TICKS(delay));
     GPIOD->BSRR = 1 << (14 + 16);
-    vTaskDelay(pdMS_TO_TICKS(100));
+    vTaskDelay(pdMS_TO_TICKS(delay));
     GPIOD->BSRR = 1 << (15 + 16);
-    vTaskDelay(pdMS_TO_TICKS(100));
+    vTaskDelay(pdMS_TO_TICKS(delay));
   }
 }
 
@@ -123,7 +123,7 @@ int main(void) {
   BaseType_t x_returned;
   prvSetupHardware();
   x_returned = xTaskCreate(vspinlock, "spinlock", configMINIMAL_STACK_SIZE,
-                           NULL, tskIDLE_PRIORITY + 1, &xHandle);
+                           &delay_ms, tskIDLE_PRIORITY + 1, &xHandle);
   configASSERT(xHandle);
   if (x_returned != pdPASS) {
     vTaskDelete(xHandle);
