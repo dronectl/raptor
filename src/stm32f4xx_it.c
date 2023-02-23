@@ -19,6 +19,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f4xx_it.h"
+#include "stm32f4xx.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 /* USER CODE END Includes */
@@ -49,9 +50,10 @@
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
-/* USER CODE BEGIN 0 */
-
-/* USER CODE END 0 */
+static void __delay(void) {
+  for (int i = 0; i < 100000; i++) {
+  }
+}
 
 /* External variables --------------------------------------------------------*/
 
@@ -63,28 +65,35 @@
 /*           Cortex-M4 Processor Interruption and Exception Handlers          */
 /******************************************************************************/
 /**
- * @brief This function handles Non maskable interrupt.
+ * @brief This function handles Non maskable interrupt. Blink the NMI status
+ * LED.
  */
 void NMI_Handler(void) {
-  /* USER CODE BEGIN NonMaskableInt_IRQn 0 */
-
-  /* USER CODE END NonMaskableInt_IRQn 0 */
-  /* USER CODE BEGIN NonMaskableInt_IRQn 1 */
+  uint8_t toggle = 0;
   while (1) {
+    toggle ^= 1;
+    GPIOD->BSRR = 1 << (12 + (16 * toggle));
+    __delay();
   }
-  /* USER CODE END NonMaskableInt_IRQn 1 */
 }
 
 /**
- * @brief This function handles Hard fault interrupt.
+ * @brief This function handles Hard fault interrupt. The system simply blinks
+ * all status LEDS sequentially indicating the system has hit a
+ * hard fault.
  */
 void HardFault_Handler(void) {
-  /* USER CODE BEGIN HardFault_IRQn 0 */
-
-  /* USER CODE END HardFault_IRQn 0 */
+  uint8_t toggle = 0;
   while (1) {
-    /* USER CODE BEGIN W1_HardFault_IRQn 0 */
-    /* USER CODE END W1_HardFault_IRQn 0 */
+    toggle ^= 1;
+    GPIOD->BSRR = 1 << (12 + (16 * toggle));
+    __delay();
+    GPIOD->BSRR = 1 << (13 + (16 * toggle));
+    __delay();
+    GPIOD->BSRR = 1 << (14 + (16 * toggle));
+    __delay();
+    GPIOD->BSRR = 1 << (15 + (16 * toggle));
+    __delay();
   }
 }
 
@@ -92,12 +101,11 @@ void HardFault_Handler(void) {
  * @brief This function handles Memory management fault.
  */
 void MemManage_Handler(void) {
-  /* USER CODE BEGIN MemoryManagement_IRQn 0 */
-
-  /* USER CODE END MemoryManagement_IRQn 0 */
+  uint8_t toggle = 0;
   while (1) {
-    /* USER CODE BEGIN W1_MemoryManagement_IRQn 0 */
-    /* USER CODE END W1_MemoryManagement_IRQn 0 */
+    toggle ^= 1;
+    GPIOD->BSRR = 1 << (13 + (16 * toggle));
+    __delay();
   }
 }
 
@@ -105,12 +113,11 @@ void MemManage_Handler(void) {
  * @brief This function handles Pre-fetch fault, memory access fault.
  */
 void BusFault_Handler(void) {
-  /* USER CODE BEGIN BusFault_IRQn 0 */
-
-  /* USER CODE END BusFault_IRQn 0 */
+  uint8_t toggle = 0;
   while (1) {
-    /* USER CODE BEGIN W1_BusFault_IRQn 0 */
-    /* USER CODE END W1_BusFault_IRQn 0 */
+    toggle ^= 1;
+    GPIOD->BSRR = 1 << (14 + (16 * toggle));
+    __delay();
   }
 }
 
@@ -118,12 +125,11 @@ void BusFault_Handler(void) {
  * @brief This function handles Undefined instruction or illegal state.
  */
 void UsageFault_Handler(void) {
-  /* USER CODE BEGIN UsageFault_IRQn 0 */
-
-  /* USER CODE END UsageFault_IRQn 0 */
+  uint8_t toggle = 0;
   while (1) {
-    /* USER CODE BEGIN W1_UsageFault_IRQn 0 */
-    /* USER CODE END W1_UsageFault_IRQn 0 */
+    toggle ^= 1;
+    GPIOD->BSRR = 1 << (15 + (16 * toggle));
+    __delay();
   }
 }
 
