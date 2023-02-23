@@ -70,21 +70,6 @@ set(CMAKE_ASM_FLAGS "${OBJECT_GEN_FLAGS}" CACHE INTERNAL "ASM Compiler options")
 # --specs=nosys.specs   No syscalls, provide empty implementations for the POSIX system calls.
 set(CMAKE_EXE_LINKER_FLAGS "-T${LINKER_SCRIPT} -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard -Wl,--print-memory-usage -Wl,--gc-sections --specs=nano.specs -mthumb -mabi=aapcs -Wl,-Map=${CMAKE_PROJECT_NAME}.map,--cref" CACHE INTERNAL "Linker options")
 
-# Options for DEBUG build
-# -g    Produce debugging information in the operating system’s native format.
-set(CMAKE_C_FLAGS_DEBUG "-O0 -g" CACHE INTERNAL "C Compiler options for debug build type")
-set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g " CACHE INTERNAL "C++ Compiler options for debug build type")
-set(CMAKE_ASM_FLAGS_DEBUG "-g" CACHE INTERNAL "ASM Compiler options for debug build type")
-set(CMAKE_EXE_LINKER_FLAGS_DEBUG "" CACHE INTERNAL "Linker options for debug build type")
-
-# Options for RELEASE build
-# -Os   Optimize for size. -Os enables all -O2 optimizations.
-# -flto Runs the standard link-time optimizer.
-set(CMAKE_C_FLAGS_RELEASE "-Os" CACHE INTERNAL "C Compiler options for release build type")
-set(CMAKE_CXX_FLAGS_RELEASE "-Os" CACHE INTERNAL "C++ Compiler options for release build type")
-set(CMAKE_ASM_FLAGS_RELEASE "" CACHE INTERNAL "ASM Compiler options for release build type")
-set(CMAKE_EXE_LINKER_FLAGS_RELEASE "" CACHE INTERNAL "Linker options for release build type")
-
 # set cmake compilers
 message(STATUS "Setting compilers.")
 set(CMAKE_C_COMPILER ${TOOLCHAIN_PREFIX}-gcc${TOOLCHAIN_EXT} CACHE INTERNAL "C Compiler")
