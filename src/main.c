@@ -1,10 +1,37 @@
 
 #include "FreeRTOS.h"
+#include "config.h"
 #include "stm32f4xx.h"
 #include "task.h"
 
 // task parameters
 static uint16_t delay_ms = 100;
+
+#ifdef RAPTOR_DEBUG
+/**
+ * @brief FreeRTOS task CPU usage statistics timer configuration.  Only used in
+ * debug builds. TIM2 peripheral is used arbitrarily.
+ *
+ */
+void vconfigure_rtos_stats_timer(void) {
+  // Enable the clock for Timer 2
+  RCC->APB1ENR |= RCC_APB1ENR_TIM2EN;
+  // Set the prescaler for Timer 2
+  TIM2->PSC = SystemCoreClock / 10000 - 1;
+  // Configure Timer 2 in up-counting mode
+  TIM2->CR1 &= ~TIM_CR1_DIR; // Up-counting mode
+  TIM2->CR1 &= ~TIM_CR1_CMS; // Edge-aligned mode
+  // Enable Timer 2
+  TIM2->CR1 |= TIM_CR1_CEN;
+}
+/**
+ * @brief FreeRTOS task CPU usage statistics helper. Fetches current counter
+ * value.
+ *
+ * @return uint32_t timer2 counter register
+ */
+uint32_t vget_runtime_count(void) { return TIM2->CNT; }
+#endif // RAPTOR_DEBUG
 
 /* configUSE_STATIC_ALLOCATION is set to 1, so the application must provide an
  * implementation of vApplicationGetIdleTaskMemory() to provide the memory that
