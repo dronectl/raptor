@@ -28,6 +28,8 @@ if(NOT CMAKE_BUILD_TYPE)
   set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release")
 endif()
 
+set(CMAKE_C_FLAGS_DEBUG "-DRAPTOR_DEBUG")
+
 
 project(
   ${EXECUTABLE}
@@ -39,8 +41,6 @@ project(
 message(STATUS "Configuring config.h header")
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/config.h.in config.h @ONLY)
 
-
-
 # set STM32F4xx include paths
 set(
   STM32CUBEF4_INCLUDE
@@ -48,6 +48,8 @@ set(
   ${STM32CUBEF4_BASE}/Drivers/CMSIS/Core/Include
 )
 
+# global include for "config.h"
+include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 # Include the FreeRTOS source code
 include(FetchContent)
@@ -85,6 +87,8 @@ add_executable(
 )
 target_link_libraries(${EXECUTABLE} LINK_PUBLIC freertos_kernel)
 set_target_properties(${EXECUTABLE} PROPERTIES OUTPUT_NAME ${EXECUTABLE}.elf)
+# for config.h inclusion
+target_include_directories(${EXECUTABLE} PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 target_include_directories(${EXECUTABLE} PRIVATE include)
 target_include_directories(${EXECUTABLE} PRIVATE ${STM32CUBEF4_INCLUDE})
 
