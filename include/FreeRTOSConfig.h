@@ -45,9 +45,7 @@
  * See http://www.freertos.org/a00110.html
  *----------------------------------------------------------*/
 
-/* USER CODE BEGIN Includes */
-/* Section where include file can be added */
-/* USER CODE END Includes */
+#include "config.h"
 
 /* Ensure definitions are only used by the compiler, and not by the assembler.
  */
@@ -178,9 +176,14 @@ standard names. */
 
 #define USE_CUSTOM_SYSTICK_HANDLER_IMPLEMENTATION 0
 
-/* USER CODE BEGIN Defines */
-/* Section where parameter definitions can be added (for instance, to override
- * default ones in FreeRTOS.h) */
-/* USER CODE END Defines */
+// Debugging definitions
+#ifdef RAPTOR_DEBUG
+// #define configGENERATE_RUN_TIME_STATS 1
+// extern void vConfigureTimerForRunTimeStats(void);
+// #define portCONFIGURE_TIMER_FOR_RUN_TIME_STATS() \
+//   vConfigureTimerForRunTimeStats()
+// #define portGET_RUN_TIME_COUNTER_VALUE() T0TC
+#endif // RAPTOR_DEBUG
+#define configRECORD_STACK_HIGH_ADDRESS 1
 
 #endif /* FREERTOS_CONFIG_H */
