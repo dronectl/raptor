@@ -1,7 +1,7 @@
 
 #include "FreeRTOS.h"
 #include "config.h"
-#include "stm32f4xx.h"
+#include "stm32h723xx.h"
 #include "task.h"
 
 #ifdef RAPTOR_DEBUG
@@ -12,14 +12,14 @@
  */
 void vconfigure_rtos_stats_timer(void) {
   // Enable the clock for Timer 2
-  RCC->APB1ENR |= RCC_APB1ENR_TIM2EN;
+  RCC->APB1HENR |= RCC_APB1HENR_TIM23EN;
   // Set the prescaler for Timer 2
-  TIM2->PSC = SystemCoreClock / 10000 - 1;
+  TIM23->PSC = SystemCoreClock / 10000 - 1;
   // Configure Timer 2 in up-counting mode
-  TIM2->CR1 &= ~TIM_CR1_DIR; // Up-counting mode
-  TIM2->CR1 &= ~TIM_CR1_CMS; // Edge-aligned mode
+  TIM23->CR1 &= ~TIM_CR1_DIR; // Up-counting mode
+  TIM23->CR1 &= ~TIM_CR1_CMS; // Edge-aligned mode
   // Enable Timer 2
-  TIM2->CR1 |= TIM_CR1_CEN;
+  TIM23->CR1 |= TIM_CR1_CEN;
 }
 /**
  * @brief FreeRTOS task CPU usage statistics helper. Fetches current counter
@@ -27,26 +27,8 @@ void vconfigure_rtos_stats_timer(void) {
  *
  * @return uint32_t timer2 counter register
  */
-uint32_t vget_runtime_count(void) { return TIM2->CNT; }
+uint32_t vget_runtime_count(void) { return TIM23->CNT; }
 #endif // RAPTOR_DEBUG
-
-/**
- * @brief Assertion statements will raise a usage fault.
- *
- */
-void vconfig_assert_fault(void) {
-  taskDISABLE_INTERRUPTS();
-  uint8_t toggle = 0;
-  while (1) {
-    toggle ^= 1;
-    GPIOD->BSRR = 1 << (12 + (16 * toggle));
-    GPIOD->BSRR = 1 << (13 + (16 * toggle));
-    GPIOD->BSRR = 1 << (14 + (16 * toggle));
-    GPIOD->BSRR = 1 << (15 + (16 * toggle));
-    for (int i = 0; i < 100000; i++) {
-    };
-  }
-}
 
 /**
  * @brief This is to provide the memory that is used by the RTOS daemon/time
@@ -127,32 +109,13 @@ void vApplicationStackOverflowHook(TaskHandle_t pxTask, char *pcTaskName) {
     ;
 }
 
-static void setup_status_leds(void) {
-  // Configue LEDs
-  RCC->AHB1ENR |= RCC_AHB1ENR_GPIODEN; // Enable the clock of port D of the
-  GPIOD->MODER |= GPIO_MODER_MODER12_0;
-  GPIOD->MODER |= GPIO_MODER_MODER13_0;
-  GPIOD->MODER |= GPIO_MODER_MODER14_0;
-  GPIOD->MODER |= GPIO_MODER_MODER15_0;
-}
-
 static void prvSetupHardware(void) {
   /* Setup STM32 system (clock, PLL and Flash configuration) */
   SystemInit();
-  setup_status_leds();
 }
 
 int main(void) {
-  // TaskHandle_t xHandle = NULL;
-  // BaseType_t x_returned;
   prvSetupHardware();
-  // x_returned = xTaskCreate(vspinlock, "spinlock", configMINIMAL_STACK_SIZE,
-  //                          &delay_ms, tskIDLE_PRIORITY + 1, &xHandle);
-  // configASSERT(xHandle);
-  // if (x_returned != pdPASS) {
-  //   vTaskDelete(xHandle);
-  // }
-  configASSERT(0);
   /* Start the scheduler. */
   vTaskStartScheduler();
   for (;;)
