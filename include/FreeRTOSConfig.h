@@ -159,7 +159,8 @@ header file. */
 extern void vconfig_assert_fault(void);
 #define configASSERT(x)                                                        \
   if ((x) == 0) {                                                              \
-    vconfig_assert_fault();                                                    \
+    for (;;) {                                                                 \
+    };                                                                         \
   }
 
 /* Definitions that map the FreeRTOS port interrupt handlers to their CMSIS
