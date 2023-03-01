@@ -6,7 +6,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules ${CMAKE_MODULE_P
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # For debug, no change detected ...
-set(CMAKE_VERBOSE_MAKEFILE ON)
+# set(CMAKE_VERBOSE_MAKEFILE ON)
 # global project name
 set(EXECUTABLE "raptor")
 set(CMAKE_C_EXTENSIONS OFF)
@@ -20,7 +20,7 @@ project(
   DESCRIPTION "Hardware in the loop test executor and reporting aggregation system."
 )
 
-include(cmsis)
+include(cubeh7)
 include(openocd)
 include(freertos)
 
@@ -57,20 +57,30 @@ message(STATUS "Configuring config.h header")
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/config.h.in config.h @ONLY)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
-fetch_cmsis()
+fetch_cubeh7()
 fetch_freertos_kernel("4" "GCC_ARM_CM7" "${CMAKE_CURRENT_SOURCE_DIR}/include")
 
 add_executable(
   ${EXECUTABLE}
   src/main.c
-  ${STM32CUBEH7_CMSIS_SRC}/Drivers/CMSIS/Device/ST/STM32H7xx/Source/Templates/system_stm32h7xx.c
-  ${STM32CUBEH7_CMSIS_SRC}/Drivers/CMSIS/Device/ST/STM32H7xx/Source/Templates/gcc/startup_stm32h723xx.s
+  src/lwip/app_ethernet.c
+  src/lwip/ethernetif.c
+  src/tcp_echoserver.c
+  ${STM32CUBEH7_SRC}/Drivers/CMSIS/Device/ST/STM32H7xx/Source/Templates/system_stm32h7xx.c
+  ${STM32CUBEH7_SRC}/Drivers/CMSIS/Device/ST/STM32H7xx/Source/Templates/gcc/startup_stm32h723xx.s
+  ${STM32CUBEH7_SRC}/Drivers/BSP/Components/lan8742/lan8742.c
+  ${STM32CUBEH7_SRC}/Drivers/BSP/STM32H7xx_Nucleo/stm32h7xx_nucleo.c
+  ${LWIP_SRC}
+  ${STM32CUBEH7_HAL_SRC}
 )
 target_link_libraries(${EXECUTABLE} LINK_PUBLIC freertos_kernel)
-set_target_properties(${EXECUTABLE} PROPERTIES OUTPUT_NAME ${EXECUTABLE}.elf)
 target_include_directories(${EXECUTABLE} PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+target_include_directories(${EXECUTABLE} PRIVATE ${LWIP_INCLUDE})
 target_include_directories(${EXECUTABLE} PRIVATE ${STM32CUBEH7_CMSIS_INCLUDE})
+target_include_directories(${EXECUTABLE} PRIVATE ${STM32CUBEH7_HAL_INCLUDE})
+target_include_directories(${EXECUTABLE} PRIVATE ${STM32CUBEH7_BSP_INCLUDE})
 target_include_directories(${EXECUTABLE} PRIVATE include)
+set_target_properties(${EXECUTABLE} PROPERTIES OUTPUT_NAME ${EXECUTABLE}.elf)
 
 find_openocd()
 

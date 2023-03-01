@@ -30,8 +30,8 @@ ENTRY(Reset_Handler)
 /* Highest address of the user mode stack */
 _estack = ORIGIN(RAM) + LENGTH(RAM);	/* end of "RAM" Ram type memory */
 
-_Min_Heap_Size = 0x200;	/* required amount of heap  */
-_Min_Stack_Size = 0x400;	/* required amount of stack */
+_Min_Heap_Size = 0x1000;	/* required amount of heap  */
+_Min_Stack_Size = 0x1000;	/* required amount of stack */
 
 /* Memories definition */
 MEMORY
@@ -39,6 +39,8 @@ MEMORY
   ITCMRAM    (xrw)    : ORIGIN = 0x00000000,   LENGTH = 64K
   RAM    (xrw)    : ORIGIN = 0x20000000,   LENGTH = 128K
   ROM    (rx)    : ORIGIN = 0x08000000,   LENGTH = 1024K
+  RAM_D2 (xrw)      : ORIGIN = 0x30000000, LENGTH = 288K
+  
 }
 
 /* Sections */
@@ -164,6 +166,17 @@ SECTIONS
     . = ALIGN(8);
   } >RAM
 
+   .lwip_sec (NOLOAD) : {
+    . = ABSOLUTE(0x30000000);
+    *(.RxDecripSection) 
+    
+    . = ABSOLUTE(0x30000200);
+    *(.TxDecripSection)
+    
+    . = ABSOLUTE(0x30000400);
+    *(.Rx_PoolSection) 
+  } >RAM_D2 AT> ROM
+  
   /* Remove information from the compiler libraries */
   /DISCARD/ :
   {
