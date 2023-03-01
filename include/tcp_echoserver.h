@@ -30,6 +30,6 @@
 #ifndef __TCP_ECHOSERVER_H__
 #define __TCP_ECHOSERVER_H__
 
-void tcp_echoserver_init(void);
+void tcp_server_task(void *pv_params);
 
 #endif /* __TCP_ECHOSERVER */

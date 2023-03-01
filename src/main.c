@@ -1,14 +1,5 @@
 
-#include "lwip/init.h"
-#include "lwip/netif.h"
-#include "lwip/opt.h"
-#include "lwip/timeouts.h"
-#include "netif/etharp.h"
-#if LWIP_DHCP
-#include "lwip/dhcp.h"
-#endif
-#include "app_ethernet.h"
-#include "ethernetif.h"
+
 #include "stm32h7xx_hal.h"
 #include "stm32h7xx_nucleo.h"
 #include "tcp_echoserver.h"
@@ -18,11 +9,9 @@
 #include "stm32h723xx.h"
 #include "task.h"
 
-struct netif gnetif;
 /* Private function prototypes -----------------------------------------------*/
 static void SystemClock_Config(void);
 static void BSP_Config(void);
-static void Netif_Config(void);
 static void MPU_Config(void);
 static void CPU_CACHE_Enable(void);
 
@@ -131,11 +120,6 @@ void vApplicationStackOverflowHook(TaskHandle_t pxTask, char *pcTaskName) {
     ;
 }
 
-/**
- * @brief  Main program
- * @param  None
- * @retval None
- */
 int main(void) {
   /* Configure the MPU attributes as Device memory for ETH DMA descriptors */
   MPU_Config();
@@ -152,79 +136,23 @@ int main(void) {
 
   /* Configure the system clock to 520 MHz */
   SystemClock_Config();
-
   /* Configure the LEDs ...*/
   BSP_Config();
-
-  /* Initialize the LwIP stack */
-  lwip_init();
-
-  /* Configure the Network interface */
-  Netif_Config();
-
-  /* TCP echo server Init */
-  tcp_echoserver_init();
-
-  /* Infinite loop */
-  while (1) {
-    /* Read a received packet from the Ethernet buffers and send it
-       to the lwIP for handling */
-    ethernetif_input(&gnetif);
-
-    /* Handle timeouts */
-    sys_check_timeouts();
-
-#if LWIP_NETIF_LINK_CALLBACK
-    Ethernet_Link_Periodic_Handle(&gnetif);
-#endif
-
-#if LWIP_DHCP
-    DHCP_Periodic_Handle(&gnetif);
-#endif
+  TaskHandle_t xHandle = NULL;
+  BaseType_t x_returned;
+  x_returned =
+      xTaskCreate(tcp_server_task, "ethernet", configMINIMAL_STACK_SIZE, NULL,
+                  tskIDLE_PRIORITY + 1, &xHandle);
+  configASSERT(xHandle);
+  if (x_returned != pdPASS) {
+    vTaskDelete(xHandle);
   }
+  vTaskStartScheduler();
 }
 
 static void BSP_Config(void) {
   BSP_LED_Init(LED2);
   BSP_LED_Init(LED3);
-}
-
-/**
- * @brief  Setup the network interface
- * @param  None
- * @retval None
- */
-static void Netif_Config(void) {
-  ip_addr_t ipaddr;
-  ip_addr_t netmask;
-  ip_addr_t gw;
-
-#if LWIP_DHCP
-  ip_addr_set_zero_ip4(&ipaddr);
-  ip_addr_set_zero_ip4(&netmask);
-  ip_addr_set_zero_ip4(&gw);
-#else
-
-  /* IP address default setting */
-  IP4_ADDR(&ipaddr, IP_ADDR0, IP_ADDR1, IP_ADDR2, IP_ADDR3);
-  IP4_ADDR(&netmask, NETMASK_ADDR0, NETMASK_ADDR1, NETMASK_ADDR2,
-           NETMASK_ADDR3);
-  IP4_ADDR(&gw, GW_ADDR0, GW_ADDR1, GW_ADDR2, GW_ADDR3);
-
-#endif
-
-  /* add the network interface */
-  netif_add(&gnetif, &ipaddr, &netmask, &gw, NULL, &ethernetif_init,
-            &ethernet_input);
-
-  /*  Registers the default network interface */
-  netif_set_default(&gnetif);
-
-  ethernet_link_status_updated(&gnetif);
-
-#if LWIP_NETIF_LINK_CALLBACK
-  netif_set_link_callback(&gnetif, ethernet_link_status_updated);
-#endif
 }
 
 /**
