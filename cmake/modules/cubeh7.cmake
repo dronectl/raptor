@@ -14,6 +14,28 @@ function(fetch_cubeh7)
     STM32CUBEH7_CMSIS_INCLUDE
     ${stm32h7_SOURCE_DIR}/Drivers/CMSIS/Device/ST/STM32H7xx/Include
     ${stm32h7_SOURCE_DIR}/Drivers/CMSIS/Core/Include
+    ${stm32h7_SOURCE_DIR}/Drivers/CMSIS/Include
+    PARENT_SCOPE
+  )
+  set(
+    STM32CUBEH7_FREERTOS_INCLUDE
+    ${stm32h7_SOURCE_DIR}/Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2
+    ${stm32h7_SOURCE_DIR}/Middlewares/Third_Party/FreeRTOS/Source/include
+    ${stm32h7_SOURCE_DIR}/Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F/
+    PARENT_SCOPE
+  )
+  set(
+    STM32CUBEH7_FREERTOS_SRC
+    ${stm32h7_SOURCE_DIR}/Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2/cmsis_os2.c
+    ${stm32h7_SOURCE_DIR}/Middlewares/Third_Party/FreeRTOS/Source/croutine.c
+    ${stm32h7_SOURCE_DIR}/Middlewares/Third_Party/FreeRTOS/Source/event_groups.c
+    ${stm32h7_SOURCE_DIR}/Middlewares/Third_Party/FreeRTOS/Source/list.c
+    ${stm32h7_SOURCE_DIR}/Middlewares/Third_Party/FreeRTOS/Source/queue.c
+    ${stm32h7_SOURCE_DIR}/Middlewares/Third_Party/FreeRTOS/Source/tasks.c
+    ${stm32h7_SOURCE_DIR}/Middlewares/Third_Party/FreeRTOS/Source/timers.c
+    ${stm32h7_SOURCE_DIR}/Middlewares/Third_Party/FreeRTOS/Source/stream_buffer.c
+    ${stm32h7_SOURCE_DIR}/Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F/port.c
+    ${stm32h7_SOURCE_DIR}/Middlewares/Third_Party/FreeRTOS/Source/portable/MemMang/heap_4.c
     PARENT_SCOPE
   )
   set(
@@ -39,9 +61,10 @@ function(fetch_cubeh7)
     GLOB_RECURSE 
     LWIP_SRC
     CONFIGURE_DEPENDS
-    "${stm32h7_SOURCE_DIR}//Middlewares/Third_Party/LwIP/src/core/*.c"
-    "${stm32h7_SOURCE_DIR}//Middlewares/Third_Party/LwIP/src/api/*.c"
-    "${stm32h7_SOURCE_DIR}//Middlewares/Third_Party/LwIP/src/netif/*.c"
+    "${stm32h7_SOURCE_DIR}/Middlewares/Third_Party/LwIP/src/core/*.c"
+    "${stm32h7_SOURCE_DIR}/Middlewares/Third_Party/LwIP/src/api/*.c"
+    "${stm32h7_SOURCE_DIR}/Middlewares/Third_Party/LwIP/src/netif/ethernet.c"
+    "${stm32h7_SOURCE_DIR}/Middlewares/Third_Party/LwIP/system/OS/sys_arch.c"
   )
   set(
     LWIP_SRC 

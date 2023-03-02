@@ -165,8 +165,8 @@ SECTIONS
     . = . + _Min_Stack_Size;
     . = ALIGN(8);
   } >RAM
-
-   .lwip_sec (NOLOAD) : {
+  
+  .lwip_sec (NOLOAD) : {
     . = ABSOLUTE(0x30000000);
     *(.RxDecripSection) 
     
@@ -176,7 +176,7 @@ SECTIONS
     . = ABSOLUTE(0x30000400);
     *(.Rx_PoolSection) 
   } >RAM_D2 AT> ROM
-  
+
   /* Remove information from the compiler libraries */
   /DISCARD/ :
   {

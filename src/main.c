@@ -10,10 +10,10 @@
 #include "task.h"
 
 /* Private function prototypes -----------------------------------------------*/
-static void SystemClock_Config(void);
-static void BSP_Config(void);
-static void MPU_Config(void);
-static void CPU_CACHE_Enable(void);
+static void system_clock_config(void);
+static void bsp_config(void);
+static void mpu_config(void);
+static void cpu_cache_enable(void);
 
 #ifdef RAPTOR_DEBUG
 /**
@@ -96,18 +96,6 @@ void vApplicationGetIdleTaskMemory(StaticTask_t **ppxIdleTaskTCBBuffer,
   *pulIdleTaskStackSize = configMINIMAL_STACK_SIZE;
 }
 
-void vApplicationIdleHook(void) {
-  /* vApplicationIdleHook() will only be called if configUSE_IDLE_HOOK is set
-  to 1 in FreeRTOSConfig.h.  It will be called on each iteration of the idle
-  task.  It is essential that code added to this hook function never attempts
-  to block in any way (for example, call xQueueReceive() with a block time
-  specified, or call vTaskDelay()).  If the application makes use of the
-  vTaskDelete() API function (as this demo application does) then it is also
-  important that vApplicationIdleHook() is permitted to return to its calling
-  function, because it is the responsibility of the idle task to clean up
-  memory allocated by the kernel to any task that has since been deleted. */
-}
-
 void vApplicationStackOverflowHook(TaskHandle_t pxTask, char *pcTaskName) {
   (void)pcTaskName;
   (void)pxTask;
@@ -122,10 +110,10 @@ void vApplicationStackOverflowHook(TaskHandle_t pxTask, char *pcTaskName) {
 
 int main(void) {
   /* Configure the MPU attributes as Device memory for ETH DMA descriptors */
-  MPU_Config();
+  mpu_config();
 
   /* Enable the CPU Cache */
-  CPU_CACHE_Enable();
+  cpu_cache_enable();
 
   /* STM32H7xx HAL library initialization:
        - Configure the SysTick to generate an interrupt each 1 msec
@@ -135,9 +123,9 @@ int main(void) {
   HAL_Init();
 
   /* Configure the system clock to 520 MHz */
-  SystemClock_Config();
+  system_clock_config();
   /* Configure the LEDs ...*/
-  BSP_Config();
+  bsp_config();
   TaskHandle_t xHandle = NULL;
   BaseType_t x_returned;
   x_returned =
@@ -150,7 +138,7 @@ int main(void) {
   vTaskStartScheduler();
 }
 
-static void BSP_Config(void) {
+static void bsp_config(void) {
   BSP_LED_Init(LED2);
   BSP_LED_Init(LED3);
 }
@@ -177,25 +165,21 @@ static void BSP_Config(void) {
  * @param  None
  * @retval None
  */
-static void SystemClock_Config(void) {
+static void system_clock_config(void) {
   RCC_ClkInitTypeDef RCC_ClkInitStruct;
   RCC_OscInitTypeDef RCC_OscInitStruct;
   HAL_StatusTypeDef ret = HAL_OK;
 
   /*!< Supply configuration update enable */
   HAL_PWREx_ConfigSupply(PWR_LDO_SUPPLY);
-
   /* The voltage scaling allows optimizing the power consumption when the device
      is clocked below the maximum system frequency, to update the voltage
      scaling value regarding system frequency refer to product datasheet.  */
   __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE0);
-
   while (!__HAL_PWR_GET_FLAG(PWR_FLAG_VOSRDY)) {
   }
-
   /* Enable D2 domain SRAM1 Clock (0x30000000 AXI)*/
   __HAL_RCC_D2SRAM1_CLK_ENABLE();
-
   /* Enable HSE Oscillator and activate PLL with HSE as source */
   RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
   RCC_OscInitStruct.HSEState = RCC_HSE_BYPASS;
@@ -203,14 +187,12 @@ static void SystemClock_Config(void) {
   RCC_OscInitStruct.CSIState = RCC_CSI_OFF;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
-
   RCC_OscInitStruct.PLL.PLLM = 4;
   RCC_OscInitStruct.PLL.PLLN = 260;
   RCC_OscInitStruct.PLL.PLLFRACN = 0;
   RCC_OscInitStruct.PLL.PLLP = 1;
   RCC_OscInitStruct.PLL.PLLR = 2;
   RCC_OscInitStruct.PLL.PLLQ = 4;
-
   RCC_OscInitStruct.PLL.PLLVCOSEL = RCC_PLL1VCOWIDE;
   RCC_OscInitStruct.PLL.PLLRGE = RCC_PLL1VCIRANGE_1;
   ret = HAL_RCC_OscConfig(&RCC_OscInitStruct);
@@ -260,12 +242,10 @@ static void SystemClock_Config(void) {
  * @param  None
  * @retval None
  */
-static void MPU_Config(void) {
+static void mpu_config(void) {
   MPU_Region_InitTypeDef MPU_InitStruct;
-
   /* Disable the MPU */
   HAL_MPU_Disable();
-
   /* Configure the MPU as Strongly ordered for not defined regions */
   MPU_InitStruct.Enable = MPU_REGION_ENABLE;
   MPU_InitStruct.BaseAddress = 0x00;
@@ -278,9 +258,7 @@ static void MPU_Config(void) {
   MPU_InitStruct.TypeExtField = MPU_TEX_LEVEL0;
   MPU_InitStruct.SubRegionDisable = 0x87;
   MPU_InitStruct.DisableExec = MPU_INSTRUCTION_ACCESS_DISABLE;
-
   HAL_MPU_ConfigRegion(&MPU_InitStruct);
-
   /* Configure the MPU attributes as Device not cacheable
      for ETH DMA descriptors */
   MPU_InitStruct.Enable = MPU_REGION_ENABLE;
@@ -294,9 +272,7 @@ static void MPU_Config(void) {
   MPU_InitStruct.TypeExtField = MPU_TEX_LEVEL0;
   MPU_InitStruct.SubRegionDisable = 0x00;
   MPU_InitStruct.DisableExec = MPU_INSTRUCTION_ACCESS_ENABLE;
-
   HAL_MPU_ConfigRegion(&MPU_InitStruct);
-
   /* Configure the MPU attributes as Normal Non Cacheable
      for LwIP RAM heap which contains the Tx buffers */
   MPU_InitStruct.Enable = MPU_REGION_ENABLE;
@@ -310,9 +286,7 @@ static void MPU_Config(void) {
   MPU_InitStruct.TypeExtField = MPU_TEX_LEVEL1;
   MPU_InitStruct.SubRegionDisable = 0x00;
   MPU_InitStruct.DisableExec = MPU_INSTRUCTION_ACCESS_ENABLE;
-
   HAL_MPU_ConfigRegion(&MPU_InitStruct);
-
   /* Enable the MPU */
   HAL_MPU_Enable(MPU_PRIVILEGED_DEFAULT);
 }
@@ -322,10 +296,9 @@ static void MPU_Config(void) {
  * @param  None
  * @retval None
  */
-static void CPU_CACHE_Enable(void) {
+static void cpu_cache_enable(void) {
   /* Enable I-Cache */
   SCB_EnableICache();
-
   /* Enable D-Cache */
   SCB_EnableDCache();
 }

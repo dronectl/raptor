@@ -23,8 +23,10 @@
 #if LWIP_DHCP
 #include "lwip/dhcp.h"
 #endif
+#include "FreeRTOS.h"
 #include "app_ethernet.h"
 #include "ethernetif.h"
+#include "task.h"
 
 /*Static IP ADDRESS: IP_ADDR0.IP_ADDR1.IP_ADDR2.IP_ADDR3 */
 #define IP_ADDR0 ((uint8_t)192U)
@@ -84,94 +86,72 @@ void ethernet_link_status_updated(struct netif *netif) {
   }
 }
 
-#if LWIP_NETIF_LINK_CALLBACK
-/**
- * @brief  Ethernet Link periodic check
- * @param  netif
- * @retval None
- */
-void Ethernet_Link_Periodic_Handle(struct netif *netif) {
-  /* Ethernet Link every 100ms */
-  if (HAL_GetTick() - EthernetLinkTimer >= 100) {
-    EthernetLinkTimer = HAL_GetTick();
-    ethernet_link_check_state(netif);
-  }
-}
-#endif
-
 #if LWIP_DHCP
 /**
- * @brief  DHCP_Process_Handle
- * @param  None
+ * @brief  DHCP Process
+ * @param  argument: network interface
  * @retval None
  */
-void DHCP_Process(struct netif *netif) {
+void dhcp_task(void *pv_params) {
+  struct netif *netif = (struct netif *)pv_params;
   ip_addr_t ipaddr;
   ip_addr_t netmask;
   ip_addr_t gw;
   struct dhcp *dhcp;
 
-  switch (DHCP_state) {
-    case DHCP_START: {
-      BSP_LED_Off(LED2);
-      BSP_LED_Off(LED3);
+  for (;;) {
+    switch (DHCP_state) {
+      case DHCP_START: {
+        ip_addr_set_zero_ip4(&netif->ip_addr);
+        ip_addr_set_zero_ip4(&netif->netmask);
+        ip_addr_set_zero_ip4(&netif->gw);
+        DHCP_state = DHCP_WAIT_ADDRESS;
 
-      ip_addr_set_zero_ip4(&netif->ip_addr);
-      ip_addr_set_zero_ip4(&netif->netmask);
-      ip_addr_set_zero_ip4(&netif->gw);
-      dhcp_start(netif);
-      DHCP_state = DHCP_WAIT_ADDRESS;
-    } break;
-
-    case DHCP_WAIT_ADDRESS: {
-      if (dhcp_supplied_address(netif)) {
-        DHCP_state = DHCP_ADDRESS_ASSIGNED;
-
-        BSP_LED_On(LED2);
+        BSP_LED_Off(LED2);
         BSP_LED_Off(LED3);
 
-      } else {
-        dhcp = (struct dhcp *)netif_get_client_data(
-            netif, LWIP_NETIF_CLIENT_DATA_INDEX_DHCP);
-
-        /* DHCP timeout */
-        if (dhcp->tries > MAX_DHCP_TRIES) {
-          DHCP_state = DHCP_TIMEOUT;
-
-          /* Static address used */
-          IP_ADDR4(&ipaddr, IP_ADDR0, IP_ADDR1, IP_ADDR2, IP_ADDR3);
-          IP_ADDR4(&netmask, NETMASK_ADDR0, NETMASK_ADDR1, NETMASK_ADDR2,
-                   NETMASK_ADDR3);
-          IP_ADDR4(&gw, GW_ADDR0, GW_ADDR1, GW_ADDR2, GW_ADDR3);
-          netif_set_addr(netif, &ipaddr, &netmask, &gw);
+        dhcp_start(netif);
+      } break;
+      case DHCP_WAIT_ADDRESS: {
+        if (dhcp_supplied_address(netif)) {
+          DHCP_state = DHCP_ADDRESS_ASSIGNED;
 
           BSP_LED_On(LED2);
           BSP_LED_Off(LED3);
+        } else {
+          dhcp = (struct dhcp *)netif_get_client_data(
+              netif, LWIP_NETIF_CLIENT_DATA_INDEX_DHCP);
+
+          /* DHCP timeout */
+          if (dhcp->tries > MAX_DHCP_TRIES) {
+            DHCP_state = DHCP_TIMEOUT;
+
+            /* Static address used */
+            IP_ADDR4(&ipaddr, IP_ADDR0, IP_ADDR1, IP_ADDR2, IP_ADDR3);
+            IP_ADDR4(&netmask, NETMASK_ADDR0, NETMASK_ADDR1, NETMASK_ADDR2,
+                     NETMASK_ADDR3);
+            IP_ADDR4(&gw, GW_ADDR0, GW_ADDR1, GW_ADDR2, GW_ADDR3);
+            netif_set_addr(netif, ip_2_ip4(&ipaddr), ip_2_ip4(&netmask),
+                           ip_2_ip4(&gw));
+
+            BSP_LED_On(LED2);
+            BSP_LED_Off(LED3);
+          }
         }
-      }
-    } break;
-    case DHCP_LINK_DOWN: {
-      DHCP_state = DHCP_OFF;
+      } break;
+      case DHCP_LINK_DOWN: {
 
-      BSP_LED_Off(LED2);
-      BSP_LED_On(LED3);
-    } break;
-    default:
-      break;
+        DHCP_state = DHCP_OFF;
+
+        BSP_LED_Off(LED2);
+        BSP_LED_On(LED3);
+      } break;
+      default:
+        break;
+    }
+
+    /* wait 500 ms */
+    vTaskDelay(pdMS_TO_TICKS(500));
   }
 }
-
-/**
- * @brief  DHCP periodic check
- * @param  netif
- * @retval None
- */
-void DHCP_Periodic_Handle(struct netif *netif) {
-  /* Fine DHCP periodic process every 500ms */
-  if (HAL_GetTick() - DHCPfineTimer >= DHCP_FINE_TIMER_MSECS) {
-    DHCPfineTimer = HAL_GetTick();
-    /* process DHCP state machine */
-    DHCP_Process(netif);
-  }
-}
-#endif
+#endif /* LWIP_DHCP */

@@ -58,28 +58,31 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/config.h.in config.h @ONLY)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 fetch_cubeh7()
-fetch_freertos_kernel("4" "GCC_ARM_CM7" "${CMAKE_CURRENT_SOURCE_DIR}/include")
 
 add_executable(
   ${EXECUTABLE}
   src/main.c
   src/lwip/app_ethernet.c
   src/lwip/ethernetif.c
+  src/syscalls.c
+  src/sysmem.c
   src/tcp_echoserver.c
-  ${STM32CUBEH7_SRC}/Drivers/CMSIS/Device/ST/STM32H7xx/Source/Templates/system_stm32h7xx.c
-  ${STM32CUBEH7_SRC}/Drivers/CMSIS/Device/ST/STM32H7xx/Source/Templates/gcc/startup_stm32h723xx.s
+  src/stm32h7xx_it.c
+  src/startup_stm32h723zgtx.s
+  src/system_stm32h7xx.c
   ${STM32CUBEH7_SRC}/Drivers/BSP/Components/lan8742/lan8742.c
   ${STM32CUBEH7_SRC}/Drivers/BSP/STM32H7xx_Nucleo/stm32h7xx_nucleo.c
   ${LWIP_SRC}
   ${STM32CUBEH7_HAL_SRC}
+  ${STM32CUBEH7_FREERTOS_SRC}
 )
-target_link_libraries(${EXECUTABLE} LINK_PUBLIC freertos_kernel)
-target_include_directories(${EXECUTABLE} PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+# target_link_libraries(${EXECUTABLE} LINK_PUBLIC freertos_kernel)
 target_include_directories(${EXECUTABLE} PRIVATE ${LWIP_INCLUDE})
-target_include_directories(${EXECUTABLE} PRIVATE ${STM32CUBEH7_CMSIS_INCLUDE})
+target_include_directories(${EXECUTABLE} PRIVATE ${STM32CUBEH7_FREERTOS_INCLUDE})
 target_include_directories(${EXECUTABLE} PRIVATE ${STM32CUBEH7_HAL_INCLUDE})
 target_include_directories(${EXECUTABLE} PRIVATE ${STM32CUBEH7_BSP_INCLUDE})
 target_include_directories(${EXECUTABLE} PRIVATE include)
+target_include_directories(${EXECUTABLE} PRIVATE ${STM32CUBEH7_CMSIS_INCLUDE})
 set_target_properties(${EXECUTABLE} PROPERTIES OUTPUT_NAME ${EXECUTABLE}.elf)
 
 find_openocd()

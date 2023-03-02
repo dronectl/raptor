@@ -24,6 +24,6 @@
 
 /* Exported types ------------------------------------------------------------*/
 err_t ethernetif_init(struct netif *netif);
-void ethernetif_input(struct netif *netif);
-void ethernet_link_check_state(struct netif *netif);
+void ethernetif_input(void *argument);
+void ethernet_link_task(void *pv_params);
 #endif

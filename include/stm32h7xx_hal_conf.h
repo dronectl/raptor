@@ -20,10 +20,6 @@
 #ifndef STM32H7xx_HAL_CONF_H
 #define STM32H7xx_HAL_CONF_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /* Exported types ------------------------------------------------------------*/
 /* Exported constants --------------------------------------------------------*/
 
@@ -153,9 +149,10 @@ extern "C" {
  * source frequency, this source is inserted directly through I2S_CKIN pad.
  */
 #if !defined(EXTERNAL_CLOCK_VALUE)
-#define EXTERNAL_CLOCK_VALUE 12288000U /*!< Value of the External clock in     \
-                                          Hz*/
-#endif                                 /* EXTERNAL_CLOCK_VALUE */
+#define EXTERNAL_CLOCK_VALUE                                                   \
+  12288000U /*!< Value of the External clock in                                \
+               Hz*/
+#endif      /* EXTERNAL_CLOCK_VALUE */
 
 /* Tip: To avoid modifying this file each time you need to use different HSE,
    ===  you can define the HSE value in your toolchain compiler preprocessor. */
@@ -195,7 +192,7 @@ extern "C" {
 #define USE_HAL_FDCAN_REGISTER_CALLBACKS                                       \
   0U /* FDCAN register callback disabled   */
 #define USE_HAL_FMAC_REGISTER_CALLBACKS                                        \
-  0U /* FMAC register callback disabled  */
+  0U /* FMAC register callback disabled    */
 #define USE_HAL_NAND_REGISTER_CALLBACKS                                        \
   0U /* NAND register callback disabled    */
 #define USE_HAL_NOR_REGISTER_CALLBACKS                                         \
@@ -522,9 +519,5 @@ void assert_failed(uint8_t *file, uint32_t line);
 #else
 #define assert_param(expr) ((void)0U)
 #endif /* USE_FULL_ASSERT */
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif /* STM32H7xx_HAL_CONF_H */
