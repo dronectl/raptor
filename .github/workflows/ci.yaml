@@ -33,6 +33,8 @@ jobs:
     needs: clang-fmt
     runs-on: ubuntu-latest
     steps:
+      - name: checkout source
+        uses: actions/checkout@v3
       - name: install gcc-arm-none-eabi & openocd
         run: |
           sudo apt update -y
