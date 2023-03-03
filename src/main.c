@@ -1,15 +1,26 @@
 
 
+#include "FreeRTOS.h"
+#include "app_ethernet.h"
+#include "config.h"
+#include "ethernetif.h"
+#include "lwip/tcpip.h"
+#include "netif/ethernet.h"
+#include "stm32h723xx.h"
 #include "stm32h7xx_hal.h"
 #include "stm32h7xx_nucleo.h"
+#include "task.h"
 #include "tcp_echoserver.h"
 
-#include "FreeRTOS.h"
-#include "config.h"
-#include "stm32h723xx.h"
-#include "task.h"
+TaskHandle_t start_handle;
+TaskHandle_t tcp_handle;
+TaskHandle_t link_handle;
+TaskHandle_t dhcp_handle;
+struct netif gnetif;
 
 /* Private function prototypes -----------------------------------------------*/
+static void start_task(void *pv_params);
+static void netconfig_init(void);
 static void system_clock_config(void);
 static void bsp_config(void);
 static void mpu_config(void);
@@ -126,16 +137,90 @@ int main(void) {
   system_clock_config();
   /* Configure the LEDs ...*/
   bsp_config();
-  TaskHandle_t xHandle = NULL;
   BaseType_t x_returned;
   x_returned =
-      xTaskCreate(tcp_server_task, "ethernet", configMINIMAL_STACK_SIZE, NULL,
-                  tskIDLE_PRIORITY + 1, &xHandle);
-  configASSERT(xHandle);
+      xTaskCreate(start_task, "start_task", configMINIMAL_STACK_SIZE * 2, NULL,
+                  tskIDLE_PRIORITY + 24, &start_handle);
+  configASSERT(start_handle);
   if (x_returned != pdPASS) {
-    vTaskDelete(xHandle);
+    vTaskDelete(start_handle);
   }
   vTaskStartScheduler();
+}
+
+void start_task(void *pv_params) {
+  /* Create tcp_ip stack thread */
+  tcpip_init(NULL, NULL);
+
+  /* Initialize the LwIP stack */
+  netconfig_init();
+
+  BaseType_t x_returned =
+      xTaskCreate(tcp_server_task, "tcp_task", configMINIMAL_STACK_SIZE, NULL,
+                  tskIDLE_PRIORITY + 32, &tcp_handle);
+  configASSERT(tcp_handle);
+  if (x_returned != pdPASS) {
+    vTaskDelete(tcp_handle);
+  }
+  for (;;) {
+    /* Delete the Init Thread */
+    vTaskDelete(start_handle);
+  }
+}
+
+/**
+ * @brief  Setup the network interface
+ * @param  None
+ * @retval None
+ */
+static void netconfig_init(void) {
+  ip_addr_t ipaddr;
+  ip_addr_t netmask;
+  ip_addr_t gw;
+
+#if LWIP_DHCP
+  ip_addr_set_zero_ip4(&ipaddr);
+  ip_addr_set_zero_ip4(&netmask);
+  ip_addr_set_zero_ip4(&gw);
+#else
+
+  /* IP address default setting */
+  IP4_ADDR(&ipaddr, IP_ADDR0, IP_ADDR1, IP_ADDR2, IP_ADDR3);
+  IP4_ADDR(&netmask, NETMASK_ADDR0, NETMASK_ADDR1, NETMASK_ADDR2,
+           NETMASK_ADDR3);
+  IP4_ADDR(&gw, GW_ADDR0, GW_ADDR1, GW_ADDR2, GW_ADDR3);
+
+#endif
+
+  /* add the network interface */
+  netif_add(&gnetif, &ipaddr, &netmask, &gw, NULL, &ethernetif_init,
+            &ethernet_input);
+
+  /*  Registers the default network interface */
+  netif_set_default(&gnetif);
+
+  ethernet_link_status_updated(&gnetif);
+  BaseType_t x_returned;
+#if LWIP_NETIF_LINK_CALLBACK
+  netif_set_link_callback(&gnetif, ethernet_link_status_updated);
+
+  x_returned = xTaskCreate(ethernet_link_thread, "eth_link_task",
+                           configMINIMAL_STACK_SIZE, &gnetif,
+                           tskIDLE_PRIORITY + 24, &link_handle);
+  configASSERT(link_handle);
+  if (x_returned != pdPASS) {
+    vTaskDelete(link_handle);
+  }
+#endif
+
+#if LWIP_DHCP
+  x_returned = xTaskCreate(dhcp_task, "dhcp_task", configMINIMAL_STACK_SIZE,
+                           &gnetif, tskIDLE_PRIORITY + 16, &dhcp_handle);
+  configASSERT(dhcp_handle);
+  if (x_returned != pdPASS) {
+    vTaskDelete(dhcp_handle);
+  }
+#endif
 }
 
 static void bsp_config(void) {
@@ -200,12 +285,10 @@ static void system_clock_config(void) {
     while (1)
       ;
   }
-
   /* Select PLL as system clock source and configure  bus clocks dividers */
   RCC_ClkInitStruct.ClockType =
       (RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_D1PCLK1 |
        RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2 | RCC_CLOCKTYPE_D3PCLK1);
-
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.SYSCLKDivider = RCC_SYSCLK_DIV1;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_HCLK_DIV2;
@@ -218,7 +301,6 @@ static void system_clock_config(void) {
     while (1)
       ;
   }
-
   /*
     Note : The activation of the I/O Compensation Cell is recommended with
     communication  interfaces (GPIO, SPI, FMC, OSPI ...)  when  operating at
@@ -229,11 +311,8 @@ static void system_clock_config(void) {
           - Enabling the I/O Compensation Cell : setting bit[0] of register
     SYSCFG_CCCSR
   */
-
   __HAL_RCC_CSI_ENABLE();
-
   __HAL_RCC_SYSCFG_CLK_ENABLE();
-
   HAL_EnableCompensationCell();
 }
 
