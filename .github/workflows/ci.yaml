@@ -33,14 +33,6 @@ jobs:
     needs: clang-fmt
     runs-on: ubuntu-latest
     steps:
-      - name: checkout source
-        uses: actions/checkout@v3
-      - name: fetch stm32f4 clib
-        uses: actions/checkout@v3
-        with:
-          repository: STMicroelectronics/STM32CubeF4
-          # relative to $GITHUB_WORKSPACE 
-          path: stm32cubef4
       - name: install gcc-arm-none-eabi & openocd
         run: |
           sudo apt update -y
@@ -55,7 +47,7 @@ jobs:
         run: |
           mkdir $GITHUB_WORKSPACE/build
           cd build
-          cmake .. -DSTM32CUBEF4_BASE=$GITHUB_WORKSPACE/stm32cubef4
+          cmake .. -DCMAKE_BUILD_TYPE=Release
           make -j`nproc`
       - name: binary size details
         working-directory: build 
