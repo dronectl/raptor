@@ -41,10 +41,10 @@ jobs:
           repository: STMicroelectronics/STM32CubeF4
           # relative to $GITHUB_WORKSPACE 
           path: stm32cubef4
-      - name: update and install gcc-arm-none-eabi
+      - name: install gcc-arm-none-eabi & openocd
         run: |
           sudo apt update -y
-          sudo apt install -y gcc-arm-none-eabi
+          sudo apt install -y gcc-arm-none-eabi openocd
         env:
           DEBIAN_FRONTEND: noninteractive
       - name: setup cmake
