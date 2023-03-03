@@ -56,7 +56,7 @@ set(STM32H723_COMPILE_FLAGS "-D${STM32H723_MCU} -DUSE_HAL_DRIVER -mcpu=${STM32H7
 message(STATUS "Exporting linker script path")
 get_filename_component(LINKER_SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/tools/STM32H723ZGTX_FLASH.ld ABSOLUTE)
 message(DEBUG "Linker script: ${LINKER_SCRIPT}")
-set(STM32H723_LINKER_FLAGS "-T${LINKER_SCRIPT} ${STM32H723_COMPILE_FLAGS} -Wl,--print-memory-usage -Wl,--gc-sections --specs=nosys.specs --specs=nano.specs -static -Wl,-z muldefs -Wl,-Map=${CMAKE_PROJECT_NAME}.map -Wl,--start-group -lc -lm -Wl,--end-group" CACHE INTERNAL "STM32H723 linker options")
+set(STM32H723_LINKER_FLAGS "-T${LINKER_SCRIPT} ${STM32H723_COMPILE_FLAGS} -Wl,--print-memory-usage -Wl,--gc-sections --specs=nosys.specs --specs=nano.specs -static -z muldefs -Wl,-Map=${CMAKE_PROJECT_NAME}.map -Wl,--start-group -lc -lm -Wl,--end-group" CACHE INTERNAL "STM32H723 linker options")
 message(STATUS "Setting compilers.")
 set(CMAKE_C_COMPILER ${TOOLCHAIN_PREFIX}-gcc${TOOLCHAIN_EXT} CACHE INTERNAL "C Compiler")
 set(CMAKE_CXX_COMPILER ${TOOLCHAIN_PREFIX}-g++${TOOLCHAIN_EXT} CACHE INTERNAL "C++ Compiler")

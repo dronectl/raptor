@@ -57,6 +57,12 @@ jobs:
       - name: binary object dump
         working-directory: build 
         run: make objdump
+      - name: archive compile commands 
+        uses: actions/upload-artifact@v3
+        with:
+          name: compile_commands.json
+          path: build/compile_commands.json
+          retention-days: 5
       - name: archive binary 
         uses: actions/upload-artifact@v3
         with:
