@@ -4,10 +4,7 @@
 // clang-format off
 #define raptor_VERSION_MAJOR @raptor_VERSION_MAJOR@
 #define raptor_VERSION_MINOR @raptor_VERSION_MINOR@
-
-#define F_CPU @F_CPU@
-#define MAX_LOGGING_LINE_LEN @MAX_LOGGING_LINE_LEN@
-#define MAX_LOGGING_CBUFFER_SIZE @MAX_LOGGING_CBUFFER_SIZE@
+#define raptor_VERSION_PATCH @raptor_VERSION_PATCH@
 // clang-format on
 
 #endif // __CONFIG_H__

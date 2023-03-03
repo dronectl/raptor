@@ -35,16 +35,10 @@ jobs:
     steps:
       - name: checkout source
         uses: actions/checkout@v3
-      - name: fetch stm32f4 clib
-        uses: actions/checkout@v3
-        with:
-          repository: STMicroelectronics/STM32CubeF4
-          # relative to $GITHUB_WORKSPACE 
-          path: stm32cubef4
-      - name: update and install gcc-arm-none-eabi
+      - name: install gcc-arm-none-eabi & openocd
         run: |
-          sudo apt update -y
-          sudo apt install -y gcc-arm-none-eabi
+          sudo apt-get update -y
+          sudo apt-get install -y gcc-arm-none-eabi openocd
         env:
           DEBIAN_FRONTEND: noninteractive
       - name: setup cmake
@@ -55,7 +49,7 @@ jobs:
         run: |
           mkdir $GITHUB_WORKSPACE/build
           cd build
-          cmake .. -DSTM32CUBEF4_BASE=$GITHUB_WORKSPACE/stm32cubef4
+          cmake .. -DCMAKE_BUILD_TYPE=Release
           make -j`nproc`
       - name: binary size details
         working-directory: build 
@@ -63,6 +57,12 @@ jobs:
       - name: binary object dump
         working-directory: build 
         run: make objdump
+      - name: archive compile commands 
+        uses: actions/upload-artifact@v3
+        with:
+          name: compile_commands.json
+          path: build/compile_commands.json
+          retention-days: 5
       - name: archive binary 
         uses: actions/upload-artifact@v3
         with:
