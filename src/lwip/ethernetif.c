@@ -1,6 +1,6 @@
 /**
  ******************************************************************************
- * @file    LwIP/LwIP_TCP_Echo_Server/Src/ethernetif.c
+ * @file    LwIP/LwIP_HTTP_Server_Socket_RTOS/Src/ethernetif.c
  * @author  MCD Application Team
  * @brief   This file implements Ethernet network interface drivers for lwIP
  ******************************************************************************
@@ -18,14 +18,14 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "ethernetif.h"
-#include "FreeRTOS.h"
-#include "lan8742.h"
-#include "lwip/netif.h"
-#include "lwip/opt.h"
+#include "../Components/lan8742/lan8742.h"
+#include "lwip/snmp.h"
+#include "lwip/stats.h"
+#include "lwip/tcpip.h"
 #include "lwip/timeouts.h"
 #include "netif/etharp.h"
+#include "netif/ethernet.h"
 #include "stm32h7xx_hal.h"
-#include "task.h"
 #include <string.h>
 
 /* Private typedef -----------------------------------------------------------*/
@@ -34,7 +34,8 @@
 #define TIME_WAITING_FOR_INPUT (osWaitForever)
 /* Stack size of the interface thread */
 #define INTERFACE_THREAD_STACK_SIZE (512)
-/* Network interface name */
+
+/* Define those to better describe your network interface. */
 #define IFNAME0 's'
 #define IFNAME1 't'
 
@@ -117,19 +118,20 @@ __attribute__((
 
 /* Variable Definitions */
 static uint8_t RxAllocStatus;
+
 osSemaphoreId RxPktSemaphore = NULL; /* Semaphore to signal incoming packets */
 
 TaskHandle_t EthIfThread; /* Handle of the interface thread */
 osSemaphoreId TxPktSemaphore =
     NULL; /* Semaphore to signal transmit packet complete */
 
-/* Global Ethernet handle*/
+/* Global Ethernet handle */
 ETH_HandleTypeDef EthHandle;
 ETH_TxPacketConfig TxConfig;
 
 /* Private function prototypes -----------------------------------------------*/
-u32_t sys_now(void);
-
+extern void Error_Handler(void);
+void ethernetif_input(void *argument);
 int32_t ETH_PHY_IO_Init(void);
 int32_t ETH_PHY_IO_DeInit(void);
 int32_t ETH_PHY_IO_ReadReg(uint32_t DevAddr, uint32_t RegAddr,
@@ -262,26 +264,25 @@ static void low_level_init(struct netif *netif) {
 }
 
 /**
- * @brief This function should do the actual transmission of the packet. The
- * packet is contained in the pbuf that is passed to the function. This pbuf
+ * This function should do the actual transmission of the packet. The packet is
+ * contained in the pbuf that is passed to the function. This pbuf
  * might be chained.
  *
  * @param netif the lwip network interface structure for this ethernetif
  * @param p the MAC packet to send (e.g. IP packet including MAC addresses and
  * type)
- * @return ERR_OK if the packet could be sent
- *         an err_t value if the packet couldn't be sent
+ * @return ERR_OK if the packet was sent, or ERR_IF if the packet was unable to
+ * be sent
  *
- * @note Returning ERR_MEM here if a DMA queue of your MAC is full can lead to
- *       strange results. You might consider waiting for space in the DMA queue
- *       to become available since the stack doesn't retry to send a packet
- *       dropped because of memory failure (except for the TCP timers).
+ * @note ERR_OK means the packet was sent (but not necessarily transmit
+ * complete), and ERR_IF means the packet has more chained buffers than what the
+ * interface supports.
  */
 static err_t low_level_output(struct netif *netif, struct pbuf *p) {
   uint32_t i = 0U;
   struct pbuf *q = NULL;
   err_t errval = ERR_OK;
-  ETH_BufferTypeDef Txbuffer[ETH_TX_DESC_CNT] = {0};
+  ETH_BufferTypeDef Txbuffer[ETH_TX_DESC_CNT];
 
   memset(Txbuffer, 0, ETH_TX_DESC_CNT * sizeof(ETH_BufferTypeDef));
 
@@ -307,7 +308,14 @@ static err_t low_level_output(struct netif *netif, struct pbuf *p) {
   TxConfig.TxBuffer = Txbuffer;
   TxConfig.pData = p;
 
-  HAL_ETH_Transmit(&EthHandle, &TxConfig, ETH_DMA_TRANSMIT_TIMEOUT);
+  pbuf_ref(p);
+
+  HAL_ETH_Transmit_IT(&EthHandle, &TxConfig);
+
+  while (osSemaphoreAcquire(TxPktSemaphore, TIME_WAITING_FOR_INPUT) != osOK) {
+  }
+
+  HAL_ETH_ReleaseTxPacket(&EthHandle);
 
   return errval;
 }
@@ -326,6 +334,7 @@ static struct pbuf *low_level_input(struct netif *netif) {
   if (RxAllocStatus == RX_ALLOC_OK) {
     HAL_ETH_ReadData(&EthHandle, (void **)&p);
   }
+
   return p;
 }
 
@@ -374,8 +383,17 @@ err_t ethernetif_init(struct netif *netif) {
   netif->hostname = "lwip";
 #endif /* LWIP_NETIF_HOSTNAME */
 
+  /*
+   * Initialize the snmp variables and counters inside the struct netif.
+   * The last argument should be replaced with your link speed, in units
+   * of bits per second.
+   */
+  MIB2_INIT_NETIF(netif, snmp_ifType_ethernet_csmacd,
+                  LINK_SPEED_OF_YOUR_NETIF_IN_BPS);
+
   netif->name[0] = IFNAME0;
   netif->name[1] = IFNAME1;
+
   /* We directly use etharp_output() here to save a function call.
    * You can instead declare your own function an call etharp_output()
    * from it if you have to do some checks before sending (e.g. if link
@@ -397,10 +415,10 @@ err_t ethernetif_init(struct netif *netif) {
 void pbuf_free_custom(struct pbuf *p) {
   struct pbuf_custom *custom_pbuf = (struct pbuf_custom *)p;
   LWIP_MEMPOOL_FREE(RX_POOL, custom_pbuf);
-  /* If the Rx Buffer Pool was exhausted, signal the ethernetif_input task to
-   * call HAL_ETH_GetRxDataBuffer to rebuild the Rx descriptors. */
+
   if (RxAllocStatus == RX_ALLOC_ERROR) {
     RxAllocStatus = RX_ALLOC_OK;
+    osSemaphoreRelease(RxPktSemaphore);
   }
 }
 
@@ -411,6 +429,7 @@ void pbuf_free_custom(struct pbuf *p) {
  * @retval Current Time value
  */
 u32_t sys_now(void) { return HAL_GetTick(); }
+
 /*******************************************************************************
                        Ethernet MSP Routines
 *******************************************************************************/
@@ -465,10 +484,47 @@ void HAL_ETH_MspInit(ETH_HandleTypeDef *heth) {
   GPIO_InitStructure.Pin = GPIO_PIN_2 | GPIO_PIN_11 | GPIO_PIN_13;
   HAL_GPIO_Init(GPIOG, &GPIO_InitStructure);
 
+  /* Enable the Ethernet global Interrupt */
+  HAL_NVIC_SetPriority(ETH_IRQn, 0x7, 0);
+  HAL_NVIC_EnableIRQ(ETH_IRQn);
+
   /* Enable Ethernet clocks */
   __HAL_RCC_ETH1MAC_CLK_ENABLE();
   __HAL_RCC_ETH1TX_CLK_ENABLE();
   __HAL_RCC_ETH1RX_CLK_ENABLE();
+}
+
+/**
+ * @brief  Ethernet Rx Transfer completed callback
+ * @param  heth: ETH handle
+ * @retval None
+ */
+void HAL_ETH_RxCpltCallback(ETH_HandleTypeDef *heth) {
+  osSemaphoreRelease(RxPktSemaphore);
+}
+
+/**
+ * @brief  Ethernet Tx Transfer completed callback
+ * @param  heth: ETH handle
+ * @retval None
+ */
+void HAL_ETH_TxCpltCallback(ETH_HandleTypeDef *heth) {
+  osSemaphoreRelease(TxPktSemaphore);
+}
+
+/**
+ * @brief  Ethernet DMA transfer error callback
+ * @param  heth: ETH handle
+ * @retval None
+ */
+void HAL_ETH_ErrorCallback(ETH_HandleTypeDef *heth) {
+  if ((HAL_ETH_GetDMAError(heth) & ETH_DMACSR_RBU) == ETH_DMACSR_RBU) {
+    osSemaphoreRelease(RxPktSemaphore);
+  }
+
+  if ((HAL_ETH_GetDMAError(heth) & ETH_DMACSR_TBU) == ETH_DMACSR_TBU) {
+    osSemaphoreRelease(TxPktSemaphore);
+  }
 }
 
 /*******************************************************************************
@@ -542,7 +598,7 @@ int32_t ETH_PHY_IO_GetTick(void) { return HAL_GetTick(); }
  * @param  argument: netif
  * @retval None
  */
-void ethernet_link_task(void *argument) {
+void ethernet_link_thread(void *argument) {
   ETH_MACConfigTypeDef MACConf = {0};
   int32_t PHYLinkState = 0U;
   uint32_t linkchanged = 0U, speed = 0U, duplex = 0U;
@@ -594,9 +650,11 @@ void ethernet_link_task(void *argument) {
         netif_set_link_up(netif);
       }
     }
-    vTaskDelay(pdMS_TO_TICKS(100));
+
+    osDelay(100);
   }
 }
+
 void HAL_ETH_RxAllocateCallback(uint8_t **buff) {
   struct pbuf_custom *p = LWIP_MEMPOOL_ALLOC(RX_POOL);
   if (p) {
