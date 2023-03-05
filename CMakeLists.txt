@@ -22,7 +22,6 @@ project(
 
 include(cubeh7)
 include(openocd)
-include(freertos)
 
 set(GCC_FLAGS "-Wno-unused-parameter -Wpedantic -fno-builtin -Wall -Wextra -ffunction-sections -fdata-sections -fomit-frame-pointer")
 message(STATUS "Appending GCC flags: ${GCC_FLAGS}")
@@ -64,12 +63,14 @@ add_executable(
   src/main.c
   src/lwip/app_ethernet.c
   src/lwip/ethernetif.c
-  src/syscalls.c
-  src/sysmem.c
-  src/tcp_echoserver.c
-  src/stm32h7xx_it.c
-  src/startup_stm32h723zgtx.s
-  src/system_stm32h7xx.c
+  src/core/syscalls.c
+  src/core/sysmem.c
+  src/core/cbuffer.c
+  src/core/logger.c
+  src/core/tcp_echoserver.c
+  src/core/stm32h7xx_it.c
+  src/core/system_stm32h7xx.c
+  src/startup/startup_stm32h723zgtx.s
   ${STM32CUBEH7_SRC}/Drivers/BSP/Components/lan8742/lan8742.c
   ${STM32CUBEH7_SRC}/Drivers/BSP/STM32H7xx_Nucleo/stm32h7xx_nucleo.c
   ${LWIP_SRC}
