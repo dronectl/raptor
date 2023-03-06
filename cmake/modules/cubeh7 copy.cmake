@@ -71,22 +71,23 @@ function(fetch_cubeh7)
     ${LWIP_SRC}
     PARENT_SCOPE
   )
-  file(
-    GLOB
-    STM32CUBEH7_HAL_SRC
-    CONFIGURE_DEPENDS
-    "${stm32h7_SOURCE_DIR}/Drivers/STM32H7xx_HAL_Driver/Src/*.c"
-  )
-  list(
-    REMOVE_ITEM
-    STM32CUBEH7_HAL_SRC
-    "${stm32h7_SOURCE_DIR}/Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_timebase_rtc_alarm_template.c"
-    "${stm32h7_SOURCE_DIR}/Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_timebase_rtc_wakeup_template.c"
-    "${stm32h7_SOURCE_DIR}/Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_i2s_ex.c"
-  )
   set(
     STM32CUBEH7_HAL_SRC 
-    ${STM32CUBEH7_HAL_SRC}
+    ${stm32h7_SOURCE_DIR}/Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal.c
+    ${stm32h7_SOURCE_DIR}/Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_adc.c
+    ${stm32h7_SOURCE_DIR}/Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_cec.c
+    ${stm32h7_SOURCE_DIR}/Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_dma.c
+    ${stm32h7_SOURCE_DIR}/Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_dma2d.c
+    ${stm32h7_SOURCE_DIR}/Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_eth.c
+    ${stm32h7_SOURCE_DIR}/Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_eth_ex.c
+    ${stm32h7_SOURCE_DIR}/Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_gpio.c
+    ${stm32h7_SOURCE_DIR}/Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_flash.c
+    ${stm32h7_SOURCE_DIR}/Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_mdios.c
+    ${stm32h7_SOURCE_DIR}/Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_pwr.c
+    ${stm32h7_SOURCE_DIR}/Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_pwr_ex.c
+    ${stm32h7_SOURCE_DIR}/Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_tim.c
+    ${stm32h7_SOURCE_DIR}/Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_rcc.c
+    ${stm32h7_SOURCE_DIR}/Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_cortex.c
     PARENT_SCOPE
   )
   message(DEBUG "Exporting include paths: ${STM32CUBEH7_CMSIS_INCLUDE} ${STM32CUBEH7_BSP_INCLUDE} ${LWIP_INCLUDE}")
