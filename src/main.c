@@ -4,6 +4,7 @@
 #include "app_ethernet.h"
 #include "config.h"
 #include "ethernetif.h"
+#include "logger.h"
 #include "lwip/tcpip.h"
 #include "netif/ethernet.h"
 #include "stm32h723xx.h"
@@ -14,6 +15,7 @@
 
 TaskHandle_t start_handle;
 TaskHandle_t tcp_handle;
+TaskHandle_t logger_handle;
 TaskHandle_t link_handle;
 TaskHandle_t dhcp_handle;
 struct netif gnetif;
@@ -138,9 +140,8 @@ int main(void) {
   /* Configure the LEDs ...*/
   bsp_config();
   BaseType_t x_returned;
-  x_returned =
-      xTaskCreate(start_task, "start_task", configMINIMAL_STACK_SIZE * 2, NULL,
-                  tskIDLE_PRIORITY + 24, &start_handle);
+  x_returned = xTaskCreate(start_task, "start_task", configMINIMAL_STACK_SIZE * 2, NULL,
+                           tskIDLE_PRIORITY + 24, &start_handle);
   configASSERT(start_handle);
   if (x_returned != pdPASS) {
     vTaskDelete(start_handle);
@@ -149,19 +150,26 @@ int main(void) {
 }
 
 void start_task(void *pv_params) {
+  BaseType_t x_returned;
   /* Create tcp_ip stack thread */
   tcpip_init(NULL, NULL);
 
   /* Initialize the LwIP stack */
   netconfig_init();
-
-  BaseType_t x_returned =
-      xTaskCreate(tcp_server_task, "tcp_task", configMINIMAL_STACK_SIZE, NULL,
-                  tskIDLE_PRIORITY + 32, &tcp_handle);
+  x_returned = xTaskCreate(logger_task, "logging_task", configMINIMAL_STACK_SIZE * 2, NULL,
+                           tskIDLE_PRIORITY + 5, &logger_handle);
+  configASSERT(logger_handle);
+  if (x_returned != pdPASS) {
+    vTaskDelete(logger_handle);
+  }
+  vTaskDelay(100);
+  x_returned = xTaskCreate(tcp_server_task, "tcp_task", configMINIMAL_STACK_SIZE, NULL,
+                           tskIDLE_PRIORITY + 32, &tcp_handle);
   configASSERT(tcp_handle);
   if (x_returned != pdPASS) {
     vTaskDelete(tcp_handle);
   }
+
   for (;;) {
     /* Delete the Init Thread */
     vTaskDelete(start_handle);
@@ -183,18 +191,14 @@ static void netconfig_init(void) {
   ip_addr_set_zero_ip4(&netmask);
   ip_addr_set_zero_ip4(&gw);
 #else
-
   /* IP address default setting */
   IP4_ADDR(&ipaddr, IP_ADDR0, IP_ADDR1, IP_ADDR2, IP_ADDR3);
-  IP4_ADDR(&netmask, NETMASK_ADDR0, NETMASK_ADDR1, NETMASK_ADDR2,
-           NETMASK_ADDR3);
+  IP4_ADDR(&netmask, NETMASK_ADDR0, NETMASK_ADDR1, NETMASK_ADDR2, NETMASK_ADDR3);
   IP4_ADDR(&gw, GW_ADDR0, GW_ADDR1, GW_ADDR2, GW_ADDR3);
-
 #endif
 
   /* add the network interface */
-  netif_add(&gnetif, &ipaddr, &netmask, &gw, NULL, &ethernetif_init,
-            &ethernet_input);
+  netif_add(&gnetif, &ipaddr, &netmask, &gw, NULL, &ethernetif_init, &ethernet_input);
 
   /*  Registers the default network interface */
   netif_set_default(&gnetif);
@@ -203,9 +207,7 @@ static void netconfig_init(void) {
   BaseType_t x_returned;
 #if LWIP_NETIF_LINK_CALLBACK
   netif_set_link_callback(&gnetif, ethernet_link_status_updated);
-
-  x_returned = xTaskCreate(ethernet_link_thread, "eth_link_task",
-                           configMINIMAL_STACK_SIZE, &gnetif,
+  x_returned = xTaskCreate(ethernet_link_thread, "eth_link_task", configMINIMAL_STACK_SIZE, &gnetif,
                            tskIDLE_PRIORITY + 24, &link_handle);
   configASSERT(link_handle);
   if (x_returned != pdPASS) {
@@ -214,8 +216,8 @@ static void netconfig_init(void) {
 #endif
 
 #if LWIP_DHCP
-  x_returned = xTaskCreate(dhcp_task, "dhcp_task", configMINIMAL_STACK_SIZE,
-                           &gnetif, tskIDLE_PRIORITY + 16, &dhcp_handle);
+  x_returned = xTaskCreate(dhcp_task, "dhcp_task", configMINIMAL_STACK_SIZE, &gnetif,
+                           tskIDLE_PRIORITY + 16, &dhcp_handle);
   configASSERT(dhcp_handle);
   if (x_returned != pdPASS) {
     vTaskDelete(dhcp_handle);
@@ -286,9 +288,8 @@ static void system_clock_config(void) {
       ;
   }
   /* Select PLL as system clock source and configure  bus clocks dividers */
-  RCC_ClkInitStruct.ClockType =
-      (RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_D1PCLK1 |
-       RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2 | RCC_CLOCKTYPE_D3PCLK1);
+  RCC_ClkInitStruct.ClockType = (RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_D1PCLK1 |
+                                 RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2 | RCC_CLOCKTYPE_D3PCLK1);
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.SYSCLKDivider = RCC_SYSCLK_DIV1;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_HCLK_DIV2;
