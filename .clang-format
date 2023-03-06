@@ -2,5 +2,6 @@
 AllowShortLoopsOnASingleLine: true
 IndentCaseLabels: true
 UseTab: Never
+ColumnLimit: 100
 UseCRLF: false
 IndentWidth: 2
