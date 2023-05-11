@@ -65,6 +65,7 @@ add_executable(
   src/lwip/app_ethernet.c
   src/lwip/ethernetif.c
   src/syscalls.c
+  src/drivers/hx711.c
   src/sysmem.c
   src/tcp_echoserver.c
   src/stm32h7xx_it.c
