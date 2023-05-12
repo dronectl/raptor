@@ -10,7 +10,7 @@
 #include "stm32h7xx_hal.h"
 #include "stm32h7xx_nucleo.h"
 #include "task.h"
-#include "tcp_echoserver.h"
+#include "hx711.h"
 
 TaskHandle_t start_handle;
 TaskHandle_t tcp_handle;
@@ -149,14 +149,8 @@ int main(void) {
 }
 
 void start_task(void *pv_params) {
-  /* Create tcp_ip stack thread */
-  tcpip_init(NULL, NULL);
-
-  /* Initialize the LwIP stack */
-  netconfig_init();
-
   BaseType_t x_returned =
-      xTaskCreate(tcp_server_task, "tcp_task", configMINIMAL_STACK_SIZE, NULL,
+      xTaskCreate(hx711_task, "hx711_task", configMINIMAL_STACK_SIZE, NULL,
                   tskIDLE_PRIORITY + 32, &tcp_handle);
   configASSERT(tcp_handle);
   if (x_returned != pdPASS) {
@@ -166,61 +160,6 @@ void start_task(void *pv_params) {
     /* Delete the Init Thread */
     vTaskDelete(start_handle);
   }
-}
-
-/**
- * @brief  Setup the network interface
- * @param  None
- * @retval None
- */
-static void netconfig_init(void) {
-  ip_addr_t ipaddr;
-  ip_addr_t netmask;
-  ip_addr_t gw;
-
-#if LWIP_DHCP
-  ip_addr_set_zero_ip4(&ipaddr);
-  ip_addr_set_zero_ip4(&netmask);
-  ip_addr_set_zero_ip4(&gw);
-#else
-
-  /* IP address default setting */
-  IP4_ADDR(&ipaddr, IP_ADDR0, IP_ADDR1, IP_ADDR2, IP_ADDR3);
-  IP4_ADDR(&netmask, NETMASK_ADDR0, NETMASK_ADDR1, NETMASK_ADDR2,
-           NETMASK_ADDR3);
-  IP4_ADDR(&gw, GW_ADDR0, GW_ADDR1, GW_ADDR2, GW_ADDR3);
-
-#endif
-
-  /* add the network interface */
-  netif_add(&gnetif, &ipaddr, &netmask, &gw, NULL, &ethernetif_init,
-            &ethernet_input);
-
-  /*  Registers the default network interface */
-  netif_set_default(&gnetif);
-
-  ethernet_link_status_updated(&gnetif);
-  BaseType_t x_returned;
-#if LWIP_NETIF_LINK_CALLBACK
-  netif_set_link_callback(&gnetif, ethernet_link_status_updated);
-
-  x_returned = xTaskCreate(ethernet_link_thread, "eth_link_task",
-                           configMINIMAL_STACK_SIZE, &gnetif,
-                           tskIDLE_PRIORITY + 24, &link_handle);
-  configASSERT(link_handle);
-  if (x_returned != pdPASS) {
-    vTaskDelete(link_handle);
-  }
-#endif
-
-#if LWIP_DHCP
-  x_returned = xTaskCreate(dhcp_task, "dhcp_task", configMINIMAL_STACK_SIZE,
-                           &gnetif, tskIDLE_PRIORITY + 16, &dhcp_handle);
-  configASSERT(dhcp_handle);
-  if (x_returned != pdPASS) {
-    vTaskDelete(dhcp_handle);
-  }
-#endif
 }
 
 static void bsp_config(void) {
