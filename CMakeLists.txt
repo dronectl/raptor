@@ -67,7 +67,6 @@ add_executable(
   src/syscalls.c
   src/drivers/hx711.c
   src/sysmem.c
-  src/tcp_echoserver.c
   src/stm32h7xx_it.c
   src/startup_stm32h723zgtx.s
   src/system_stm32h7xx.c
