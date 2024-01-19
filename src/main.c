@@ -20,7 +20,6 @@ struct netif gnetif;
 
 /* Private function prototypes -----------------------------------------------*/
 static void start_task(void *pv_params);
-static void netconfig_init(void);
 static void system_clock_config(void);
 static void bsp_config(void);
 static void mpu_config(void);

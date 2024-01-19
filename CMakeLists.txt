@@ -66,6 +66,7 @@ add_executable(
   src/lwip/ethernetif.c
   src/syscalls.c
   src/drivers/hx711.c
+  src/drivers/bme280.c
   src/sysmem.c
   src/stm32h7xx_it.c
   src/startup_stm32h723zgtx.s
