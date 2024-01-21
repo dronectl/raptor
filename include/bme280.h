@@ -108,12 +108,12 @@ typedef struct bme280_calib_t {
   int16_t dig_p7;
   int16_t dig_p8;
   int16_t dig_p9;
-  uint16_t dig_h1;
+  uint16_t dig_h1; // uint8_t (space optimized due to struct padding)
   int16_t dig_h2;
-  uint16_t dig_h3;
+  uint16_t dig_h3; // uint8_t (space optimized due to struct padding)
   int16_t dig_h4;
   int16_t dig_h5;
-  uint16_t dig_h6;
+  uint16_t dig_h6; // uint8_t (space optimized due to struct padding)
   int16_t t_fine;
 } bme280_calib_t;
 
@@ -133,10 +133,8 @@ typedef struct bme280_dev_t {
 } bme280_dev_t;
 
 void bme280_init(bme280_dev_t *dev);
-void bme280_hw_reset(bme280_dev_t *dev);
+void bme280_reset(bme280_dev_t *dev);
 void bme280_sleep(bme280_dev_t *dev);
 void bme280_read(bme280_dev_t *dev, bme280_meas_t *measurements);
-void bme280_enable_measurements(bme280_dev_t *dev);
-void bme280_set_power_mode(bme280_dev_t *dev, const enum BME280_PModes mode);
 
 #endif // __BME280_H__

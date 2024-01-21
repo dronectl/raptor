@@ -73,6 +73,52 @@ static void convert_humidity(bme280_meas_t *measurements, bme280_calib_t *calib_
   }
 }
 
+static void load_calibration(bme280_dev_t *dev) {
+  uint8_t rx_buf[BME280_CALIB_BLK0_SIZE] = {0};
+  bme280_calib_t *calib_data = &dev->calib_data;
+  HAL_I2C_Mem_Read(&dev->i2c, BME280_DEFAULT_DEV_ADDR, BME280_CALIB00, I2C_MEMADD_SIZE_8BIT, rx_buf, BME280_CALIB_BLK0_SIZE, HAL_MAX_DELAY);
+  calib_data->dig_t1 = (uint16_t)(rx_buf[1] << 8) | (uint16_t)rx_buf[0];
+  calib_data->dig_t2 = (int16_t)((rx_buf[3] << 8) | (int16_t)rx_buf[2]);
+  calib_data->dig_t3 = (int16_t)((rx_buf[5] << 8) | (int16_t)rx_buf[4]);
+  calib_data->dig_p1 = (uint16_t)((rx_buf[7] << 8) | (uint16_t)rx_buf[6]);
+  calib_data->dig_p2 = (int16_t)((rx_buf[9] << 8) | (int16_t)rx_buf[8]);
+  calib_data->dig_p3 = (int16_t)((rx_buf[11] << 8) | (int16_t)rx_buf[10]);
+  calib_data->dig_p4 = (int16_t)((rx_buf[13] << 8) | (int16_t)rx_buf[12]);
+  calib_data->dig_p5 = (int16_t)((rx_buf[15] << 8) | (int16_t)rx_buf[14]);
+  calib_data->dig_p6 = (int16_t)((rx_buf[17] << 8) | (int16_t)rx_buf[16]);
+  calib_data->dig_p7 = (int16_t)((rx_buf[19] << 8) | (int16_t)rx_buf[18]);
+  calib_data->dig_p8 = (int16_t)((rx_buf[21] << 8) | (int16_t)rx_buf[20]);
+  calib_data->dig_p9 = (int16_t)((rx_buf[23] << 8) | (int16_t)rx_buf[22]);
+  calib_data->dig_h1 = (uint16_t)rx_buf[24];
+  // clear buffer
+  for (int i = 0; i < BME280_CALIB_BLK0_SIZE - 1; i++) {
+    rx_buf[i] = 0;
+  }
+  HAL_I2C_Mem_Read(&dev->i2c, BME280_DEFAULT_DEV_ADDR, BME280_CALIB26, I2C_MEMADD_SIZE_8BIT, rx_buf, BME280_CALIB_BLK1_SIZE, HAL_MAX_DELAY);
+  calib_data->dig_h2 = (int16_t)(rx_buf[1] << 8) | (int16_t)rx_buf[0];
+  calib_data->dig_h3 = (uint16_t)rx_buf[2];
+  calib_data->dig_h4 = (int16_t)((rx_buf[3] << 4) | (int16_t)(rx_buf[4] & 0xF));
+  calib_data->dig_h5 = (int16_t)((rx_buf[5] << 4) | (int16_t)(rx_buf[4] >> 4));
+  calib_data->dig_h6 = (int16_t)rx_buf[6];
+  printf("BME280 | Loaded calibration parameters\r\n");
+}
+
+static void enable_measurements(bme280_dev_t *dev) {
+  uint8_t pload = 0x0;
+  pload |= BME280_OSRS_T(BME280_OSRS_1X);
+  pload |= BME280_OSRS_P(BME280_OSRS_1X);
+  HAL_I2C_Mem_Write(&dev->i2c, BME280_DEFAULT_DEV_ADDR, BME280_CTRL_MEAS, I2C_MEMADD_SIZE_8BIT, &pload, 1, HAL_MAX_DELAY);
+  pload = BME280_OSRS_H(BME280_OSRS_1X);
+  HAL_I2C_Mem_Write(&dev->i2c, BME280_DEFAULT_DEV_ADDR, BME280_CTRL_HUM, I2C_MEMADD_SIZE_8BIT, &pload, 1, HAL_MAX_DELAY);
+}
+
+static void set_power_mode(bme280_dev_t *dev, const enum BME280_PModes mode) {
+  uint8_t ctrl_reg;
+  HAL_I2C_Mem_Read(&dev->i2c, BME280_DEFAULT_DEV_ADDR, BME280_CTRL_MEAS, I2C_MEMADD_SIZE_8BIT, &ctrl_reg, 1, HAL_MAX_DELAY);
+  ctrl_reg |= BME280_PMODE(mode);
+  HAL_I2C_Mem_Write(&dev->i2c, BME280_DEFAULT_DEV_ADDR, BME280_CTRL_MEAS, I2C_MEMADD_SIZE_8BIT, &ctrl_reg, 1, HAL_MAX_DELAY);
+}
+
 static void verify(bme280_dev_t *dev) {
   // populate chip ID and verify
   HAL_I2C_Mem_Read(&dev->i2c, BME280_DEFAULT_DEV_ADDR, BME280_ID, I2C_MEMADD_SIZE_8BIT, &dev->chip_id, 1, HAL_MAX_DELAY);
@@ -88,33 +134,6 @@ void bme280_init(bme280_dev_t *dev) {
   // set power mode
   bme280_set_power_mode(dev, BME280_NORMAL);
   printf("BME280 | Sensor %d initialized\r\n", dev->chip_id);
-}
-
-void bme280_load_calibration(bme280_dev_t *dev) {
-  uint8_t rx_buf[BME280_CALIB_BLK0_SIZE] = {0};
-  bme280_calib_t *calib_data = &dev->calib_data;
-  HAL_I2C_Mem_Read(&dev->i2c, BME280_DEFAULT_DEV_ADDR, BME280_CALIB00, I2C_MEMADD_SIZE_8BIT, rx_buf, BME280_CALIB_BLK0_SIZE, HAL_MAX_DELAY);
-  calib_data->dig_t1 = (uint16_t)(rx_buf[1] << 8) | (uint16_t)rx_buf[0];
-  calib_data->dig_t2 = (int16_t)((uint16_t)(rx_buf[3] << 8) | (uint16_t)rx_buf[2]);
-  calib_data->dig_t3 = (int16_t)((uint16_t)(rx_buf[5] << 8) | (uint16_t)rx_buf[4]);
-  HAL_I2C_Mem_Read(&dev->i2c, BME280_DEFAULT_DEV_ADDR, BME280_CALIB26, I2C_MEMADD_SIZE_8BIT, rx_buf, BME280_CALIB_BLK0_SIZE, HAL_MAX_DELAY);
-  printf("BME280 | Loaded calibration parameters\r\n");
-}
-
-void bme280_enable_measurements(bme280_dev_t *dev) {
-  uint8_t pload = 0x0;
-  pload |= BME280_OSRS_T(BME280_OSRS_1X);
-  pload |= BME280_OSRS_P(BME280_OSRS_1X);
-  HAL_I2C_Mem_Write(&dev->i2c, BME280_DEFAULT_DEV_ADDR, BME280_CTRL_MEAS, I2C_MEMADD_SIZE_8BIT, &pload, 1, HAL_MAX_DELAY);
-  pload = BME280_OSRS_H(BME280_OSRS_1X);
-  HAL_I2C_Mem_Write(&dev->i2c, BME280_DEFAULT_DEV_ADDR, BME280_CTRL_HUM, I2C_MEMADD_SIZE_8BIT, &pload, 1, HAL_MAX_DELAY);
-}
-
-void bme280_set_power_mode(bme280_dev_t *dev, const enum BME280_PModes mode) {
-  uint8_t ctrl_reg;
-  HAL_I2C_Mem_Read(&dev->i2c, BME280_DEFAULT_DEV_ADDR, BME280_CTRL_MEAS, I2C_MEMADD_SIZE_8BIT, &ctrl_reg, 1, HAL_MAX_DELAY);
-  ctrl_reg |= BME280_PMODE(mode);
-  HAL_I2C_Mem_Write(&dev->i2c, BME280_DEFAULT_DEV_ADDR, BME280_CTRL_MEAS, I2C_MEMADD_SIZE_8BIT, &ctrl_reg, 1, HAL_MAX_DELAY);
 }
 
 void bme280_reset(bme280_dev_t *dev) {
