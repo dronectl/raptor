@@ -1,0 +1,10 @@
+{
+    "configurations": [
+        {
+            "name": "STM32H7",
+            "compileCommands": "${workspaceFolder}/build/compile_commands.json",
+            "intelliSenseMode": "gcc-arm"
+        }
+    ],
+    "version": 4
+}

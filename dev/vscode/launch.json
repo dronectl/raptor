@@ -1,0 +1,21 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "cortex-debug",
+            "request": "launch",
+            "servertype": "openocd",
+            "name": "Debug (OpenOCD)",
+            "cwd": "${workspaceRoot}",
+            "executable": "${workspaceRoot}/build/raptor.elf",
+            "device": "STM32H732",
+            "interface": "swd",
+            "rtos": "FreeRTOS",
+            "runToMain": true,
+            "configFiles": [
+                "${workspaceRoot}/tools/stm32h723.cfg"
+            ],
+            "svdFile": "${workspaceRoot}/tools/stm32h7x3.svd"
+        }
+    ]
+}
