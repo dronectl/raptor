@@ -68,6 +68,7 @@ add_executable(
   src/drivers/hx711.c
   src/drivers/bme280.c
   src/sysmem.c
+  src/health.c
   src/stm32h7xx_it.c
   src/startup_stm32h723zgtx.s
   src/system_stm32h7xx.c
