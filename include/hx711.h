@@ -1,6 +1,8 @@
 
-#include <stdint.h>
+#ifndef __HX711_H__
+#define __HX711_H__
 
+#include <stdint.h>
 #define MIN 0x80000
 #define MAX 0x7FFFF
 
@@ -18,3 +20,5 @@ uint32_t hx711_read(void);
 void hx711_task(void *pv_params);
 void hx711_shutdown(void);
 void hx711_boot(void);
+
+#endif // __HX711_H__

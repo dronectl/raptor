@@ -4,13 +4,13 @@
 #include "app_ethernet.h"
 #include "config.h"
 #include "ethernetif.h"
+#include "hx711.h"
 #include "lwip/tcpip.h"
 #include "netif/ethernet.h"
 #include "stm32h723xx.h"
 #include "stm32h7xx_hal.h"
 #include "stm32h7xx_nucleo.h"
 #include "task.h"
-#include "hx711.h"
 
 TaskHandle_t start_handle;
 TaskHandle_t tcp_handle;
@@ -137,9 +137,7 @@ int main(void) {
   /* Configure the LEDs ...*/
   bsp_config();
   BaseType_t x_returned;
-  x_returned =
-      xTaskCreate(start_task, "start_task", configMINIMAL_STACK_SIZE * 2, NULL,
-                  tskIDLE_PRIORITY + 24, &start_handle);
+  x_returned = xTaskCreate(start_task, "start_task", configMINIMAL_STACK_SIZE * 2, NULL, tskIDLE_PRIORITY + 24, &start_handle);
   configASSERT(start_handle);
   if (x_returned != pdPASS) {
     vTaskDelete(start_handle);
@@ -148,9 +146,7 @@ int main(void) {
 }
 
 void start_task(void *pv_params) {
-  BaseType_t x_returned =
-      xTaskCreate(hx711_task, "hx711_task", configMINIMAL_STACK_SIZE, NULL,
-                  tskIDLE_PRIORITY + 32, &tcp_handle);
+  BaseType_t x_returned = xTaskCreate(hx711_task, "hx711_task", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 32, &tcp_handle);
   configASSERT(tcp_handle);
   if (x_returned != pdPASS) {
     vTaskDelete(tcp_handle);

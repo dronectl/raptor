@@ -128,11 +128,11 @@ static void verify(bme280_dev_t *dev) {
 void bme280_init(bme280_dev_t *dev) {
   bme280_reset(dev);
   verify(dev);
-  bme280_load_calibration(dev);
+  load_calibration(dev);
   // configure measurement subsystem
-  bme280_enable_measurements(dev);
+  enable_measurements(dev);
   // set power mode
-  bme280_set_power_mode(dev, BME280_NORMAL);
+  set_power_mode(dev, BME280_NORMAL);
   printf("BME280 | Sensor %d initialized\r\n", dev->chip_id);
 }
 
@@ -172,5 +172,5 @@ void bme280_read(bme280_dev_t *dev, bme280_meas_t *measurements) {
 }
 
 void bme280_sleep(bme280_dev_t *dev) {
-  bme280_set_power_mode(dev, BME280_SLEEP);
+  set_power_mode(dev, BME280_SLEEP);
 }
