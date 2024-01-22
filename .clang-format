@@ -4,3 +4,4 @@ IndentCaseLabels: true
 UseTab: Never
 UseCRLF: false
 IndentWidth: 2
+ColumnLimit: 0
