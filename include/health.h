@@ -2,6 +2,8 @@
 #ifndef __HEALTH_H__
 #define __HEALTH_H__
 
+#include <stdint.h>
+
 /**
  * @brief Health FSM States
  *
