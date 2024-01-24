@@ -1,6 +1,18 @@
-# USB Permissions in WSL
+# Advanced Troubleshooting
 
-In order for the Cortex-Debugger extension to work in WSL, we need to have access to the USB plugin for STLink. In order to do this we need to define a `udev` rule in WSL. Create a new file `/etc/udev/rules.d/60-openocd.rules60-openocd.rules` and add the following line:
+If you are here you clearly need help. Hopefully this collection of fixes will address your problem.
+
+
+## Cortex Debugger in WSL
+
+If I try to run a debug instance in VSCode from my Ubuntu 22.04 WSL2 environment I get the following error:
+```bash
+...
+Error: libusb_open failed with LIBUSB_ERROR_NOT_FOUND
+Error: open failed
+```
+
+In order for the `cortex-debugger` extension to work in WSL, we need to have the correct access permissions to the USB plugin for STLink. In order to do this we need to define a `udev` rule in WSL. Create a new file `/etc/udev/rules.d/60-openocd.rules60-openocd.rules` and add the following line:
 ```
 ATTRS{idVendor}=="0483", ATTRS{idProduct}=="374e", MODE="666", GROUP="plugdev", TAG+="uaccess"
 ```
