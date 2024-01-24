@@ -17,7 +17,7 @@ project(
   ${EXECUTABLE}
   LANGUAGES C ASM
   VERSION 0.1.0
-  DESCRIPTION "Hardware in the loop test executor and reporting aggregation system."
+  DESCRIPTION "Propulsion test executor."
 )
 
 include(cubeh7)
@@ -94,4 +94,4 @@ add_custom_target(size ALL ${ARM_SIZE} -B -d --target=binary ${EXECUTABLE}.elf D
 add_custom_target(hex ALL ${ARM_OBJCPY} -O ihex ${EXECUTABLE}.elf ${EXECUTABLE}.hex DEPENDS ${EXECUTABLE})
 add_custom_target(bin ALL ${ARM_OBJCPY} -O binary -S ${EXECUTABLE}.elf ${EXECUTABLE}.bin DEPENDS ${EXECUTABLE})
 add_custom_target(objdump ${ARM_OBJDUMP} -S ${EXECUTABLE}.elf DEPENDS ${EXECUTABLE})
-add_custom_target(flash DEPENDS size COMMAND ${OPENOCD_EXECUTABLE} -f../tools/stm32h723.cfg -c "program ${EXECUTABLE}.elf verify reset exit")
+add_custom_target(flash DEPENDS size COMMAND ${OPENOCD_EXECUTABLE} -f../utils/stm32h723.cfg -c "program ${EXECUTABLE}.elf verify reset exit")
