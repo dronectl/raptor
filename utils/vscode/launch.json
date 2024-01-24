@@ -13,9 +13,9 @@
             "rtos": "FreeRTOS",
             "runToMain": true,
             "configFiles": [
-                "${workspaceRoot}/tools/stm32h723.cfg"
+                "${workspaceRoot}/utils/stm32h723.cfg"
             ],
-            "svdFile": "${workspaceRoot}/tools/stm32h7x3.svd"
+            "svdFile": "${workspaceRoot}/utils/stm32h7x3.svd"
         }
     ]
 }
