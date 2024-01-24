@@ -70,6 +70,7 @@ add_executable(
   src/sysmem.c
   src/health.c
   src/stm32h7xx_it.c
+  src/stm32h7xx_hal_msp.c
   src/startup_stm32h723zgtx.s
   src/system_stm32h7xx.c
   ${STM32CUBEH7_SRC}/Drivers/BSP/Components/lan8742/lan8742.c
