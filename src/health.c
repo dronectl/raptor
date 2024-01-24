@@ -8,12 +8,7 @@
 static health_report_t health_report;
 
 // devices
-I2C_HandleTypeDef i2c_handle;
 bme280_dev_t bme280;
-
-static void ehandle(void) {
-  return;
-}
 
 #ifndef RAPTOR_DEBUG
 static IWDG_HandleTypeDef iwdg_handle;
@@ -42,7 +37,6 @@ static enum HealthState fsm_tick(const enum HealthState state) {
 #ifndef RAPTOR_DEBUG
       configure_watchdog();
 #endif // RAPTOR_DEBUG
-      bme280.i2c = i2c_handle;
       bme280_init(&bme280);
       next_state = HEALTH_SERVICE;
       break;
@@ -58,15 +52,16 @@ static enum HealthState fsm_tick(const enum HealthState state) {
 #endif // RAPTOR_DEBUG
       next_state = HEALTH_READ;
       break;
-    case HEALTH_READ:
+    case HEALTH_READ: {
       // read from alive sensors
-      bme280_meas_t bme280_meas;
+      bme280_meas_t bme280_meas = {.humidity = 0.0f, .humidity_raw = 0, .pressure = 0.0f, .pressure_raw = 0, .temperature = 0.0f, .temperature_raw = 0};
       bme280_read(&bme280, &bme280_meas);
       health_report.humidity = bme280_meas.humidity;
       health_report.pressure = bme280_meas.pressure;
       health_report.temperature = bme280_meas.temperature;
       next_state = HEALTH_REPORT;
       break;
+    }
     case HEALTH_REPORT:
       // export health alive telemetry
       next_state = HEALTH_SERVICE;
@@ -78,9 +73,12 @@ static enum HealthState fsm_tick(const enum HealthState state) {
   return next_state;
 }
 
-void health_t_main(void *pv_params) {
+void health_main(void *pv_params) {
   const TickType_t delay = 100 / portTICK_PERIOD_MS;
   enum HealthState state = HEALTH_INIT;
+  // get i2c2 handle and set bme280
+  I2C_HandleTypeDef hi2c2 = *(I2C_HandleTypeDef *)pv_params;
+  bme280.i2c = hi2c2;
   while (1) {
     state = fsm_tick(state);
     vTaskDelay(delay);
