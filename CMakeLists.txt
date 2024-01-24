@@ -69,6 +69,7 @@ add_executable(
   src/drivers/bme280.c
   src/sysmem.c
   src/health.c
+  src/freertos_openocd.c
   src/stm32h7xx_it.c
   src/stm32h7xx_hal_msp.c
   src/startup_stm32h723zgtx.s
