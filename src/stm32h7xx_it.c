@@ -18,7 +18,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32h7xx_it.h"
-#include "cmsis_os.h"
+#include "FreeRTOS.h"
 #include "stm32h7xx_hal.h"
 
 /* Private typedef -----------------------------------------------------------*/
@@ -104,6 +104,15 @@ void DebugMon_Handler(void) {}
  * @retval None
  */
 void ETH_IRQHandler(void) { HAL_ETH_IRQHandler(&EthHandle); }
+
+/**
+ * @brief  This function handles SysTick Handler.
+ * @param  None
+ * @retval None
+ */
+void SysTick_Handler(void) {
+  HAL_IncTick();
+}
 
 /**
  * @}

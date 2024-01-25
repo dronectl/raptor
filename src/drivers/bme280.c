@@ -1,6 +1,7 @@
 
 
 #include "bme280.h"
+#include "main.h"
 #include <stdio.h>
 
 static void convert_temperature(bme280_meas_t *measurements, bme280_calib_t *calib_data) {
@@ -74,9 +75,13 @@ static void convert_humidity(bme280_meas_t *measurements, bme280_calib_t *calib_
 }
 
 static void load_calibration(bme280_dev_t *dev) {
+  HAL_StatusTypeDef status;
   uint8_t rx_buf[BME280_CALIB_BLK0_SIZE] = {0};
   bme280_calib_t *calib_data = &dev->calib_data;
-  HAL_I2C_Mem_Read(&dev->i2c, BME280_DEFAULT_DEV_ADDR, BME280_CALIB00, I2C_MEMADD_SIZE_8BIT, rx_buf, BME280_CALIB_BLK0_SIZE, HAL_MAX_DELAY);
+  status = HAL_I2C_Mem_Read(&dev->i2c, BME280_DEFAULT_DEV_ADDR, BME280_CALIB00, I2C_MEMADD_SIZE_8BIT, rx_buf, BME280_CALIB_BLK0_SIZE, HAL_MAX_DELAY);
+  if (status != HAL_OK) {
+    EHANDLE(status);
+  }
   calib_data->dig_t1 = (uint16_t)(rx_buf[1] << 8) | (uint16_t)rx_buf[0];
   calib_data->dig_t2 = (int16_t)((rx_buf[3] << 8) | (int16_t)rx_buf[2]);
   calib_data->dig_t3 = (int16_t)((rx_buf[5] << 8) | (int16_t)rx_buf[4]);
@@ -94,7 +99,10 @@ static void load_calibration(bme280_dev_t *dev) {
   for (int i = 0; i < BME280_CALIB_BLK0_SIZE - 1; i++) {
     rx_buf[i] = 0;
   }
-  HAL_I2C_Mem_Read(&dev->i2c, BME280_DEFAULT_DEV_ADDR, BME280_CALIB26, I2C_MEMADD_SIZE_8BIT, rx_buf, BME280_CALIB_BLK1_SIZE, HAL_MAX_DELAY);
+  status = HAL_I2C_Mem_Read(&dev->i2c, BME280_DEFAULT_DEV_ADDR, BME280_CALIB26, I2C_MEMADD_SIZE_8BIT, rx_buf, BME280_CALIB_BLK1_SIZE, HAL_MAX_DELAY);
+  if (status != HAL_OK) {
+    EHANDLE(status);
+  }
   calib_data->dig_h2 = (int16_t)(rx_buf[1] << 8) | (int16_t)rx_buf[0];
   calib_data->dig_h3 = (uint16_t)rx_buf[2];
   calib_data->dig_h4 = (int16_t)((rx_buf[3] << 4) | (int16_t)(rx_buf[4] & 0xF));

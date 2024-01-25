@@ -122,7 +122,7 @@ typedef struct bme280_meas_t {
   uint32_t pressure_raw;    // ADC
   uint32_t humidity_raw;    // ADC
   double temperature;       // °C
-  double pressure;          // HPa
+  double pressure;          // Pa
   double humidity;          // %
 } bme280_meas_t;
 
