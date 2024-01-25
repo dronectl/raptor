@@ -6,7 +6,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules ${CMAKE_MODULE_P
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # For debug, no change detected ...
-# set(CMAKE_VERBOSE_MAKEFILE ON)
+set(CMAKE_VERBOSE_MAKEFILE ON)
 # global project name
 set(EXECUTABLE "raptor")
 set(CMAKE_C_EXTENSIONS OFF)
@@ -80,7 +80,6 @@ add_executable(
   ${STM32CUBEH7_HAL_SRC}
   ${STM32CUBEH7_FREERTOS_SRC}
 )
-# target_link_libraries(${EXECUTABLE} LINK_PUBLIC freertos_kernel)
 target_include_directories(${EXECUTABLE} PRIVATE ${LWIP_INCLUDE})
 target_include_directories(${EXECUTABLE} PRIVATE ${STM32CUBEH7_FREERTOS_INCLUDE})
 target_include_directories(${EXECUTABLE} PRIVATE ${STM32CUBEH7_HAL_INCLUDE})
@@ -88,6 +87,11 @@ target_include_directories(${EXECUTABLE} PRIVATE ${STM32CUBEH7_BSP_INCLUDE})
 target_include_directories(${EXECUTABLE} PRIVATE include)
 target_include_directories(${EXECUTABLE} PRIVATE ${STM32CUBEH7_CMSIS_INCLUDE})
 set_target_properties(${EXECUTABLE} PROPERTIES OUTPUT_NAME ${EXECUTABLE}.elf)
+
+if(BUILD_TESTS)
+  message(STATUS "Adding test directory to build.")
+  add_subdirectory(tests)
+endif()
 
 find_openocd()
 
