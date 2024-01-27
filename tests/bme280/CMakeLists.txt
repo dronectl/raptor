@@ -11,7 +11,6 @@ target_include_directories(
     PRIVATE ${CMAKE_SOURCE_DIR}/include
     PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
 )
-set_target_properties(test-bme280 PROPERTIES SUFFIX ".elf")
 target_compile_options(
     test-bme280
     PRIVATE ${GCC_FLAGS} ${STM32H723_COMPILE_FLAGS}
@@ -22,3 +21,4 @@ target_link_options(
     PRIVATE ${STM32H723_COMPILE_FLAGS}
     PRIVATE -T${LINKER_SCRIPT} -Wl,--print-memory-usage -Wl,--gc-sections -static -z muldefs -Wl,-Map=${CMAKE_PROJECT_NAME}.map -Wl,--start-group -lc -lm -Wl,--end-group
 )
+set_target_properties(test-bme280 PROPERTIES SUFFIX ".elf")
