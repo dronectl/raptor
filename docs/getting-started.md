@@ -84,15 +84,25 @@ cmake .. -DCMAKE_BUILD_TYPE=DEBUG
 ...
 ```
 Compile the firmware:
-> Hint: speed up build times use -j`nproc` to enable multicore builds using all available cores.
+> Hint: speed up build times by specifying `-j` (jobs) to enable multicore builds. Passing `-j` with no job limit will allow any number of simultaneous jobs to run.
 
 ```bash
-make -j`nproc`
+make -j
 ...
 ```
 Once complete the binary should be built as `raptor.elf` in the `build` directory. You should also have a `compile_commands.json` file which will now enable intellisense features (for VSCode users). If everything is done correctly there should be no red underline or default colored function names or variables indicating an unknown symbol. Below is an example of properly configured intellisense:
 
 ![isense-demo](img/isense-demo.png)
+
+## Flashing the Firmware
+The flash step is powered by OpenOCD. 
+
+> OpenOCD will retrieve the binary from `build/raptor.elf` and program the MCU using [this](/utils/stm32h723.cfg) configuration spec.
+
+Plugin the evaluation board to your PC over mini USB and flash the microcontroller using the `flash` directive:
+```bash
+make flash
+```
 
 ## Debugging
 This section will cover the steps to debug firmware using either VSCode powered by `cortex-debug` or STM32CubeIDE. Depending on the debugging job, one or both of these tools may be used. It is important that all developers are familiar with STM32CubeIDE at minimum since it is the most feature rich debugging platform.
@@ -144,15 +154,7 @@ We can follow these steps to debug the firmware in CubeIDE. Note that these step
 
 Under the hood the `raptor` debug configuration points to the firmware binary from `build/raptor.elf` and uses the source references defined by the Cube project configuration settings.
 
-## Flashing the Firmware
-The flash step is powered by OpenOCD. 
 
-> OpenOCD will retrieve the binary from `build/raptor.elf` and program the MCU using [this](/utils/stm32h723.cfg) configuration spec.
-
-Plugin the evaluation board to your PC over mini USB and flash the microcontroller using the `flash` directive:
-```bash
-make flash
-```
 
 ## Issues
 If there are any issues with this documentation please contact me at christian911@sympatico.ca or create a new issue.
