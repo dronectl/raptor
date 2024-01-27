@@ -85,8 +85,8 @@ a lot of data that needs to be copied, this should be set high. */
    order. Define to 0 if your device is low on memory. */
 
 /* TCP Maximum segment size. */
-#define TCP_MSS                                                                \
-  (1500 - 40) /* TCP_MSS = (Ethernet MTU - IP header size - TCP header size)   \
+#define TCP_MSS                                                              \
+  (1500 - 40) /* TCP_MSS = (Ethernet MTU - IP header size - TCP header size) \
                */
 
 /* TCP sender buffer space (bytes). */
