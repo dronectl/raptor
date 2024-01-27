@@ -49,7 +49,7 @@ jobs:
         run: |
           mkdir $GITHUB_WORKSPACE/build
           cd build
-          cmake .. -DCMAKE_BUILD_TYPE=Release
+          cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=Off
           make -j`nproc`
       - name: binary size details
         working-directory: build 
@@ -70,3 +70,26 @@ jobs:
           # relative to $GITHUB_WORKSPACE 
           path: build/raptor.elf
           retention-days: 5
+  test:
+    name: build tests
+    needs: clang-fmt
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout source
+        uses: actions/checkout@v3
+      - name: install gcc-arm-none-eabi & openocd
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y gcc-arm-none-eabi openocd
+        env:
+          DEBIAN_FRONTEND: noninteractive
+      - name: setup cmake
+        uses: jwlawson/actions-setup-cmake@v1.13
+        with:
+          cmake-version: '3.22.x'
+      - name: build
+        run: |
+          mkdir $GITHUB_WORKSPACE/build
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTS=On
+          make -j`nproc`
