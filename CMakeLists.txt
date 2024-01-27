@@ -6,7 +6,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules ${CMAKE_MODULE_P
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # For debug, no change detected ...
-set(CMAKE_VERBOSE_MAKEFILE ON)
+# set(CMAKE_VERBOSE_MAKEFILE ON)
 # global project name
 set(EXECUTABLE "raptor")
 set(CMAKE_C_EXTENSIONS OFF)
@@ -17,23 +17,20 @@ project(
   ${EXECUTABLE}
   LANGUAGES C ASM
   VERSION 0.1.0
-  DESCRIPTION "Propulsion test executor."
+  DESCRIPTION "UAV propulsion test executor."
 )
 
 include(cubeh7)
 include(openocd)
 include(freertos)
+find_openocd()
 
-set(GCC_FLAGS "-Wno-unused-parameter -Wpedantic -fno-builtin -Wall -Wextra -ffunction-sections -fdata-sections -fomit-frame-pointer")
-message(STATUS "Appending GCC flags: ${GCC_FLAGS}")
-set(CMAKE_C_FLAGS   "${STM32H723_COMPILE_FLAGS} ${GCC_FLAGS}")
-set(CMAKE_ASM_FLAGS "${STM32H723_COMPILE_FLAGS} ${GCC_FLAGS}")
-set(CMAKE_EXE_LINKER_FLAGS "${STM32H723_LINKER_FLAGS}")
 
 # cmake build guard
 if(PROJECT_SOURCE_DIR STREQUAL PROJECT_BINARY_DIR)
   message(FATAL_ERROR "In-source builds not allowed. Please make a new directory (called a build directory) and run CMake from there.")
 endif()
+
 
 # set default build type if none specified
 if(NOT CMAKE_BUILD_TYPE)
@@ -42,15 +39,6 @@ if(NOT CMAKE_BUILD_TYPE)
   set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release")
 endif()
 
-# Options for DEBUG build
-set(CMAKE_C_FLAGS_DEBUG "-DRAPTOR_DEBUG -O0 -g" CACHE INTERNAL "C Compiler options for debug build type")
-set(CMAKE_ASM_FLAGS_DEBUG "-O0 -g" CACHE INTERNAL "ASM Compiler options for debug build type")
-set(CMAKE_EXE_LINKER_FLAGS_DEBUG "-O0 -g" CACHE INTERNAL "Linker options for debug build type")
-
-# Options for RELEASE build
-set(CMAKE_C_FLAGS_RELEASE "-Os" CACHE INTERNAL "C Compiler options for release build type")
-set(CMAKE_ASM_FLAGS_RELEASE "-Os" CACHE INTERNAL "ASM Compiler options for release build type")
-set(CMAKE_EXE_LINKER_FLAGS_RELEASE "-Os" CACHE INTERNAL "Linker options for release build type")
 
 # project config
 message(STATUS "Configuring config.h header")
@@ -88,12 +76,27 @@ target_include_directories(${EXECUTABLE} PRIVATE include)
 target_include_directories(${EXECUTABLE} PRIVATE ${STM32CUBEH7_CMSIS_INCLUDE})
 set_target_properties(${EXECUTABLE} PROPERTIES OUTPUT_NAME ${EXECUTABLE}.elf)
 
-if(BUILD_TESTS)
-  message(STATUS "Adding test directory to build.")
+set(GCC_FLAGS -Wno-unused-parameter -Wpedantic -fno-builtin -Wall -Wextra -ffunction-sections -fdata-sections -fomit-frame-pointer)
+message(STATUS "Appending GCC flags: ${GCC_FLAGS}")
+target_compile_options(
+  ${EXECUTABLE}
+  PRIVATE ${GCC_FLAGS} ${STM32H723_COMPILE_FLAGS}
+  PRIVATE $<$<CONFIG:Debug>:-DRAPTOR_DEBUG -O0 -g>
+  PRIVATE $<$<CONFIG:Release>:-Os>
+)
+target_link_options(
+  ${EXECUTABLE}
+  PRIVATE ${STM32H723_LINKER_FLAGS}
+  PRIVATE $<$<CONFIG:Debug>:-DRAPTOR_DEBUG -O0 -g>
+  PRIVATE $<$<CONFIG:Release>:-Os>
+)
+
+# only include tests if BUILD_TESTS is enabled
+option(BUILD_TESTS "Build tests" ON)
+if (BUILD_TESTS)
+  message(STATUS "Adding test binaries to build")
   add_subdirectory(tests)
 endif()
-
-find_openocd()
 
 message(STATUS "Adding custom targets")
 add_custom_target(size ALL ${ARM_SIZE} -B -d --target=binary ${EXECUTABLE}.elf DEPENDS ${EXECUTABLE})

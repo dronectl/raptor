@@ -52,11 +52,11 @@ set(STM32H723_ABI "aapcs" CACHE INTERNAL "Compiler ABI")
 
 # configure compile commands for CMSIS and compiler
 # use hardware fpu and use mthumb optimization (does not affect debug mode)
-set(STM32H723_COMPILE_FLAGS "-D${STM32H723_MCU} -DUSE_HAL_DRIVER -mcpu=${STM32H723_ARM_ARCH} -mfpu=${STM32H723_FPU_ARCH} -mabi=${STM32H723_ABI} -mfloat-abi=hard -mthumb")
+set(STM32H723_COMPILE_FLAGS -D${STM32H723_MCU} -DUSE_HAL_DRIVER -mcpu=${STM32H723_ARM_ARCH} -mfpu=${STM32H723_FPU_ARCH} -mabi=${STM32H723_ABI} -mfloat-abi=hard -mthumb CACHE INTERNAL "STM32H723_COMPILE_FLAGS")
 message(STATUS "Exporting linker script path")
 get_filename_component(LINKER_SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/utils/STM32H723ZGTX_FLASH.ld ABSOLUTE)
 message(DEBUG "Linker script: ${LINKER_SCRIPT}")
-set(STM32H723_LINKER_FLAGS "-T${LINKER_SCRIPT} ${STM32H723_COMPILE_FLAGS} -Wl,--print-memory-usage -Wl,--gc-sections -Wl,--undefined=uxTopUsedPriority --specs=nosys.specs --specs=nano.specs -static -z muldefs -Wl,-Map=${CMAKE_PROJECT_NAME}.map -Wl,--start-group -lc -lm -Wl,--end-group" CACHE INTERNAL "STM32H723 linker options")
+set(STM32H723_LINKER_FLAGS -T${LINKER_SCRIPT} ${STM32H723_COMPILE_FLAGS} -Wl,--print-memory-usage -Wl,--gc-sections -Wl,--undefined=uxTopUsedPriority --specs=nosys.specs --specs=nano.specs -static -z muldefs -Wl,-Map=${CMAKE_PROJECT_NAME}.map -Wl,--start-group -lc -lm -Wl,--end-group CACHE INTERNAL "STM32H723_LINKER_FLAGS")
 message(STATUS "Setting compilers.")
 set(CMAKE_C_COMPILER ${TOOLCHAIN_PREFIX}-gcc${TOOLCHAIN_EXT} CACHE INTERNAL "C Compiler")
 set(CMAKE_CXX_COMPILER ${TOOLCHAIN_PREFIX}-g++${TOOLCHAIN_EXT} CACHE INTERNAL "C++ Compiler")
