@@ -73,9 +73,9 @@ void hx711_task(void *pv_params) {
   hx711_init();
   // TODO: support 80Hz mode
   const TickType_t delay = 100 / portTICK_PERIOD_MS;
-  uint32_t measurement = 0;
+  // uint32_t measurement = 0;
   while (1) {
-    measurement = hx711_read();
+    // measurement = hx711_read();
     vTaskDelay(delay);
   }
 }

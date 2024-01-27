@@ -152,7 +152,7 @@ static bme280_status_t load_calibration(bme280_dev_t *dev) {
   bme280_status_t status;
   uint8_t rx_buf[BME280_CALIB_BLK0_SIZE] = {0};
   bme280_calib_t *calib_data = &dev->calib_data;
-  status = _read(&dev->i2c, BME280_CALIB00, &rx_buf, BME280_CALIB_BLK0_SIZE);
+  status = _read(&dev->i2c, BME280_CALIB00, rx_buf, BME280_CALIB_BLK0_SIZE);
   if (status != BME280_OK) {
     return status;
   }
@@ -173,7 +173,7 @@ static bme280_status_t load_calibration(bme280_dev_t *dev) {
   for (int i = 0; i < BME280_CALIB_BLK0_SIZE - 1; i++) {
     rx_buf[i] = 0;
   }
-  status = _read(&dev->i2c, BME280_CALIB26, &rx_buf, BME280_CALIB_BLK1_SIZE);
+  status = _read(&dev->i2c, BME280_CALIB26, rx_buf, BME280_CALIB_BLK1_SIZE);
   if (status != BME280_OK) {
     return status;
   }
@@ -220,6 +220,9 @@ static bme280_status_t set_power_mode(bme280_dev_t *dev, const enum BME280_PMode
   uint8_t ctrl_reg;
   bme280_status_t status;
   status = _read(&dev->i2c, BME280_CTRL_MEAS, &ctrl_reg, 1);
+  if (status != BME280_OK) {
+    return status;
+  }
   ctrl_reg |= BME280_PMODE(mode);
   return _write(&dev->i2c, BME280_CTRL_MEAS, &ctrl_reg, 1);
 }
