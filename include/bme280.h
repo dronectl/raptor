@@ -6,7 +6,7 @@
  * @version 0.1
  * @date 2024-01
  *
- * @copyright Copyright © 2024 Christian Sargusingh
+ * @copyright Copyright © 2024 dronectl
  *
  */
 
@@ -15,13 +15,17 @@
 
 #include <stm32h7xx_hal.h>
 
+/**
+ * @brief BME280 metadata
+ *
+ */
 #define BME280_DEFAULT_DEV_ADDR (uint8_t)(0x76 << 1)
-
 #define BME280_HW_RESET_KEY 0xB6
 #define BME280_CHIP_ID 0x60 // BME280 UUID
 
 /**
- * Hardware limits
+ * @brief BME280 Hardware limits
+ *
  */
 #define BME280_TEMP_MIN -40.0f    // °C
 #define BME280_TEMP_MAX 85.0f     // °C
@@ -38,23 +42,37 @@
 #define BME280_CALIB_BLK1_SIZE (uint16_t)(BME280_CALIB41 - BME280_CALIB26)
 
 /**
- * 0xF3 STATUS
+ * @brief 0xF3 STATUS
  */
 #define BME280_STAT_MEAS_MSK (uint8_t)(0x1 << 3)
 #define BME280_STAT_UPDATE_MSK (uint8_t)(0x1)
 
 /**
- * 0xF2 CTRL_HUM
+ * @brief 0xF2 CTRL_HUM
  */
 #define BME280_OSRS_H(x) ((uint8_t)(x) << 0) // Humidity OSRS bits
 
 /**
- * 0xF4 CTRL_MEAS
+ * @brief 0xF4 CTRL_MEAS
  */
 #define BME280_OSRS_T(x) ((uint8_t)(x) << 5) // Temperature OSRS bits
 #define BME280_OSRS_P(x) ((uint8_t)(x) << 2) // Pressure OSRS bits
 #define BME280_PMODE(x) ((uint8_t)(x) << 0)  // Power mode bits
 
+/**
+ * @brief Error codes
+ *
+ */
+typedef int bme280_status_t;
+#define BME280_OK (bme280_status_t)0
+#define BME280_ERR (bme280_status_t)1
+#define BME280_VERIFICATION (bme280_status_t)2
+#define BME280_TIMEOUT (bme280_status_t)3
+
+/**
+ * @brief Oversampling register settings
+ * 5.4 Register description Table 20, 23, 24
+ */
 enum BME280_OSRS {
   BME280_OSRS_DISABLE = 0x0, // default on reset
   BME280_OSRS_1X = 0x1,      // oversampling x 1
@@ -64,6 +82,10 @@ enum BME280_OSRS {
   BME280_OSRS_16X = 0x5,     // oversampling x 16
 };
 
+/**
+ * @brief Power modes register settings
+ * 5.4 Register description Table 25
+ */
 enum BME280_PModes {
   BME280_SLEEP = 0x0,  // default on reset
   BME280_FORCED = 0x1, // triggered sampling
@@ -71,8 +93,8 @@ enum BME280_PModes {
 };
 
 /**
+ * @brief BME280 Register Memory Map
  * 5.3 Memory Map Table 18
- * https://cdn-learn.adafruit.com/assets/assets/000/115/588/original/bst-bme280-ds002.pdf?1664822559
  */
 enum BME280_MMap {
   BME280_ID = 0xD0,
@@ -93,7 +115,7 @@ enum BME280_MMap {
 
 /**
  * @brief Compensation parameters
- * Table 16: Compensation parameter storage, naming and dtype
+ * 4.2.2 Trimming Parameter Readout Table 16: Compensation parameter storage, naming and dtype
  */
 typedef struct bme280_calib_t {
   uint16_t dig_t1;
@@ -117,24 +139,60 @@ typedef struct bme280_calib_t {
   int16_t t_fine;
 } bme280_calib_t;
 
+/**
+ * @brief BME280 measurements to store converted and raw measurement fields
+ *
+ */
 typedef struct bme280_meas_t {
-  uint32_t temperature_raw; // ADC
-  uint32_t pressure_raw;    // ADC
-  uint32_t humidity_raw;    // ADC
+  uint32_t temperature_raw; // raw
+  uint32_t pressure_raw;    // raw
+  uint32_t humidity_raw;    // raw
   double temperature;       // °C
   double pressure;          // Pa
   double humidity;          // %
 } bme280_meas_t;
 
+/**
+ * @brief BME280 device struct required for using the bme280 driver.
+ *
+ */
 typedef struct bme280_dev_t {
   uint8_t chip_id;
   I2C_HandleTypeDef i2c;
   bme280_calib_t calib_data;
 } bme280_dev_t;
 
-void bme280_init(bme280_dev_t *dev);
-void bme280_reset(bme280_dev_t *dev);
-void bme280_sleep(bme280_dev_t *dev);
-void bme280_read(bme280_dev_t *dev, bme280_meas_t *measurements);
+/**
+ * @brief Initialize, verify, load calibration trimming parameters, enable measurement subsystems.
+ *
+ * @param dev bme280 device struct
+ * @return bme280_status_t status code
+ */
+bme280_status_t bme280_init(bme280_dev_t *dev);
+
+/**
+ * @brief Hardware reset
+ *
+ * @param dev bme280 device struct
+ * @return bme280_status_t status code
+ */
+bme280_status_t bme280_reset(bme280_dev_t *dev);
+
+/**
+ * @brief Power off BME280
+ *
+ * @param dev bme280 device struct
+ * @return bme280_status_t status code
+ */
+bme280_status_t bme280_sleep(bme280_dev_t *dev);
+
+/**
+ * @brief Bulk read of temperature, humidity, and pressure in standard units (˚C, % and Pa respectively)
+ *
+ * @param dev bme280 device struct
+ * @param measurements measurement payload struct
+ * @return bme280_status_t status code
+ */
+bme280_status_t bme280_read(bme280_dev_t *dev, bme280_meas_t *measurements);
 
 #endif // __BME280_H__
