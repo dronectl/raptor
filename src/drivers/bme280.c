@@ -1,8 +1,6 @@
 
 
 #include "bme280.h"
-#include "main.h"
-#include <stdio.h>
 
 static void convert_temperature(bme280_meas_t *measurements, bme280_calib_t *calib_data) {
   double var1;
@@ -80,7 +78,6 @@ static void load_calibration(bme280_dev_t *dev) {
   bme280_calib_t *calib_data = &dev->calib_data;
   status = HAL_I2C_Mem_Read(&dev->i2c, BME280_DEFAULT_DEV_ADDR, BME280_CALIB00, I2C_MEMADD_SIZE_8BIT, rx_buf, BME280_CALIB_BLK0_SIZE, HAL_MAX_DELAY);
   if (status != HAL_OK) {
-    EHANDLE(status);
   }
   calib_data->dig_t1 = (uint16_t)(rx_buf[1] << 8) | (uint16_t)rx_buf[0];
   calib_data->dig_t2 = (int16_t)((rx_buf[3] << 8) | (int16_t)rx_buf[2]);
@@ -101,14 +98,12 @@ static void load_calibration(bme280_dev_t *dev) {
   }
   status = HAL_I2C_Mem_Read(&dev->i2c, BME280_DEFAULT_DEV_ADDR, BME280_CALIB26, I2C_MEMADD_SIZE_8BIT, rx_buf, BME280_CALIB_BLK1_SIZE, HAL_MAX_DELAY);
   if (status != HAL_OK) {
-    EHANDLE(status);
   }
   calib_data->dig_h2 = (int16_t)(rx_buf[1] << 8) | (int16_t)rx_buf[0];
   calib_data->dig_h3 = (uint16_t)rx_buf[2];
   calib_data->dig_h4 = (int16_t)((rx_buf[3] << 4) | (int16_t)(rx_buf[4] & 0xF));
   calib_data->dig_h5 = (int16_t)((rx_buf[5] << 4) | (int16_t)(rx_buf[4] >> 4));
   calib_data->dig_h6 = (int16_t)rx_buf[6];
-  printf("BME280 | Loaded calibration parameters\r\n");
 }
 
 static void enable_measurements(bme280_dev_t *dev) {
@@ -141,13 +136,11 @@ void bme280_init(bme280_dev_t *dev) {
   enable_measurements(dev);
   // set power mode
   set_power_mode(dev, BME280_NORMAL);
-  printf("BME280 | Sensor %d initialized\r\n", dev->chip_id);
 }
 
 void bme280_reset(bme280_dev_t *dev) {
   uint8_t pdata = BME280_HW_RESET_KEY;
   HAL_I2C_Mem_Write(&dev->i2c, BME280_DEFAULT_DEV_ADDR, BME280_RESET, I2C_MEMADD_SIZE_8BIT, &pdata, 1, HAL_MAX_DELAY);
-  printf("BME280 | Reset\r\n");
 }
 
 void bme280_read(bme280_dev_t *dev, bme280_meas_t *measurements) {
@@ -176,7 +169,6 @@ void bme280_read(bme280_dev_t *dev, bme280_meas_t *measurements) {
   convert_temperature(measurements, &dev->calib_data);
   convert_pressure(measurements, &dev->calib_data);
   convert_humidity(measurements, &dev->calib_data);
-  printf("BME280 | Measurement complete\r\n");
 }
 
 void bme280_sleep(bme280_dev_t *dev) {
