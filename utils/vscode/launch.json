@@ -2,16 +2,39 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Raptor Debug (OpenOCD)",
             "type": "cortex-debug",
             "request": "launch",
             "servertype": "openocd",
-            "name": "Debug (OpenOCD)",
             "cwd": "${workspaceRoot}",
             "executable": "${workspaceRoot}/build/raptor.elf",
-            "device": "STM32H732",
+            "device": "stm32h732",
             "interface": "swd",
             "rtos": "FreeRTOS",
-            "runToMain": true,
+            "liveWatch": {
+                "enabled": true,
+                "samplesPerSecond": 4
+            },
+            "runToEntryPoint": "main",
+            "configFiles": [
+                "${workspaceRoot}/utils/stm32h723.cfg"
+            ],
+            "svdFile": "${workspaceRoot}/utils/stm32h7x3.svd"
+        },
+        {
+            "name": "Test Debug (OpenOCD)",
+            "type": "cortex-debug",
+            "request": "launch",
+            "servertype": "openocd",
+            "cwd": "${workspaceRoot}",
+            "executable": "${workspaceRoot}/build/tests/bme280/test-bme280.elf",
+            "device": "stm32h732",
+            "interface": "swd",
+            "liveWatch": {
+                "enabled": true,
+                "samplesPerSecond": 4
+            },
+            "runToEntryPoint": "main",
             "configFiles": [
                 "${workspaceRoot}/utils/stm32h723.cfg"
             ],
