@@ -154,7 +154,5 @@ We can follow these steps to debug the firmware in CubeIDE. Note that these step
 
 Under the hood the `raptor` debug configuration points to the firmware binary from `build/raptor.elf` and uses the source references defined by the Cube project configuration settings.
 
-
-
 ## Issues
 If there are any issues with this documentation please contact me at christian911@sympatico.ca or create a new issue.
