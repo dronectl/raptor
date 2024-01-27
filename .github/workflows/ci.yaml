@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: checkout source
-      uses: actions/checkout@v3 
+      uses: actions/checkout@v4
     - name: update and install apt dependancies
       run: |
         sudo apt update -y
@@ -42,7 +42,7 @@ jobs:
         env:
           DEBIAN_FRONTEND: noninteractive
       - name: setup cmake
-        uses: jwlawson/actions-setup-cmake@v1.13
+        uses: jwlawson/actions-setup-cmake@v1.14
         with:
           cmake-version: '3.22.x'
       - name: build
@@ -76,7 +76,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: checkout source
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: install gcc-arm-none-eabi & openocd
         run: |
           sudo apt-get update -y
@@ -84,7 +84,7 @@ jobs:
         env:
           DEBIAN_FRONTEND: noninteractive
       - name: setup cmake
-        uses: jwlawson/actions-setup-cmake@v1.13
+        uses: jwlawson/actions-setup-cmake@v1.14
         with:
           cmake-version: '3.22.x'
       - name: build
