@@ -14,18 +14,22 @@ bme280_dev_t bme280;
 static IWDG_HandleTypeDef iwdg_handle;
 // https://github.com/STMicroelectronics/STM32CubeH7/blob/master/Projects/NUCLEO-H723ZG/Examples/IWDG/IWDG_WindowMode/Src/main.c
 static void configure_watchdog(void) {
+  HAL_StatusTypeDef status;
   iwdg_handle.Instance = IWDG1;
   iwdg_handle.Init.Prescaler = IWDG_PRESCALER_16;
   iwdg_handle.Init.Reload = (32000 * 762) / (16 * 1000); /* 762 ms */
   iwdg_handle.Init.Window = (32000 * 400) / (16 * 1000); /* 400 ms */
-  if (HAL_IWDG_Init(&iwdg_handle) != HAL_OK) {
-    ehandle();
+  status = HAL_IWDG_Init(&iwdg_handle);
+  if (status != HAL_OK) {
+    EHANDLE(status);
   }
 }
 
 static void service_watchdog(void) {
-  if (HAL_IWDG_Refresh(&iwdg_handle) != HAL_OK)
-    ehandle();
+  HAL_StatusTypeDef status;
+  status = HAL_IWDG_Refresh(&iwdg_handle);
+  if (status != HAL_OK)
+    EHANDLE(status);
 }
 #endif // RAPTOR_DEBUG
 

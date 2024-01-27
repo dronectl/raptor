@@ -17,11 +17,11 @@
 
 /**
  * @brief BME280 metadata
- *
+ * 5.4 Register description (5.4.1 & 5.4.2)
  */
 #define BME280_DEFAULT_DEV_ADDR (uint8_t)(0x76 << 1)
 #define BME280_HW_RESET_KEY 0xB6
-#define BME280_CHIP_ID 0x60 // BME280 UUID
+#define BME280_CHIP_ID 0x60
 
 /**
  * @brief BME280 Hardware limits
