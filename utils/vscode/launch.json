@@ -27,7 +27,7 @@
             "request": "launch",
             "servertype": "openocd",
             "cwd": "${workspaceRoot}",
-            "executable": "${workspaceRoot}/build/tests/bme280/test-bme280.elf",
+            "executable": "${workspaceRoot}/build/tests/bme280/test.elf",
             "device": "stm32h732",
             "interface": "swd",
             "liveWatch": {
