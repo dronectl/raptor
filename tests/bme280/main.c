@@ -1,50 +1,6 @@
-/**
- ******************************************************************************
- * @file    system_stm32h7xx.c
- * @author  MCD Application Team
- * @brief   CMSIS Cortex-Mx Device Peripheral Access Layer System Source File.
- *
- *   This file provides two functions and one global variable to be called from
- *   user application:
- *      - SystemInit(): This function is called at startup just after reset and
- *                      before branch to main program. This call is made inside
- *                      the "startup_stm32h7xx.s" file.
- *
- *      - SystemCoreClock variable: Contains the core clock, it can be used
- *                                  by the user application to setup the SysTick
- *                                  timer or configure other parameters.
- *
- *      - SystemCoreClockUpdate(): Updates the variable SystemCoreClock and must
- *                                 be called whenever the core clock is changed
- *                                 during program execution.
- *
- *
- ******************************************************************************
- * @attention
- *
- * Copyright (c) 2017 STMicroelectronics.
- * All rights reserved.
- *
- * This software is licensed under terms that can be found in the LICENSE file
- * in the root directory of this software component.
- * If no LICENSE file comes with this software, it is provided AS-IS.
- *
- ******************************************************************************
- */
-
-/** @addtogroup CMSIS
- * @{
- */
-
-/** @addtogroup stm32h7xx_system
- * @{
- */
-
-/** @addtogroup STM32H7xx_System_Private_Includes
- * @{
- */
-
+#include "bme280.h"
 #include "stm32h7xx.h"
+#include "stm32h7xx_hal.h"
 #include <math.h>
 
 #if !defined(HSE_VALUE)
@@ -59,110 +15,12 @@
 #define HSI_VALUE ((uint32_t)64000000) /*!< Value of the Internal oscillator in Hz*/
 #endif                                 /* HSI_VALUE */
 
-/**
- * @}
- */
-
-/** @addtogroup STM32H7xx_System_Private_TypesDefinitions
- * @{
- */
-
-/**
- * @}
- */
-
-/** @addtogroup STM32H7xx_System_Private_Defines
- * @{
- */
-
-/************************* Miscellaneous Configuration ************************/
-/*!< Uncomment the following line if you need to use initialized data in D2 domain SRAM (AHB SRAM) */
-/* #define DATA_IN_D2_SRAM */
-
-/* Note: Following vector table addresses must be defined in line with linker
-         configuration. */
-/*!< Uncomment the following line if you need to relocate the vector table
-     anywhere in FLASH BANK1 or AXI SRAM, else the vector table is kept at the automatic
-     remap of boot address selected */
-/* #define USER_VECT_TAB_ADDRESS */
-
-#if defined(USER_VECT_TAB_ADDRESS)
-#if defined(DUAL_CORE) && defined(CORE_CM4)
-/*!< Uncomment the following line if you need to relocate your vector Table
-     in D2 AXI SRAM else user remap will be done in FLASH BANK2. */
-/* #define VECT_TAB_SRAM */
-#if defined(VECT_TAB_SRAM)
-#define VECT_TAB_BASE_ADDRESS D2_AXISRAM_BASE /*!< Vector Table base address field. \
-                                                   This value must be a multiple of 0x400. */
-#define VECT_TAB_OFFSET 0x00000000U           /*!< Vector Table base offset field. \
-                                                   This value must be a multiple of 0x400. */
-#else
-#define VECT_TAB_BASE_ADDRESS FLASH_BANK2_BASE /*!< Vector Table base address field. \
-                                                    This value must be a multiple of 0x400. */
-#define VECT_TAB_OFFSET 0x00000000U            /*!< Vector Table base offset field. \
-                                                    This value must be a multiple of 0x400. */
-#endif                                         /* VECT_TAB_SRAM */
-#else
-/*!< Uncomment the following line if you need to relocate your vector Table
-     in D1 AXI SRAM else user remap will be done in FLASH BANK1. */
-/* #define VECT_TAB_SRAM */
-#if defined(VECT_TAB_SRAM)
-#define VECT_TAB_BASE_ADDRESS D1_AXISRAM_BASE /*!< Vector Table base address field. \
-                                                   This value must be a multiple of 0x400. */
-#define VECT_TAB_OFFSET 0x00000000U           /*!< Vector Table base offset field. \
-                                                   This value must be a multiple of 0x400. */
-#else
-#define VECT_TAB_BASE_ADDRESS FLASH_BANK1_BASE /*!< Vector Table base address field. \
-                                                    This value must be a multiple of 0x400. */
-#define VECT_TAB_OFFSET 0x00000000U            /*!< Vector Table base offset field. \
-                                                    This value must be a multiple of 0x400. */
-#endif                                         /* VECT_TAB_SRAM */
-#endif                                         /* DUAL_CORE && CORE_CM4 */
-#endif                                         /* USER_VECT_TAB_ADDRESS */
-                                               /******************************************************************************/
-
-/**
- * @}
- */
-
-/** @addtogroup STM32H7xx_System_Private_Macros
- * @{
- */
-
-/**
- * @}
- */
-
-/** @addtogroup STM32H7xx_System_Private_Variables
- * @{
- */
-/* This variable is updated in three ways:
-    1) by calling CMSIS function SystemCoreClockUpdate()
-    2) by calling HAL API function HAL_RCC_GetHCLKFreq()
-    3) each time HAL_RCC_ClockConfig() is called to configure the system clock frequency
-       Note: If you use this function to configure the system clock; then there
-             is no need to call the 2 first functions listed above, since SystemCoreClock
-             variable is updated automatically.
-*/
 uint32_t SystemCoreClock = 64000000;
 uint32_t SystemD2Clock = 64000000;
 const uint8_t D1CorePrescTable[16] = {0, 0, 0, 0, 1, 2, 3, 4, 1, 2, 3, 4, 6, 7, 8, 9};
-
-/**
- * @}
- */
-
-/** @addtogroup STM32H7xx_System_Private_FunctionPrototypes
- * @{
- */
-
-/**
- * @}
- */
-
-/** @addtogroup STM32H7xx_System_Private_Functions
- * @{
- */
+I2C_HandleTypeDef hi2c2;
+bme280_dev_t bme280;
+bme280_meas_t meas;
 
 /**
  * @brief  Setup the microcontroller system
@@ -425,13 +283,171 @@ void SystemCoreClockUpdate(void) {
 }
 
 /**
- * @}
+ * @brief  This function is executed in case of error occurrence.
+ * @retval None
  */
+void Error_Handler(void) {
+  __disable_irq();
+  while (1) {
+  }
+}
 
 /**
- * @}
+ * @brief This function handles System tick timer.
  */
+void SysTick_Handler(void) { HAL_IncTick(); }
 
 /**
- * @}
+ * Initializes the Global MSP.
  */
+void HAL_MspInit(void) {
+  __HAL_RCC_SYSCFG_CLK_ENABLE();
+}
+
+/**
+ * @brief I2C MSP Initialization
+ * This function configures the hardware resources used in this example
+ * @param hi2c: I2C handle pointer
+ * @retval None
+ */
+void HAL_I2C_MspInit(I2C_HandleTypeDef *hi2c) {
+  GPIO_InitTypeDef GPIO_InitStruct = {0};
+  RCC_PeriphCLKInitTypeDef PeriphClkInitStruct = {0};
+  if (hi2c->Instance == I2C2) {
+    /** Initializes the peripherals clock
+     */
+    PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_I2C2;
+    PeriphClkInitStruct.I2c123ClockSelection = RCC_I2C1235CLKSOURCE_D2PCLK1;
+    if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct) != HAL_OK) {
+      Error_Handler();
+    }
+    __HAL_RCC_GPIOF_CLK_ENABLE();
+    /**I2C2 GPIO Configuration
+    PF0     ------> I2C2_SDA
+    PF1     ------> I2C2_SCL
+    */
+    GPIO_InitStruct.Pin = GPIO_PIN_0 | GPIO_PIN_1;
+    GPIO_InitStruct.Mode = GPIO_MODE_AF_OD;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+    GPIO_InitStruct.Alternate = GPIO_AF4_I2C2;
+    HAL_GPIO_Init(GPIOF, &GPIO_InitStruct);
+    /* Peripheral clock enable */
+    __HAL_RCC_I2C2_CLK_ENABLE();
+  }
+}
+
+/**
+ * @brief I2C MSP De-Initialization
+ * This function freeze the hardware resources used in this example
+ * @param hi2c: I2C handle pointer
+ * @retval None
+ */
+void HAL_I2C_MspDeInit(I2C_HandleTypeDef *hi2c) {
+  if (hi2c->Instance == I2C2) {
+    /* Peripheral clock disable */
+    __HAL_RCC_I2C2_CLK_DISABLE();
+    /**I2C2 GPIO Configuration
+    PF0     ------> I2C2_SDA
+    PF1     ------> I2C2_SCL
+    */
+    HAL_GPIO_DeInit(GPIOF, GPIO_PIN_0);
+    HAL_GPIO_DeInit(GPIOF, GPIO_PIN_1);
+  }
+}
+
+/**
+ * @brief System Clock Configuration
+ * @retval None
+ */
+void SystemClock_Config(void) {
+  RCC_OscInitTypeDef RCC_OscInitStruct = {0};
+  RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
+  /** Supply configuration update enable
+   */
+  HAL_PWREx_ConfigSupply(PWR_LDO_SUPPLY);
+  /** Configure the main internal regulator output voltage
+   */
+  __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE3);
+  while (!__HAL_PWR_GET_FLAG(PWR_FLAG_VOSRDY)) {
+  }
+  /** Initializes the RCC Oscillators according to the specified parameters
+   * in the RCC_OscInitTypeDef structure.
+   */
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
+  RCC_OscInitStruct.HSIState = RCC_HSI_DIV1;
+  RCC_OscInitStruct.HSICalibrationValue = 64;
+  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_NONE;
+  if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK) {
+    Error_Handler();
+  }
+  /** Initializes the CPU, AHB and APB buses clocks
+   */
+  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2 | RCC_CLOCKTYPE_D3PCLK1 | RCC_CLOCKTYPE_D1PCLK1;
+  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_HSI;
+  RCC_ClkInitStruct.SYSCLKDivider = RCC_SYSCLK_DIV1;
+  RCC_ClkInitStruct.AHBCLKDivider = RCC_HCLK_DIV1;
+  RCC_ClkInitStruct.APB3CLKDivider = RCC_APB3_DIV1;
+  RCC_ClkInitStruct.APB1CLKDivider = RCC_APB1_DIV2;
+  RCC_ClkInitStruct.APB2CLKDivider = RCC_APB2_DIV1;
+  RCC_ClkInitStruct.APB4CLKDivider = RCC_APB4_DIV1;
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_1) != HAL_OK) {
+    Error_Handler();
+  }
+}
+
+/**
+ * @brief I2C2 Initialization Function
+ * @param None
+ * @retval None
+ */
+static void MX_I2C2_Init(void) {
+  hi2c2.Instance = I2C2;
+  hi2c2.Init.Timing = 0x00707CBB;
+  hi2c2.Init.OwnAddress1 = 0;
+  hi2c2.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
+  hi2c2.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
+  hi2c2.Init.OwnAddress2 = 0;
+  hi2c2.Init.OwnAddress2Masks = I2C_OA2_NOMASK;
+  hi2c2.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
+  hi2c2.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
+  if (HAL_I2C_Init(&hi2c2) != HAL_OK) {
+    Error_Handler();
+  }
+  /** Configure Analogue filter
+   */
+  if (HAL_I2CEx_ConfigAnalogFilter(&hi2c2, I2C_ANALOGFILTER_ENABLE) != HAL_OK) {
+    Error_Handler();
+  }
+  /** Configure Digital filter
+   */
+  if (HAL_I2CEx_ConfigDigitalFilter(&hi2c2, 0) != HAL_OK) {
+    Error_Handler();
+  }
+}
+
+/**
+ * @brief GPIO Initialization Function
+ * @param None
+ * @retval None
+ */
+static void MX_GPIO_Init(void) {
+  __HAL_RCC_GPIOF_CLK_ENABLE();
+}
+
+/**
+ * @brief  The application entry point.
+ * @retval int
+ */
+int main(void) {
+  HAL_Init();
+  SystemClock_Config();
+  MX_GPIO_Init();
+  MX_I2C2_Init();
+  bme280.i2c = hi2c2;
+  bme280_init(&bme280);
+  while (1) {
+    bme280_read(&bme280, &meas);
+    HAL_Delay(100);
+  }
+}

@@ -66,7 +66,10 @@ updated value will be generated in stm32xxxx_hal_conf.h
 ETH_RX_DESC_CNT. 2.b. Rx Buffers must have the same size: ETH_RX_BUFFER_SIZE,
 this value must passed to ETH DMA in the init field (heth.Init.RxBuffLen)
 */
-typedef enum { RX_ALLOC_OK = 0x00, RX_ALLOC_ERROR = 0x01 } RxAllocStatusTypeDef;
+typedef enum {
+  RX_ALLOC_OK = 0x00,
+  RX_ALLOC_ERROR = 0x01
+} RxAllocStatusTypeDef;
 
 typedef struct {
   struct pbuf_custom pbuf_custom;
