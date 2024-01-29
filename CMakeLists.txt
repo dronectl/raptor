@@ -57,6 +57,9 @@ add_executable(
   src/drivers/bme280.c
   src/sysmem.c
   src/health.c
+  src/cbuffer.c
+  src/logger.c
+  src/tcp_echoserver.c
   src/freertos_openocd.c
   src/stm32h7xx_it.c
   src/stm32h7xx_hal_msp.c
