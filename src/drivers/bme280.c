@@ -111,9 +111,9 @@ static void convert_humidity(bme280_meas_t *measurements, bme280_calib_t *calib_
  * @param size number of bytes to read
  * @return bme280_status_t status code (converted from `HAL_StatusTypeDef`)
  */
-static bme280_status_t _read(I2C_HandleTypeDef *hi2c, uint16_t mem_address, uint8_t *rx_buffer, uint16_t size) {
+static bme280_status_t _read(I2C_HandleTypeDef *hi2c, uint8_t mem_address, uint8_t *rx_buffer, uint16_t size) {
   HAL_StatusTypeDef status;
-  status = HAL_I2C_Mem_Read(hi2c, BME280_DEFAULT_DEV_ADDR, mem_address, I2C_MEMADD_SIZE_8BIT, rx_buffer, size, HAL_MAX_DELAY);
+  status = HAL_I2C_Mem_Read(hi2c, BME280_DEFAULT_DEV_ADDR, (uint16_t)mem_address, I2C_MEMADD_SIZE_8BIT, rx_buffer, size, HAL_MAX_DELAY);
   if (status == HAL_TIMEOUT || status == HAL_BUSY) {
     return BME280_TIMEOUT;
   } else if (status == HAL_ERROR) {
@@ -229,11 +229,6 @@ static bme280_status_t set_power_mode(bme280_dev_t *dev, const enum BME280_PMode
 
 bme280_status_t bme280_init(bme280_dev_t *dev) {
   bme280_status_t status;
-  // hardware reset sensor
-  status = bme280_reset(dev);
-  if (status != BME280_OK) {
-    return status;
-  }
   // chip verification
   status = _read(&dev->i2c, BME280_ID, &dev->chip_id, 1);
   if (status != BME280_OK) {
@@ -242,11 +237,18 @@ bme280_status_t bme280_init(bme280_dev_t *dev) {
   if (dev->chip_id != BME280_CHIP_ID) {
     return BME280_VERIFICATION;
   }
+  // hardware reset sensor
+  status = bme280_reset(dev);
+  if (status != BME280_OK) {
+    return status;
+  }
   status = load_calibration(dev);
   if (status != BME280_OK) {
     return status;
   }
-  // configure temperature, pressure and humidity measurement subsystem with 1x oversampling
+  // Configure sensor for low frequency weather monitoring (3.5.1)
+  // temperature, pressure and humidity measurement subsystem with 1x oversampling
+  // NOTE: IIR filter is disabled by default
   status = configure_measurements(dev, BME280_OSRS_1X, BME280_OSRS_1X, BME280_OSRS_1X);
   if (status != BME280_OK) {
     return status;
@@ -270,6 +272,10 @@ bme280_status_t bme280_reset(bme280_dev_t *dev) {
   do {
     status = _read(&dev->i2c, BME280_STATUS, &status_reg, 1);
   } while ((retries--) && (status == BME280_OK) && (status_reg & BME280_STAT_UPDATE_MSK));
+  // notify failure with NVM copy
+  if (status_reg & BME280_STAT_UPDATE_MSK) {
+    status = BME280_NVM_COPY;
+  }
   return status;
 }
 
