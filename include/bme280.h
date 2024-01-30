@@ -68,6 +68,7 @@ typedef int bme280_status_t;
 #define BME280_ERR (bme280_status_t)1
 #define BME280_VERIFICATION (bme280_status_t)2
 #define BME280_TIMEOUT (bme280_status_t)3
+#define BME280_NVM_COPY (bme280_status_t)4
 
 /**
  * @brief Oversampling register settings
@@ -171,7 +172,7 @@ typedef struct bme280_dev_t {
 bme280_status_t bme280_init(bme280_dev_t *dev);
 
 /**
- * @brief Hardware reset
+ * @brief Sensor soft reset
  *
  * @param dev bme280 device struct
  * @return bme280_status_t status code
