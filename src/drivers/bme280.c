@@ -19,6 +19,189 @@
  * @param measurements measurement struct container with raw and converted measurments
  * @param calib_data bme280 calibration constants
  */
+static void convert_temperature(bme280_meas_t *measurements, bme280_calib_t *calib_data);
+
+/**
+ * @brief Convert humidity ADC measurement to %.
+ * 4.2.3 Compensation Formulas
+ *
+ * @param measurements measurement struct container with raw and converted measurments
+ * @param calib_data bme280 calibration constants
+ */
+static void convert_humidity(bme280_meas_t *measurements, bme280_calib_t *calib_data);
+
+/**
+ * @brief Convert pressure ADC measurement to Pa.
+ * 4.2.3 Compensation Formulas
+ *
+ * @param measurements measurement struct container with raw and converted measurments
+ * @param calib_data bme280 calibration constants
+ */
+static void convert_pressure(bme280_meas_t *measurements, bme280_calib_t *calib_data);
+
+/**
+ * @brief Read I2C memory address from BME280
+ *
+ * @param hi2c I2C handle
+ * @param mem_address device memory address
+ * @param rx_buffer receive buffer
+ * @param size number of bytes to read
+ * @return bme280_status_t status code (converted from `HAL_StatusTypeDef`)
+ */
+static bme280_status_t _read(I2C_HandleTypeDef *hi2c, uint8_t mem_address, uint8_t *rx_buffer, uint16_t size);
+
+/**
+ * @brief Write I2C memory address from BME280
+ *
+ * @param hi2c I2C handle
+ * @param mem_address device memory address
+ * @param tx_buffer transact buffer
+ * @param size number of bytes to write
+ * @return bme280_status_t status code (converted from `HAL_StatusTypeDef`)
+ */
+static bme280_status_t _write(I2C_HandleTypeDef *hi2c, uint16_t mem_address, uint8_t *tx_buffer, uint16_t size);
+
+/**
+ * @brief Trigger a measurement and wait for conversion to complete.
+ *
+ * @param dev bme280 device struct
+ * @return bme280_status_t status code
+ */
+static bme280_status_t acq_trigger_and_wait(bme280_dev_t *dev);
+
+/**
+ * @brief Configure measurement subsystems for temperature, pressure and humidity.
+ * `BME280_OSRS_1X` to enable `BME280_OSRS_DISABLE` to disable, all other OSRS configure oversampling.
+ *
+ * @param dev bme280 device struct
+ * @param temp_osrs temperature oversampling rate
+ * @param press_osrs temperature oversampling rate
+ * @param hum_osrs temperature oversampling rate
+ * @return bme280_status_t
+ */
+static bme280_status_t configure_measurements(bme280_dev_t *dev, const enum BME280_OSRS temp_osrs, const enum BME280_OSRS press_osrs, const enum BME280_OSRS hum_osrs);
+
+/**
+ * @brief Set the sensor power mode
+ *
+ * @param dev bme280 device struct
+ * @param mode power mode
+ * @return bme280_status_t status code
+ */
+static bme280_status_t set_power_mode(bme280_dev_t *dev, const enum BME280_PModes mode);
+
+/**
+ * @brief Load calibration parameters from BME280 into device struct for measurement conversion.
+ *
+ * @param dev bme280 device struct
+ * @return bme280_status_t status code
+ */
+static bme280_status_t load_calibration(bme280_dev_t *dev);
+
+/**
+ * @brief API entry
+ *
+ */
+bme280_status_t bme280_init(bme280_dev_t *dev) {
+  bme280_status_t status;
+  // chip verification
+  status = _read(&dev->i2c, BME280_ID, &dev->chip_id, 1);
+  if (status != BME280_OK) {
+    return status;
+  }
+  if (dev->chip_id != BME280_CHIP_ID) {
+    return BME280_VERIFICATION;
+  }
+  // hardware reset sensor
+  status = bme280_reset(dev);
+  if (status != BME280_OK) {
+    return status;
+  }
+  status = load_calibration(dev);
+  if (status != BME280_OK) {
+    return status;
+  }
+  // Configure sensor for low frequency weather monitoring (3.5.1)
+  // temperature, pressure and humidity measurement subsystem with 1x oversampling
+  // NOTE: IIR filter is disabled by default
+  status = configure_measurements(dev, BME280_OSRS_1X, BME280_OSRS_1X, BME280_OSRS_1X);
+  if (status != BME280_OK) {
+    return status;
+  }
+  return status;
+}
+
+/**
+ * @brief Sensor reset
+ */
+bme280_status_t bme280_reset(bme280_dev_t *dev) {
+  bme280_status_t status;
+  uint8_t status_reg;
+  uint8_t retries = 3;
+  uint8_t payload = BME280_HW_RESET_KEY;
+  status = _write(&dev->i2c, BME280_RESET, &payload, 1);
+  if (status != BME280_OK) {
+    return status;
+  }
+  // Table 1. the technical datasheet indicates bme280 takes 2ms to boot up.
+  HAL_Delay(2);
+  // wait for trimming parameters to be read into memory from non-volatile memory
+  do {
+    status = _read(&dev->i2c, BME280_STATUS, &status_reg, 1);
+  } while ((retries--) && (status == BME280_OK) && (status_reg & BME280_STAT_UPDATE_MSK));
+  // notify failure with NVM copy
+  if (status_reg & BME280_STAT_UPDATE_MSK) {
+    status = BME280_NVM_ERR;
+  }
+  return status;
+}
+
+/**
+ * @brief Execute a sensor read using triggering (forced mode)
+ */
+bme280_status_t bme280_trigger_read(bme280_dev_t *dev, bme280_meas_t *measurements) {
+  uint32_t msb;
+  uint32_t lsb;
+  uint32_t xlsb;
+  bme280_status_t status;
+  uint8_t rx_buf[8] = {0};
+  measurements->humidity_raw = 0;
+  measurements->pressure_raw = 0;
+  measurements->temperature_raw = 0;
+  measurements->temperature = 0.0f;
+  measurements->pressure = 0.0f;
+  measurements->humidity = 0.0f;
+  // trigger acquisition and wait for conversion
+  status = acq_trigger_and_wait(dev);
+  if (status != BME280_OK) {
+    return status;
+  }
+  // read ready
+  status = _read(&dev->i2c, BME280_PRESS_MSB, rx_buf, 8);
+  if (status != BME280_OK) {
+    return status;
+  }
+  msb = (rx_buf[0] << 12);
+  lsb = (rx_buf[1] << 4);
+  xlsb = (rx_buf[2] >> 4);
+  measurements->pressure_raw = msb | lsb | xlsb;
+  msb = (rx_buf[3] << 12);
+  lsb = (rx_buf[4] << 4);
+  xlsb = (rx_buf[5] >> 4);
+  measurements->temperature_raw = msb | lsb | xlsb;
+  msb = (rx_buf[6] << 8);
+  lsb = rx_buf[7];
+  measurements->humidity_raw = msb | lsb;
+  convert_temperature(measurements, &dev->calib_data);
+  convert_pressure(measurements, &dev->calib_data);
+  convert_humidity(measurements, &dev->calib_data);
+  return status;
+}
+
+bme280_status_t bme280_sleep(bme280_dev_t *dev) {
+  return set_power_mode(dev, BME280_SLEEP);
+}
+
 static void convert_temperature(bme280_meas_t *measurements, bme280_calib_t *calib_data) {
   double var1;
   double var2;
@@ -36,13 +219,6 @@ static void convert_temperature(bme280_meas_t *measurements, bme280_calib_t *cal
   }
 }
 
-/**
- * @brief Convert pressure ADC measurement to Pa.
- * 4.2.3 Compensation Formulas
- *
- * @param measurements measurement struct container with raw and converted measurments
- * @param calib_data bme280 calibration constants
- */
 static void convert_pressure(bme280_meas_t *measurements, bme280_calib_t *calib_data) {
   double var1;
   double var2;
@@ -72,13 +248,6 @@ static void convert_pressure(bme280_meas_t *measurements, bme280_calib_t *calib_
   }
 }
 
-/**
- * @brief Convert humidity ADC measurement to %.
- * 4.2.3 Compensation Formulas
- *
- * @param measurements measurement struct container with raw and converted measurments
- * @param calib_data bme280 calibration constants
- */
 static void convert_humidity(bme280_meas_t *measurements, bme280_calib_t *calib_data) {
   double var1;
   double var2;
@@ -102,15 +271,6 @@ static void convert_humidity(bme280_meas_t *measurements, bme280_calib_t *calib_
   }
 }
 
-/**
- * @brief Read I2C memory address from BME280
- *
- * @param hi2c I2C handle
- * @param mem_address device memory address
- * @param rx_buffer receive buffer
- * @param size number of bytes to read
- * @return bme280_status_t status code (converted from `HAL_StatusTypeDef`)
- */
 static bme280_status_t _read(I2C_HandleTypeDef *hi2c, uint8_t mem_address, uint8_t *rx_buffer, uint16_t size) {
   HAL_StatusTypeDef status;
   status = HAL_I2C_Mem_Read(hi2c, BME280_DEFAULT_DEV_ADDR, (uint16_t)mem_address, I2C_MEMADD_SIZE_8BIT, rx_buffer, size, HAL_MAX_DELAY);
@@ -122,15 +282,6 @@ static bme280_status_t _read(I2C_HandleTypeDef *hi2c, uint8_t mem_address, uint8
   return BME280_OK;
 }
 
-/**
- * @brief Write I2C memory address from BME280
- *
- * @param hi2c I2C handle
- * @param mem_address device memory address
- * @param tx_buffer transact buffer
- * @param size number of bytes to write
- * @return bme280_status_t status code (converted from `HAL_StatusTypeDef`)
- */
 static bme280_status_t _write(I2C_HandleTypeDef *hi2c, uint16_t mem_address, uint8_t *tx_buffer, uint16_t size) {
   HAL_StatusTypeDef status;
   status = HAL_I2C_Mem_Write(hi2c, BME280_DEFAULT_DEV_ADDR, mem_address, I2C_MEMADD_SIZE_8BIT, tx_buffer, size, HAL_MAX_DELAY);
@@ -142,12 +293,25 @@ static bme280_status_t _write(I2C_HandleTypeDef *hi2c, uint16_t mem_address, uin
   return BME280_OK;
 }
 
-/**
- * @brief Load calibration parameters from BME280 into device struct for measurement conversion.
- *
- * @param dev bme280 device struct
- * @return bme280_status_t status code
- */
+static bme280_status_t acq_trigger_and_wait(bme280_dev_t *dev) {
+  bme280_status_t status;
+  uint8_t stat_reg = 0;
+  uint8_t retries = 5;
+  // set forced mode
+  status = set_power_mode(dev, BME280_FORCED);
+  if (status != BME280_OK) {
+    return BME280_FORCE_ERR;
+  }
+  // wait for acquisition completion
+  do {
+    status = _read(&dev->i2c, BME280_STATUS, &stat_reg, 1);
+  } while ((status == BME280_OK) && (retries--) && (stat_reg & BME280_STAT_MEAS_MSK));
+  if (stat_reg & BME280_STAT_MEAS_MSK) {
+    return BME280_MEAS_TIMEOUT;
+  }
+  return status;
+}
+
 static bme280_status_t load_calibration(bme280_dev_t *dev) {
   bme280_status_t status;
   uint8_t rx_buf[BME280_CALIB_BLK0_SIZE] = {0};
@@ -185,16 +349,6 @@ static bme280_status_t load_calibration(bme280_dev_t *dev) {
   return status;
 }
 
-/**
- * @brief Configure measurement subsystems for temperature, pressure and humidity.
- * `BME280_OSRS_1X` to enable `BME280_OSRS_DISABLE` to disable, all other OSRS configure oversampling.
- *
- * @param dev bme280 device struct
- * @param temp_osrs temperature oversampling rate
- * @param press_osrs temperature oversampling rate
- * @param hum_osrs temperature oversampling rate
- * @return bme280_status_t
- */
 static bme280_status_t configure_measurements(bme280_dev_t *dev, const enum BME280_OSRS temp_osrs, const enum BME280_OSRS press_osrs, const enum BME280_OSRS hum_osrs) {
   bme280_status_t status;
   uint8_t pload = 0x0;
@@ -209,13 +363,6 @@ static bme280_status_t configure_measurements(bme280_dev_t *dev, const enum BME2
   return status;
 }
 
-/**
- * @brief Set the power mode object
- *
- * @param dev
- * @param mode
- * @return bme280_status_t
- */
 static bme280_status_t set_power_mode(bme280_dev_t *dev, const enum BME280_PModes mode) {
   uint8_t ctrl_reg;
   bme280_status_t status;
@@ -225,93 +372,4 @@ static bme280_status_t set_power_mode(bme280_dev_t *dev, const enum BME280_PMode
   }
   ctrl_reg |= BME280_PMODE(mode);
   return _write(&dev->i2c, BME280_CTRL_MEAS, &ctrl_reg, 1);
-}
-
-bme280_status_t bme280_init(bme280_dev_t *dev) {
-  bme280_status_t status;
-  // chip verification
-  status = _read(&dev->i2c, BME280_ID, &dev->chip_id, 1);
-  if (status != BME280_OK) {
-    return status;
-  }
-  if (dev->chip_id != BME280_CHIP_ID) {
-    return BME280_VERIFICATION;
-  }
-  // hardware reset sensor
-  status = bme280_reset(dev);
-  if (status != BME280_OK) {
-    return status;
-  }
-  status = load_calibration(dev);
-  if (status != BME280_OK) {
-    return status;
-  }
-  // Configure sensor for low frequency weather monitoring (3.5.1)
-  // temperature, pressure and humidity measurement subsystem with 1x oversampling
-  // NOTE: IIR filter is disabled by default
-  status = configure_measurements(dev, BME280_OSRS_1X, BME280_OSRS_1X, BME280_OSRS_1X);
-  if (status != BME280_OK) {
-    return status;
-  }
-  // set power mode to normal
-  return set_power_mode(dev, BME280_NORMAL);
-}
-
-bme280_status_t bme280_reset(bme280_dev_t *dev) {
-  bme280_status_t status;
-  uint8_t status_reg;
-  uint8_t retries = 3;
-  uint8_t payload = BME280_HW_RESET_KEY;
-  status = _write(&dev->i2c, BME280_RESET, &payload, 1);
-  if (status != BME280_OK) {
-    return status;
-  }
-  // Table 1. the technical datasheet indicates bme280 takes 2ms to boot up.
-  HAL_Delay(2);
-  // wait for trimming parameters to be read into memory from non-volatile memory
-  do {
-    status = _read(&dev->i2c, BME280_STATUS, &status_reg, 1);
-  } while ((retries--) && (status == BME280_OK) && (status_reg & BME280_STAT_UPDATE_MSK));
-  // notify failure with NVM copy
-  if (status_reg & BME280_STAT_UPDATE_MSK) {
-    status = BME280_NVM_COPY;
-  }
-  return status;
-}
-
-bme280_status_t bme280_read(bme280_dev_t *dev, bme280_meas_t *measurements) {
-  uint32_t msb;
-  uint32_t lsb;
-  uint32_t xlsb;
-  bme280_status_t status;
-  uint8_t rx_buf[8] = {0};
-  measurements->humidity_raw = 0;
-  measurements->pressure_raw = 0;
-  measurements->temperature_raw = 0;
-  measurements->temperature = 0.0f;
-  measurements->pressure = 0.0f;
-  measurements->humidity = 0.0f;
-  status = _read(&dev->i2c, BME280_PRESS_MSB, rx_buf, 8);
-  if (status != BME280_OK) {
-    return status;
-  }
-  msb = (rx_buf[0] << 12);
-  lsb = (rx_buf[1] << 4);
-  xlsb = (rx_buf[2] >> 4);
-  measurements->pressure_raw = msb | lsb | xlsb;
-  msb = (rx_buf[3] << 12);
-  lsb = (rx_buf[4] << 4);
-  xlsb = (rx_buf[5] >> 4);
-  measurements->temperature_raw = msb | lsb | xlsb;
-  msb = (rx_buf[6] << 8);
-  lsb = rx_buf[7];
-  measurements->humidity_raw = msb | lsb;
-  convert_temperature(measurements, &dev->calib_data);
-  convert_pressure(measurements, &dev->calib_data);
-  convert_humidity(measurements, &dev->calib_data);
-  return status;
-}
-
-bme280_status_t bme280_sleep(bme280_dev_t *dev) {
-  return set_power_mode(dev, BME280_SLEEP);
 }
