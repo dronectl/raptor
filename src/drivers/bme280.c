@@ -256,8 +256,21 @@ bme280_status_t bme280_init(bme280_dev_t *dev) {
 }
 
 bme280_status_t bme280_reset(bme280_dev_t *dev) {
+  bme280_status_t status;
+  uint8_t status_reg;
+  uint8_t retries = 3;
   uint8_t payload = BME280_HW_RESET_KEY;
-  return _write(&dev->i2c, BME280_RESET, &payload, 1);
+  status = _write(&dev->i2c, BME280_RESET, &payload, 1);
+  if (status != BME280_OK) {
+    return status;
+  }
+  // Table 1. the technical datasheet indicates bme280 takes 2ms to boot up.
+  HAL_Delay(2);
+  // wait for trimming parameters to be read into memory from non-volatile memory
+  do {
+    status = _read(&dev->i2c, BME280_STATUS, &status_reg, 1);
+  } while ((retries--) && (status == BME280_OK) && (status_reg & BME280_STAT_UPDATE_MSK));
+  return status;
 }
 
 bme280_status_t bme280_read(bme280_dev_t *dev, bme280_meas_t *measurements) {
