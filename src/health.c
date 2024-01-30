@@ -60,7 +60,7 @@ static enum HealthState fsm_tick(const enum HealthState state) {
     case HEALTH_READ: {
       // read from alive sensors
       bme280_meas_t bme280_meas = {.humidity = 0.0f, .humidity_raw = 0, .pressure = 0.0f, .pressure_raw = 0, .temperature = 0.0f, .temperature_raw = 0};
-      bme280_read(&bme280, &bme280_meas);
+      bme280_trigger_read(&bme280, &bme280_meas);
       health_report.humidity = bme280_meas.humidity;
       health_report.pressure = bme280_meas.pressure;
       health_report.temperature = bme280_meas.temperature;
