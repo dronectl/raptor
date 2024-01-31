@@ -11,32 +11,131 @@
 
 #include "main.h"
 #include "FreeRTOS.h"
-#include "app_ethernet.h"
 #include "config.h"
-#include "ethernetif.h"
 #include "health.h"
-#include "hx711.h"
-#include "lwip/tcpip.h"
-#include "netif/ethernet.h"
 #include "stm32h723xx.h"
 #include "stm32h7xx_hal.h"
 #include "stm32h7xx_nucleo.h"
 #include "task.h"
+#include <stdio.h>
 
 // HAL structs
 I2C_HandleTypeDef hi2c2;
 // RTOS task structs
 TaskHandle_t start_handle;
-TaskHandle_t tcp_handle;
-TaskHandle_t link_handle;
-TaskHandle_t dhcp_handle;
-struct netif gnetif;
+TaskHandle_t health_handle;
 
 /**
  * @brief  Configure the MPU attributes
  * @param  None
  * @retval None
  */
+static void mpu_config(void);
+
+/**
+ * @brief  System Clock Configuration
+ *         The system Clock is configured as follow :
+ *            System Clock source            = PLL (HSE BYPASS)
+ *            SYSCLK(Hz)                     = 520000000 (CPU Clock)
+ *            HCLK(Hz)                       = 260000000 (AXI and AHBs Clock)
+ *            AHB Prescaler                  = 2
+ *            D1 APB3 Prescaler              = 2 (APB3 Clock  130MHz)
+ *            D2 APB1 Prescaler              = 2 (APB1 Clock  130MHz)
+ *            D2 APB2 Prescaler              = 2 (APB2 Clock  130MHz)
+ *            D3 APB4 Prescaler              = 2 (APB4 Clock  130MHz)
+ *            HSE Frequency(Hz)              = 8000000
+ *            PLL_M                          = 4
+ *            PLL_N                          = 260
+ *            PLL_P                          = 1
+ *            PLL_Q                          = 4
+ *            PLL_R                          = 2
+ *            VDD(V)                         = 3.3
+ *            Flash Latency(WS)              = 3
+ * @param  None
+ * @retval None
+ */
+static void system_clock_config(void);
+
+/**
+ * @brief  CPU L1-Cache enable.
+ * @param  None
+ * @retval None
+ */
+static void cpu_cache_enable(void);
+
+// To remove
+static void bsp_config(void) {
+  BSP_LED_Init(LED2);
+  BSP_LED_Init(LED3);
+}
+
+static void genesis_task(void *pv_params) {
+  BaseType_t x_return;
+  x_return = xTaskCreate(health_main, "health_main", configMINIMAL_STACK_SIZE, (void *)&hi2c2, tskIDLE_PRIORITY + 32, &health_handle);
+  configASSERT(health_handle);
+  if (x_return != pdPASS) {
+    vTaskDelete(health_handle);
+  }
+  /* Delete the Init Thread */
+  vTaskDelete(start_handle);
+}
+
+void error_handler(int ecode, const char *file, int line) {
+  __disable_irq();
+  printf("Error: %d in file: %s on line: %d\n", ecode, file, line);
+  while (1) {
+  }
+}
+
+/**
+ * @brief I2C2 Initialization Function
+ * @param None
+ * @retval None
+ */
+static void MX_I2C2_Init(void) {
+  HAL_StatusTypeDef status;
+  hi2c2.Instance = I2C2;
+  hi2c2.Init.Timing = 0x00707CBB;
+  hi2c2.Init.OwnAddress1 = 0;
+  hi2c2.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
+  hi2c2.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
+  hi2c2.Init.OwnAddress2 = 0;
+  hi2c2.Init.OwnAddress2Masks = I2C_OA2_NOMASK;
+  hi2c2.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
+  hi2c2.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
+  status = HAL_I2C_Init(&hi2c2);
+  if (status != HAL_OK) {
+    EHANDLE(status);
+  }
+  status = HAL_I2CEx_ConfigAnalogFilter(&hi2c2, I2C_ANALOGFILTER_ENABLE);
+  if (status != HAL_OK) {
+    EHANDLE(status);
+  }
+  status = HAL_I2CEx_ConfigDigitalFilter(&hi2c2, 0);
+  if (status != HAL_OK) {
+    EHANDLE(status);
+  }
+}
+
+int main(void) {
+  BaseType_t x_return;
+  mpu_config();
+  cpu_cache_enable();
+  HAL_Init();
+  MX_I2C2_Init();
+  system_clock_config();
+  bsp_config();
+  x_return = xTaskCreate(genesis_task, "genesis_task", configMINIMAL_STACK_SIZE * 2, NULL, tskIDLE_PRIORITY + 24, &start_handle);
+  configASSERT(start_handle);
+  if (x_return != pdPASS) {
+    vTaskDelete(start_handle);
+  }
+  vTaskStartScheduler();
+  // will only reach here if rtos has insufficient memory
+  for (;;)
+    ;
+}
+
 static void mpu_config(void) {
   MPU_Region_InitTypeDef MPU_InitStruct;
   /* Disable the MPU */
@@ -86,28 +185,6 @@ static void mpu_config(void) {
   HAL_MPU_Enable(MPU_PRIVILEGED_DEFAULT);
 }
 
-/**
- * @brief  System Clock Configuration
- *         The system Clock is configured as follow :
- *            System Clock source            = PLL (HSE BYPASS)
- *            SYSCLK(Hz)                     = 520000000 (CPU Clock)
- *            HCLK(Hz)                       = 260000000 (AXI and AHBs Clock)
- *            AHB Prescaler                  = 2
- *            D1 APB3 Prescaler              = 2 (APB3 Clock  130MHz)
- *            D2 APB1 Prescaler              = 2 (APB1 Clock  130MHz)
- *            D2 APB2 Prescaler              = 2 (APB2 Clock  130MHz)
- *            D3 APB4 Prescaler              = 2 (APB4 Clock  130MHz)
- *            HSE Frequency(Hz)              = 8000000
- *            PLL_M                          = 4
- *            PLL_N                          = 260
- *            PLL_P                          = 1
- *            PLL_Q                          = 4
- *            PLL_R                          = 2
- *            VDD(V)                         = 3.3
- *            Flash Latency(WS)              = 3
- * @param  None
- * @retval None
- */
 static void system_clock_config(void) {
   RCC_ClkInitTypeDef RCC_ClkInitStruct;
   RCC_OscInitTypeDef RCC_OscInitStruct;
@@ -174,127 +251,11 @@ static void system_clock_config(void) {
   HAL_EnableCompensationCell();
 }
 
-/**
- * @brief  CPU L1-Cache enable.
- * @param  None
- * @retval None
- */
 static void cpu_cache_enable(void) {
   /* Enable I-Cache */
   SCB_EnableICache();
   /* Enable D-Cache */
   SCB_EnableDCache();
-}
-
-// To remove
-static void bsp_config(void) {
-  BSP_LED_Init(LED2);
-  BSP_LED_Init(LED3);
-}
-
-static void genesis_task(void *pv_params) {
-  BaseType_t x_returned = xTaskCreate(health_main, "health_main", configMINIMAL_STACK_SIZE, (void *)&hi2c2, tskIDLE_PRIORITY + 32, &tcp_handle);
-  configASSERT(tcp_handle);
-  if (x_returned != pdPASS) {
-    vTaskDelete(tcp_handle);
-  }
-  for (;;) {
-    /* Delete the Init Thread */
-    vTaskDelete(start_handle);
-  }
-}
-
-#ifdef RAPTOR_DEBUG
-/**
- * @brief FreeRTOS task CPU usage statistics timer configuration.  Only used in
- * debug builds. TIM2 peripheral is used arbitrarily.
- *
- */
-void vconfigure_rtos_stats_timer(void) {
-  // Enable the clock for Timer 2
-  RCC->APB1HENR |= RCC_APB1HENR_TIM23EN;
-  // Set the prescaler for Timer 2
-  TIM23->PSC = SystemCoreClock / 10000 - 1;
-  // Configure Timer 2 in up-counting mode
-  TIM23->CR1 &= ~TIM_CR1_DIR; // Up-counting mode
-  TIM23->CR1 &= ~TIM_CR1_CMS; // Edge-aligned mode
-  // Enable Timer 2
-  TIM23->CR1 |= TIM_CR1_CEN;
-}
-/**
- * @brief FreeRTOS task CPU usage statistics helper. Fetches current counter
- * value.
- *
- * @return uint32_t timer2 counter register
- */
-uint32_t vget_runtime_count(void) { return TIM23->CNT; }
-#endif // RAPTOR_DEBUG
-
-/**
- * @brief This is to provide the memory that is used by the RTOS daemon/time
- * task.
- *
- * If configUSE_STATIC_ALLOCATION is set to 1, so the application must provide
- * an implementation of vApplicationGetTimerTaskMemory() to provide the memory
- * that is used by the RTOS daemon/time task.
- */
-void vApplicationGetTimerTaskMemory(StaticTask_t **ppxTimerTaskTCBBuffer,
-                                    StackType_t **ppxTimerTaskStackBuffer,
-                                    uint32_t *pulTimerTaskStackSize) {
-  /* If the buffers to be provided to the Timer task are declared inside this
-   * function then they must be declared static - otherwise they will be
-   * allocated on the stack and so not exists after this function exits. */
-  static StaticTask_t xTimerTaskTCB;
-  static StackType_t uxTimerTaskStack[configTIMER_TASK_STACK_DEPTH];
-
-  /* Pass out a pointer to the StaticTask_t structure in which the Idle
-   * task's state will be stored. */
-  *ppxTimerTaskTCBBuffer = &xTimerTaskTCB;
-
-  /* Pass out the array that will be used as the Timer task's stack. */
-  *ppxTimerTaskStackBuffer = uxTimerTaskStack;
-
-  /* Pass out the size of the array pointed to by *ppxTimerTaskStackBuffer.
-   * Note that, as the array is necessarily of type StackType_t,
-   * configMINIMAL_STACK_SIZE is specified in words, not bytes. */
-  *pulTimerTaskStackSize = configTIMER_TASK_STACK_DEPTH;
-}
-
-/* configUSE_STATIC_ALLOCATION is set to 1, so the application must provide an
- * implementation of vApplicationGetIdleTaskMemory() to provide the memory that
- * is used by the Idle task. */
-void vApplicationGetIdleTaskMemory(StaticTask_t **ppxIdleTaskTCBBuffer,
-                                   StackType_t **ppxIdleTaskStackBuffer,
-                                   uint32_t *pulIdleTaskStackSize) {
-  /* If the buffers to be provided to the Idle task are declared inside this
-   * function then they must be declared static - otherwise they will be
-   * allocated on the stack and so not exists after this function exits. */
-  static StaticTask_t xIdleTaskTCB;
-  static StackType_t uxIdleTaskStack[configMINIMAL_STACK_SIZE];
-
-  /* Pass out a pointer to the StaticTask_t structure in which the Idle
-   * task's state will be stored. */
-  *ppxIdleTaskTCBBuffer = &xIdleTaskTCB;
-
-  /* Pass out the array that will be used as the Idle task's stack. */
-  *ppxIdleTaskStackBuffer = uxIdleTaskStack;
-
-  /* Pass out the size of the array pointed to by *ppxIdleTaskStackBuffer.
-   * Note that, as the array is necessarily of type StackType_t,
-   * configMINIMAL_STACK_SIZE is specified in words, not bytes. */
-  *pulIdleTaskStackSize = configMINIMAL_STACK_SIZE;
-}
-
-void vApplicationStackOverflowHook(TaskHandle_t pxTask, char *pcTaskName) {
-  (void)pcTaskName;
-  (void)pxTask;
-
-  /* Run time stack overflow checking is performed if
-  configCHECK_FOR_STACK_OVERFLOW is defined to 1 or 2.  This hook
-  function is called if a stack overflow is detected. */
-  taskDISABLE_INTERRUPTS();
-  for (;;)
-    ;
 }
 
 #ifdef USE_FULL_ASSERT
@@ -315,56 +276,3 @@ void assert_failed(uint8_t *file, uint32_t line) {
   }
 }
 #endif // USE_FULL_ASSERT
-
-void error_handler(int ecode, const char *file, int line) {
-  __disable_irq();
-  printf("Error: %d in file: %s on line: %d\n", ecode, file, line);
-  while (1) {
-  }
-}
-
-/**
- * @brief I2C2 Initialization Function
- * @param None
- * @retval None
- */
-static void MX_I2C2_Init(void) {
-  HAL_StatusTypeDef status;
-  hi2c2.Instance = I2C2;
-  hi2c2.Init.Timing = 0x00707CBB;
-  hi2c2.Init.OwnAddress1 = 0;
-  hi2c2.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
-  hi2c2.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
-  hi2c2.Init.OwnAddress2 = 0;
-  hi2c2.Init.OwnAddress2Masks = I2C_OA2_NOMASK;
-  hi2c2.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
-  hi2c2.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
-  status = HAL_I2C_Init(&hi2c2);
-  if (status != HAL_OK) {
-    EHANDLE(status);
-  }
-  status = HAL_I2CEx_ConfigAnalogFilter(&hi2c2, I2C_ANALOGFILTER_ENABLE);
-  if (status != HAL_OK) {
-    EHANDLE(status);
-  }
-  status = HAL_I2CEx_ConfigDigitalFilter(&hi2c2, 0);
-  if (status != HAL_OK) {
-    EHANDLE(status);
-  }
-}
-
-int main(void) {
-  HAL_Init();
-  mpu_config();
-  cpu_cache_enable();
-  MX_I2C2_Init();
-  system_clock_config();
-  bsp_config();
-  BaseType_t x_returned;
-  x_returned = xTaskCreate(genesis_task, "genesis_task", configMINIMAL_STACK_SIZE * 2, NULL, tskIDLE_PRIORITY + 24, &start_handle);
-  configASSERT(start_handle);
-  if (x_returned != pdPASS) {
-    vTaskDelete(start_handle);
-  }
-  vTaskStartScheduler();
-}
