@@ -12,7 +12,7 @@
 #define __LOGGER_H__
 
 #ifndef MAX_LOGGING_LINE_LEN
-#define MAX_LOGGING_LINE_LEN 200
+#define MAX_LOGGING_LINE_LEN 500
 #endif
 #ifndef MAX_LOGGING_CBUFFER_SIZE
 #define MAX_LOGGING_CBUFFER_SIZE 15
@@ -38,6 +38,7 @@ enum logger_level {
 
 enum logger_level logger_get_level(void);
 void logger_set_level(enum logger_level level);
+void logger_init(const enum logger_level level);
 void logger_out(enum logger_level level, const char *func, int line, const char *fmt, ...);
 void logger_task(void *pv_params);
 
