@@ -52,20 +52,20 @@ add_executable(
   src/main.c
   src/lwip/app_ethernet.c
   src/lwip/ethernetif.c
-  src/syscalls.c
+  src/stcore/syscalls.c
   src/drivers/hx711.c
   src/drivers/bme280.c
-  src/sysmem.c
+  src/stcore/sysmem.c
   src/health.c
   src/cbuffer.c
   src/logger.c
   src/tcp_echoserver.c
   src/freertos_openocd.c
-  src/stm32h7xx_it.c
-  src/stm32h7xx_hal_msp.c
-  src/stm32h7xx_hal_timebase_tim.c
-  src/startup_stm32h723zgtx.s
-  src/system_stm32h7xx.c
+  src/stcore/stm32h7xx_it.c
+  src/stcore/stm32h7xx_hal_msp.c
+  src/stcore/stm32h7xx_hal_timebase_tim.c
+  src/stcore/startup_stm32h723zgtx.s
+  src/stcore/system_stm32h7xx.c
   ${STM32CUBEH7_SRC}/Drivers/BSP/Components/lan8742/lan8742.c
   ${STM32CUBEH7_SRC}/Drivers/BSP/STM32H7xx_Nucleo/stm32h7xx_nucleo.c
   ${LWIP_SRC}
