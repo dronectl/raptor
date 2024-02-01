@@ -9,12 +9,13 @@
  *
  */
 
-#include "main.h"
 #include "FreeRTOS.h"
+#include "app_ethernet.h"
 #include "config.h"
+#include "ethernetif.h"
 #include "health.h"
-#include "logger.h"
 #include "hx711.h"
+#include "logger.h"
 #include "lwip/tcpip.h"
 #include "netif/ethernet.h"
 #include "stm32h723xx.h"
@@ -82,12 +83,12 @@ static void MX_I2C2_Init(void);
 static void bsp_config(void);
 static void genesis_task(void *pv_params);
 
-void error_handler(int ecode, const char *file, int line) {
-  __disable_irq();
-  printf("Error: %d in file: %s on line: %d\n", ecode, file, line);
-  while (1) {
-  }
-}
+/**
+ * @brief  Setup the network interface
+ * @param  None
+ * @retval None
+ */
+static void netconfig_init(void);
 
 int main(void) {
   BaseType_t x_return;
@@ -110,7 +111,15 @@ int main(void) {
 
 static void genesis_task(void *pv_params) {
   BaseType_t x_return;
-  x_return = xTaskCreate(health_main, "health_main", configMINIMAL_STACK_SIZE, (void *)&hi2c2, tskIDLE_PRIORITY + 32, &health_handle);
+  tcpip_init(NULL, NULL);
+  netconfig_init();
+  logger_init(LOGGER_TRACE);
+  x_return = xTaskCreate(logger_task, "logger_task", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 10, &logger_handle);
+  configASSERT(logger_handle);
+  if (x_return != pdPASS) {
+    vTaskDelete(logger_handle);
+  }
+  x_return = xTaskCreate(health_main, "health_task", configMINIMAL_STACK_SIZE, (void *)&hi2c2, tskIDLE_PRIORITY + 32, &health_handle);
   configASSERT(health_handle);
   if (x_return != pdPASS) {
     vTaskDelete(health_handle);
@@ -132,16 +141,60 @@ static void MX_I2C2_Init(void) {
   hi2c2.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
   status = HAL_I2C_Init(&hi2c2);
   if (status != HAL_OK) {
-    EHANDLE(status);
+    return;
   }
   status = HAL_I2CEx_ConfigAnalogFilter(&hi2c2, I2C_ANALOGFILTER_ENABLE);
   if (status != HAL_OK) {
-    EHANDLE(status);
+    return;
   }
   status = HAL_I2CEx_ConfigDigitalFilter(&hi2c2, 0);
   if (status != HAL_OK) {
-    EHANDLE(status);
+    return;
   }
+}
+
+static void netconfig_init(void) {
+  ip_addr_t ipaddr;
+  ip_addr_t netmask;
+  ip_addr_t gw;
+
+#if LWIP_DHCP
+  ip_addr_set_zero_ip4(&ipaddr);
+  ip_addr_set_zero_ip4(&netmask);
+  ip_addr_set_zero_ip4(&gw);
+#else
+  /* IP address default setting */
+  IP4_ADDR(&ipaddr, IP_ADDR0, IP_ADDR1, IP_ADDR2, IP_ADDR3);
+  IP4_ADDR(&netmask, NETMASK_ADDR0, NETMASK_ADDR1, NETMASK_ADDR2, NETMASK_ADDR3);
+  IP4_ADDR(&gw, GW_ADDR0, GW_ADDR1, GW_ADDR2, GW_ADDR3);
+#endif
+
+  /* add the network interface */
+  netif_add(&gnetif, &ipaddr, &netmask, &gw, NULL, &ethernetif_init, &ethernet_input);
+
+  /*  Registers the default network interface */
+  netif_set_default(&gnetif);
+
+  ethernet_link_status_updated(&gnetif);
+  BaseType_t x_returned;
+#if LWIP_NETIF_LINK_CALLBACK
+  netif_set_link_callback(&gnetif, ethernet_link_status_updated);
+  x_returned = xTaskCreate(ethernet_link_thread, "eth_link_task", configMINIMAL_STACK_SIZE, &gnetif,
+                           tskIDLE_PRIORITY + 24, &link_handle);
+  configASSERT(link_handle);
+  if (x_returned != pdPASS) {
+    vTaskDelete(link_handle);
+  }
+#endif
+
+#if LWIP_DHCP
+  x_returned = xTaskCreate(dhcp_task, "dhcp_task", configMINIMAL_STACK_SIZE, &gnetif,
+                           tskIDLE_PRIORITY + 16, &dhcp_handle);
+  configASSERT(dhcp_handle);
+  if (x_returned != pdPASS) {
+    vTaskDelete(dhcp_handle);
+  }
+#endif
 }
 
 static void mpu_config(void) {
