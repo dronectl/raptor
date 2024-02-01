@@ -63,10 +63,40 @@ static void system_clock_config(void);
  */
 static void cpu_cache_enable(void);
 
-// To remove
-static void bsp_config(void) {
-  BSP_LED_Init(LED2);
-  BSP_LED_Init(LED3);
+/**
+ * @brief I2C2 Initialization Function
+ * @param None
+ * @retval None
+ */
+static void MX_I2C2_Init(void);
+
+static void bsp_config(void);
+static void genesis_task(void *pv_params);
+
+void error_handler(int ecode, const char *file, int line) {
+  __disable_irq();
+  printf("Error: %d in file: %s on line: %d\n", ecode, file, line);
+  while (1) {
+  }
+}
+
+int main(void) {
+  BaseType_t x_return;
+  mpu_config();
+  cpu_cache_enable();
+  HAL_Init();
+  MX_I2C2_Init();
+  system_clock_config();
+  bsp_config();
+  x_return = xTaskCreate(genesis_task, "genesis_task", configMINIMAL_STACK_SIZE * 2, NULL, tskIDLE_PRIORITY + 24, &start_handle);
+  configASSERT(start_handle);
+  if (x_return != pdPASS) {
+    vTaskDelete(start_handle);
+  }
+  vTaskStartScheduler();
+  // will only reach here if rtos has insufficient memory
+  for (;;)
+    ;
 }
 
 static void genesis_task(void *pv_params) {
@@ -80,18 +110,6 @@ static void genesis_task(void *pv_params) {
   vTaskDelete(start_handle);
 }
 
-void error_handler(int ecode, const char *file, int line) {
-  __disable_irq();
-  printf("Error: %d in file: %s on line: %d\n", ecode, file, line);
-  while (1) {
-  }
-}
-
-/**
- * @brief I2C2 Initialization Function
- * @param None
- * @retval None
- */
 static void MX_I2C2_Init(void) {
   HAL_StatusTypeDef status;
   hi2c2.Instance = I2C2;
@@ -115,25 +133,6 @@ static void MX_I2C2_Init(void) {
   if (status != HAL_OK) {
     EHANDLE(status);
   }
-}
-
-int main(void) {
-  BaseType_t x_return;
-  mpu_config();
-  cpu_cache_enable();
-  HAL_Init();
-  MX_I2C2_Init();
-  system_clock_config();
-  bsp_config();
-  x_return = xTaskCreate(genesis_task, "genesis_task", configMINIMAL_STACK_SIZE * 2, NULL, tskIDLE_PRIORITY + 24, &start_handle);
-  configASSERT(start_handle);
-  if (x_return != pdPASS) {
-    vTaskDelete(start_handle);
-  }
-  vTaskStartScheduler();
-  // will only reach here if rtos has insufficient memory
-  for (;;)
-    ;
 }
 
 static void mpu_config(void) {
@@ -252,10 +251,13 @@ static void system_clock_config(void) {
 }
 
 static void cpu_cache_enable(void) {
-  /* Enable I-Cache */
   SCB_EnableICache();
-  /* Enable D-Cache */
   SCB_EnableDCache();
+}
+
+static void bsp_config(void) {
+  BSP_LED_Init(LED2);
+  BSP_LED_Init(LED3);
 }
 
 #ifdef USE_FULL_ASSERT
