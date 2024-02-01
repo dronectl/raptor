@@ -2,7 +2,7 @@
 #include "health.h"
 #include "FreeRTOS.h"
 #include "bme280.h"
-#include "main.h"
+#include "logger.h"
 #include "stm32h7xx_hal.h"
 #include "task.h"
 
@@ -85,6 +85,7 @@ void health_main(void *pv_params) {
   I2C_HandleTypeDef hi2c2 = *(I2C_HandleTypeDef *)pv_params;
   bme280.i2c = hi2c2;
   while (1) {
+    trace("Health tick with state %d", state);
     state = fsm_tick(state);
     vTaskDelay(delay);
   }
