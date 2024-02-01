@@ -447,7 +447,7 @@ int main(void) {
   bme280.i2c = hi2c2;
   bme280_init(&bme280);
   while (1) {
-    bme280_read(&bme280, &meas);
-    HAL_Delay(100);
+    bme280_trigger_read(&bme280, &meas);
+    HAL_Delay(1000);
   }
 }

@@ -154,16 +154,6 @@ header file. */
 standard names. */
 #define vPortSVCHandler SVC_Handler
 #define xPortPendSVHandler PendSV_Handler
-
-// Debugging definitions
-#ifdef RAPTOR_DEBUG
-#define configGENERATE_RUN_TIME_STATS 1
-#define configUSE_STATS_FORMATTING_FUNCTIONS 1
-extern void vconfigure_rtos_stats_timer(void);
-extern uint32_t vget_runtime_count(void);
-#define portCONFIGURE_TIMER_FOR_RUN_TIME_STATS() vconfigure_rtos_stats_timer()
-#define portGET_RUN_TIME_COUNTER_VALUE() vget_runtime_count()
-#endif // RAPTOR_DEBUG
 #define configRECORD_STACK_HIGH_ADDRESS 1
 
 #endif /* FREERTOS_CONFIG_H */

@@ -68,6 +68,9 @@ typedef int bme280_status_t;
 #define BME280_ERR (bme280_status_t)1
 #define BME280_VERIFICATION (bme280_status_t)2
 #define BME280_TIMEOUT (bme280_status_t)3
+#define BME280_NVM_ERR (bme280_status_t)4
+#define BME280_FORCE_ERR (bme280_status_t)5
+#define BME280_MEAS_TIMEOUT (bme280_status_t)6
 
 /**
  * @brief Oversampling register settings
@@ -163,7 +166,7 @@ typedef struct bme280_dev_t {
 } bme280_dev_t;
 
 /**
- * @brief Initialize, verify, load calibration trimming parameters, enable measurement subsystems.
+ * @brief Verify sensor, reset, load calibration trimming parameters, enable measurement subsystems.
  *
  * @param dev bme280 device struct
  * @return bme280_status_t status code
@@ -171,7 +174,7 @@ typedef struct bme280_dev_t {
 bme280_status_t bme280_init(bme280_dev_t *dev);
 
 /**
- * @brief Hardware reset
+ * @brief Sensor soft reset
  *
  * @param dev bme280 device struct
  * @return bme280_status_t status code
@@ -187,12 +190,12 @@ bme280_status_t bme280_reset(bme280_dev_t *dev);
 bme280_status_t bme280_sleep(bme280_dev_t *dev);
 
 /**
- * @brief Bulk read of temperature, humidity, and pressure in standard units (˚C, % and Pa respectively)
+ * @brief Perform a triggered bulk read of temperature, humidity, and pressure using forced mode.
  *
  * @param dev bme280 device struct
  * @param measurements measurement payload struct
  * @return bme280_status_t status code
  */
-bme280_status_t bme280_read(bme280_dev_t *dev, bme280_meas_t *measurements);
+bme280_status_t bme280_trigger_read(bme280_dev_t *dev, bme280_meas_t *measurements);
 
 #endif // __BME280_H__

@@ -21,15 +21,6 @@
 #include "FreeRTOS.h"
 #include "stm32h7xx_hal.h"
 
-/* Private typedef -----------------------------------------------------------*/
-/* Private define ------------------------------------------------------------*/
-/* Private macro -------------------------------------------------------------*/
-/* Private variables ---------------------------------------------------------*/
-extern ETH_HandleTypeDef EthHandle;
-/* Private function prototypes -----------------------------------------------*/
-void ETH_IRQHandler(void);
-/* Private functions ---------------------------------------------------------*/
-
 /******************************************************************************/
 /*            Cortex-M7 Processor Exceptions Handlers                         */
 /******************************************************************************/
@@ -98,26 +89,3 @@ void DebugMon_Handler(void) {}
 /*  available peripheral interrupt handler's name please refer to the startup */
 /*  file (startup_stm32h7xx.s).                                               */
 /******************************************************************************/
-/**
- * @brief  This function handles Ethernet interrupt request.
- * @param  None
- * @retval None
- */
-void ETH_IRQHandler(void) { HAL_ETH_IRQHandler(&EthHandle); }
-
-/**
- * @brief  This function handles SysTick Handler.
- * @param  None
- * @retval None
- */
-void SysTick_Handler(void) {
-  HAL_IncTick();
-}
-
-/**
- * @}
- */
-
-/**
- * @}
- */
