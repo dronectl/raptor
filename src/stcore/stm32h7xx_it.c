@@ -25,12 +25,19 @@
 /*            Cortex-M7 Processor Exceptions Handlers                         */
 /******************************************************************************/
 
+extern ETH_HandleTypeDef EthHandle;
+/* Private function prototypes -----------------------------------------------*/
+void ETH_IRQHandler(void);
+
 /**
  * @brief   This function handles NMI exception.
  * @param  None
  * @retval None
  */
-void NMI_Handler(void) {}
+void NMI_Handler(void) {
+  while (1) {
+  }
+}
 
 /**
  * @brief  This function handles Hard Fault exception.
@@ -81,7 +88,10 @@ void UsageFault_Handler(void) {
  * @param  None
  * @retval None
  */
-void DebugMon_Handler(void) {}
+void DebugMon_Handler(void) {
+  while (1) {
+  }
+}
 
 /******************************************************************************/
 /*                 STM32H7xx Peripherals Interrupt Handlers                   */
@@ -89,3 +99,10 @@ void DebugMon_Handler(void) {}
 /*  available peripheral interrupt handler's name please refer to the startup */
 /*  file (startup_stm32h7xx.s).                                               */
 /******************************************************************************/
+
+/**
+ * @brief  This function handles Ethernet interrupt request.
+ * @param  None
+ * @retval None
+ */
+void ETH_IRQHandler(void) { HAL_ETH_IRQHandler(&EthHandle); }
