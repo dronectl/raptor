@@ -16,7 +16,6 @@
  ******************************************************************************
  */
 
-#include "main.h"
 #include "stm32h7xx_hal.h"
 
 /**
@@ -57,7 +56,7 @@ void HAL_I2C_MspInit(I2C_HandleTypeDef *hi2c) {
     PeriphClkInitStruct.I2c123ClockSelection = RCC_I2C1235CLKSOURCE_D2PCLK1;
     status = HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct);
     if (status != HAL_OK) {
-      error_handler(status, __FILE__, __LINE__);
+      return;
     }
 
     __HAL_RCC_GPIOF_CLK_ENABLE();
