@@ -1,24 +1,69 @@
-
 #ifndef __HX711_H__
 #define __HX711_H__
 
 #include <stdint.h>
-#define MIN 0x80000
-#define MAX 0x7FFFF
 
+/**
+ * @brief ADC output in 24-bit 2's complement
+ **/
+#define HX711_ADC_MIN 0x80000
+#define HX711_ADC_MAX 0x7FFFF
+
+typedef int hx711_status_t;
+
+#define HX711_OK (hx711_status_t)0
+
+/**
+ * @brief Table 3: HX711 Channel and Gain Select Modes.
+ * Enum values match number of clock pulses required to configure next SOC.
+ */
+enum HX711InputSel {
+  HX711_CHA_GAIN128=1, // Channel A (default) @ 128
+  HX711_CHB_GAIN32=2, // Channel B @ 32 
+  HX711_CHA_GAIN64=3, // Channel A (default) @ 64
+};
+
+
+/**
+ * @brief struct hx711_config_t - Configuration struct
+ * NOTE: The XFW HX711 board used ties pin XI to DVDD which configures it to 80 Hz sampling
+ */
 typedef struct hx711_config_t {
-  // uint8_t sck;
-  // uint8_t sda;
-  uint8_t gain;
-  uint16_t offset;
-  uint16_t slope;
-
+  enum HX711InputSel input_select; // channel and gain select
+  int32_t offset; // tare calibration
+  float scale; // scaling factor
 } hx711_config_t;
 
-void hx711_init(void);
-uint32_t hx711_read(void);
-void hx711_task(void *pv_params);
-void hx711_shutdown(void);
-void hx711_boot(void);
+/**
+ * @brief Initialize HX711
+ *
+ * @return status code
+ */
+hx711_status_t hx711_init(void);
+
+
+/**
+ * @brief Read converted ADC measurement from HX711 and configure next conversion
+ *
+ * @param data conversion result
+ * @param config configuration struct for conversion
+ * @return status code
+ */
+hx711_status_t hx711_read(float *data, hx711_config_t *config);
+
+/**
+ * @brief Shutdown HX711
+ *
+ * @return status code
+ */
+hx711_status_t hx711_sleep(void);
+
+/**
+ * @brief Soft reset HX711
+ *
+ * @return status code
+ */
+hx711_status_t hx711_reset(void);
 
 #endif // __HX711_H__
+
