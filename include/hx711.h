@@ -25,31 +25,30 @@ enum HX711InputSel {
 
 
 /**
- * @brief struct hx711_config_t - Configuration struct
+ * @brief struct hx711_settings_t - Load cell channel and calibration settings
  * NOTE: The XFW HX711 board used ties pin XI to DVDD which configures it to 80 Hz sampling
  */
-typedef struct hx711_config_t {
+typedef struct hx711_settings_t {
   enum HX711InputSel input_select; // channel and gain select
-  int32_t offset; // tare calibration
-  float scale; // scaling factor
-} hx711_config_t;
+  int32_t offset; // V/V zero
+  float gain; // measurement scaling factor
+} hx711_settings_t;
 
 /**
  * @brief Initialize HX711
  *
  * @return status code
  */
-hx711_status_t hx711_init(void);
-
+hx711_status_t hx711_init(hx711_settings_t *settings);
 
 /**
  * @brief Read converted ADC measurement from HX711 and configure next conversion
  *
  * @param data conversion result
- * @param config configuration struct for conversion
+ * @param settings settings struct for load cell
  * @return status code
  */
-hx711_status_t hx711_read(float *data, hx711_config_t *config);
+hx711_status_t hx711_read(float *data, hx711_settings_t *settings);
 
 /**
  * @brief Shutdown HX711

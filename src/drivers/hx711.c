@@ -5,6 +5,8 @@
 
 #define SIGN_BIT 0x800000
 #define NEGATIVE_PAD 0xff000000
+#define DEFAULT_GAIN 1.0f
+#define DEFAULT_OFFSET (int32_t)0
 
 /**
  * @brief Microsecond delay function using hardware timer
@@ -35,7 +37,7 @@ hx711_status_t hx711_reset(void) {
 /**
  * @brief Initialize ADC and GPIOs
  */
-hx711_status_t hx711_init(void) {
+hx711_status_t hx711_init(hx711_settings_t *settings) {
   // configure DOUT and PCK GPIOs
   RCC->AHB4ENR &= ~(RCC_AHB4ENR_GPIOFEN_Msk);
   RCC->AHB4ENR |= RCC_AHB4ENR_GPIOFEN;
@@ -49,6 +51,10 @@ hx711_status_t hx711_init(void) {
   TIM2->PSC = SystemCoreClock / (1000000 - 1);
   TIM2->ARR = 0x01;
   TIM2->EGR = TIM_EGR_UG;
+  // set default scale and offset parameters
+  settings->gain = DEFAULT_GAIN;
+  settings->offset = DEFAULT_OFFSET;
+  settings->input_select = HX711_CHA_GAIN128;
   // boot hx711
   hx711_reset();
   return HX711_OK;
