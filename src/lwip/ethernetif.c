@@ -43,7 +43,7 @@
 
 #define ETH_RX_BUFFER_SIZE 1000U
 #define ETH_RX_BUFFER_CNT 12U
-#define ETH_TX_BUFFER_MAX ((ETH_TX_DESC_CNT)*2U)
+#define ETH_TX_BUFFER_MAX ((ETH_TX_DESC_CNT) * 2U)
 
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
@@ -347,9 +347,9 @@ static struct pbuf *low_level_input(struct netif *netif) {
  *
  * @param argument the lwip network interface structure for this ethernetif
  */
-void ethernetif_input(void *argument) {
+void ethernetif_input(void *arguments) {
   struct pbuf *p = NULL;
-  struct netif *netif = (struct netif *)argument;
+  struct netif *netif = (struct netif *)arguments;
 
   for (;;) {
     if (osSemaphoreAcquire(RxPktSemaphore, TIME_WAITING_FOR_INPUT) == osOK) {
