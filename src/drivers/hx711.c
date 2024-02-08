@@ -38,19 +38,6 @@ hx711_status_t hx711_reset(void) {
  * @brief Initialize ADC and GPIOs
  */
 hx711_status_t hx711_init(hx711_settings_t *settings) {
-  // configure DOUT and PCK GPIOs
-  RCC->AHB4ENR &= ~(RCC_AHB4ENR_GPIOFEN_Msk);
-  RCC->AHB4ENR |= RCC_AHB4ENR_GPIOFEN;
-  GPIOF->MODER &= ~(GPIO_MODER_MODE0_Msk | GPIO_MODER_MODE1_Msk);
-  GPIOF->MODER |= GPIO_MODER_MODE1_0;
-  GPIOF->PUPDR &= ~(GPIO_PUPDR_PUPD0_Msk);
-  GPIOF->PUPDR |= GPIO_PUPDR_PUPD0_0;
-  // configure timer 2 for microsecond precision
-  RCC->APB1LENR |= RCC_APB1LENR_TIM2EN;
-  TIM2->CR1 &= ~TIM_CR1_CEN;
-  TIM2->PSC = SystemCoreClock / (1000000 - 1);
-  TIM2->ARR = 0x01;
-  TIM2->EGR = TIM_EGR_UG;
   // set default scale and offset parameters
   settings->gain = DEFAULT_GAIN;
   settings->offset = DEFAULT_OFFSET;
@@ -60,7 +47,7 @@ hx711_status_t hx711_init(hx711_settings_t *settings) {
   return HX711_OK;
 }
 
-hx711_status_t hx711_read(float *data, hx711_config_t *config) {
+hx711_status_t hx711_read(float *data, hx711_settings_t *settings) {
   int32_t dout = 0;
   wait_ready();
   // read next conversion (Big Endian)
@@ -76,14 +63,14 @@ hx711_status_t hx711_read(float *data, hx711_config_t *config) {
     dout |= NEGATIVE_PAD;
   }
   // configure next ADC SOC gain and channel select
-  for (int i = 0; i < (int)config->input_select; i++) {
+  for (int i = 0; i < (int)settings->input_select; i++) {
     GPIOF->BSRR |= GPIO_BSRR_BS1;
     delay_us(1);
     GPIOF->BSRR &= ~GPIO_BSRR_BR1;
     delay_us(1);
   }
   // convert sample and return
-  *data = (float)(dout - config->offset) / config->scale;
+  *data = (float)(dout - settings->offset) / settings->gain;
   return HX711_OK;
 }
 
