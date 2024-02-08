@@ -13,6 +13,7 @@ set(CMAKE_C_EXTENSIONS OFF)
 set(CMAKE_C_STANDARD 99)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 
+
 project(
   ${EXECUTABLE}
   LANGUAGES C ASM
@@ -77,7 +78,16 @@ target_include_directories(${EXECUTABLE} PRIVATE include)
 target_include_directories(${EXECUTABLE} PRIVATE ${STM32CUBEH7_CMSIS_INCLUDE})
 set_target_properties(${EXECUTABLE} PROPERTIES OUTPUT_NAME ${EXECUTABLE}.elf)
 
-set(GCC_FLAGS -Wno-unused-parameter -Wpedantic -fno-builtin -Wall -Wextra -ffunction-sections -fdata-sections -fomit-frame-pointer)
+# NOTE: -isystem is a hack for clangd to interpret system include headers from toolchain
+if(DEFINED CMAKE_INCLUDE_PATH)
+  set(ISYSTEM -isystem ${CMAKE_INCLUDE_PATH})
+  message(STATUS "Adding system includes: ${CMAKE_INCLUDE_PATH}")
+else()
+  set(ISYSTEM)
+  message(STATUS "No system include path was set. For clangd system header interpretation include the path to the toolchain system header files using CMAKE_INCLUDE_PATH")
+endif()
+
+set(GCC_FLAGS ${ISYSTEM} -Wno-unused-parameter -Wpedantic -fno-builtin -Wall -Wextra -ffunction-sections -fdata-sections -fomit-frame-pointer -lm)
 message(STATUS "Appending GCC flags: ${GCC_FLAGS}")
 target_compile_options(
   ${EXECUTABLE}
@@ -87,7 +97,7 @@ target_compile_options(
 )
 target_link_options(
   ${EXECUTABLE}
-  PRIVATE ${STM32H723_LINKER_FLAGS}
+  PRIVATE ${STM32H723_LINKER_FLAGS} -lm
   PRIVATE $<$<CONFIG:Debug>:-DRAPTOR_DEBUG -O0 -g>
   PRIVATE $<$<CONFIG:Release>:-Os>
 )
