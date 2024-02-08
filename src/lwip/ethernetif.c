@@ -43,7 +43,7 @@
 
 #define ETH_RX_BUFFER_SIZE 1000U
 #define ETH_RX_BUFFER_CNT 12U
-#define ETH_TX_BUFFER_MAX ((ETH_TX_DESC_CNT) * 2U)
+#define ETH_TX_BUFFER_MAX ((ETH_TX_DESC_CNT)*2U)
 
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/

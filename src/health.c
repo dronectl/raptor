@@ -2,7 +2,6 @@
 #include "health.h"
 #include "FreeRTOS.h"
 #include "bme280.h"
-#include "logger.h"
 #include "stm32h7xx_hal.h"
 #include "task.h"
 
@@ -23,7 +22,8 @@ static void configure_watchdog(void) {
   iwdg_handle.Init.Window = (32000 * 400) / (16 * 1000); /* 400 ms */
   status = HAL_IWDG_Init(&iwdg_handle);
   if (status != HAL_OK) {
-    EHANDLE(status);
+    // TODO: Handle error
+    // EHANDLE(status);
   }
 }
 
@@ -31,7 +31,8 @@ static void service_watchdog(void) {
   HAL_StatusTypeDef status;
   status = HAL_IWDG_Refresh(&iwdg_handle);
   if (status != HAL_OK)
-    EHANDLE(status);
+  // TODO: Handle error
+  // EHANDLE(status);
 }
 #endif // RAPTOR_DEBUG
 
@@ -85,7 +86,6 @@ void health_main(void *pv_params) {
   I2C_HandleTypeDef hi2c2 = *(I2C_HandleTypeDef *)pv_params;
   bme280.i2c = hi2c2;
   while (1) {
-    trace("Health tick with state %d", state);
     state = fsm_tick(state);
     vTaskDelay(delay);
   }

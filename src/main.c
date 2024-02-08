@@ -14,7 +14,6 @@
 #include "config.h"
 #include "ethernetif.h"
 #include "health.h"
-#include "hx711.h"
 #include "logger.h"
 #include "lwip/tcpip.h"
 #include "netif/ethernet.h"
@@ -29,7 +28,6 @@ I2C_HandleTypeDef hi2c2;
 // RTOS task structs
 TaskHandle_t start_handle;
 TaskHandle_t health_handle;
-TaskHandle_t tcp_handle;
 TaskHandle_t logger_handle;
 
 /**

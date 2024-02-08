@@ -26,6 +26,7 @@
 #include "FreeRTOS.h"
 #include "app_ethernet.h"
 #include "ethernetif.h"
+#include "string.h"
 #include "task.h"
 
 struct netif gnetif;
@@ -35,8 +36,8 @@ TaskHandle_t dhcp_handle;
 /*Static IP ADDRESS: IP_ADDR0.IP_ADDR1.IP_ADDR2.IP_ADDR3 */
 #define IP_ADDR0 ((uint8_t)192U)
 #define IP_ADDR1 ((uint8_t)168U)
-#define IP_ADDR2 ((uint8_t)2U)
-#define IP_ADDR3 ((uint8_t)28U)
+#define IP_ADDR2 ((uint8_t)86U)
+#define IP_ADDR3 ((uint8_t)69U)
 
 /*NETMASK*/
 #define NETMASK_ADDR0 ((uint8_t)255U)
@@ -47,7 +48,7 @@ TaskHandle_t dhcp_handle;
 /*Gateway Address*/
 #define GW_ADDR0 ((uint8_t)192U)
 #define GW_ADDR1 ((uint8_t)168U)
-#define GW_ADDR2 ((uint8_t)2U)
+#define GW_ADDR2 ((uint8_t)86U)
 #define GW_ADDR3 ((uint8_t)1U)
 
 /* Private typedef -----------------------------------------------------------*/
@@ -58,10 +59,23 @@ TaskHandle_t dhcp_handle;
 uint32_t EthernetLinkTimer;
 
 #if LWIP_DHCP
-#define MAX_DHCP_TRIES 4
+#define MAX_DHCP_TRIES 20
 uint32_t DHCPfineTimer = 0;
 uint8_t DHCP_state = DHCP_OFF;
 #endif
+
+void print_netif_ip(struct netif *netif) {
+  // Ensure that the netif is valid and has an IP address assigned
+  if (netif != NULL && netif_is_up(netif) && netif->ip_addr.addr != 0) {
+    // Convert the IP address to a human-readable string format
+    char ip_str[16];
+    ip4addr_ntoa_r(&netif->ip_addr, ip_str, sizeof(ip_str));
+    // Print the IP address
+    printf("IP Address: %s\n", ip_str);
+  } else {
+    printf("No IP Address assigned to the netif.\n");
+  }
+}
 
 void netconfig_init(void) {
   ip_addr_t ipaddr;
@@ -158,7 +172,10 @@ void dhcp_task(void *pv_params) {
         BSP_LED_Off(LED2);
         BSP_LED_Off(LED3);
 
-        dhcp_start(netif);
+        err_t dhcp_init_result = dhcp_start(netif);
+        if (dhcp_init_result != 0) {
+          printf("Something went when initiating DHCP discover");
+        }
       } break;
       case DHCP_WAIT_ADDRESS: {
         if (dhcp_supplied_address(netif)) {
@@ -169,7 +186,6 @@ void dhcp_task(void *pv_params) {
         } else {
           dhcp = (struct dhcp *)netif_get_client_data(
               netif, LWIP_NETIF_CLIENT_DATA_INDEX_DHCP);
-
           /* DHCP timeout */
           if (dhcp->tries > MAX_DHCP_TRIES) {
             DHCP_state = DHCP_TIMEOUT;
@@ -184,8 +200,7 @@ void dhcp_task(void *pv_params) {
 
             BSP_LED_On(LED2);
             BSP_LED_Off(LED3);
-          } else {
-            printf("Address was obtained.");
+            print_netif_ip(netif);
           }
         }
       } break;

@@ -181,7 +181,7 @@ static const char *_get_level_str(enum logger_level level) {
 static void build_log_string(log_t *log) {
   int inc;
   char buffer[MAX_LOGGING_LINE_LEN];
-  // TODO: implement overflow checks
+  // TODO: implement overflow checks as certain log sizes will not populated, currently a bug.
   // copy log message to temp buffer
   size_t len = strlen(log->message);
   memcpy(buffer, log->message, len);

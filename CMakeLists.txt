@@ -59,7 +59,6 @@ add_executable(
   src/health.c
   src/cbuffer.c
   src/logger.c
-  src/tcp_echoserver.c
   src/freertos_openocd.c
   src/stcore/stm32h7xx_it.c
   src/stcore/stm32h7xx_hal_msp.c
