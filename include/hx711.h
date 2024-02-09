@@ -2,12 +2,15 @@
 #define __HX711_H__
 
 #include <stdint.h>
+#include "hw_config.h"
 
 /**
  * @brief ADC output in 24-bit 2's complement
  **/
 #define HX711_ADC_MIN 0x80000
 #define HX711_ADC_MAX 0x7FFFF
+
+
 
 typedef int hx711_status_t;
 
