@@ -2,6 +2,7 @@ add_executable(
     test-hx711 
     ${STM32CUBEH7_HAL_SRC}
     ${CMAKE_SOURCE_DIR}/src/drivers/hx711.c
+    ${STM32CUBEH7_SRC}/Drivers/BSP/STM32H7xx_Nucleo/stm32h7xx_nucleo.c
     startup_stm32h723zgtx.s
     main.c
 )
@@ -10,6 +11,7 @@ target_include_directories(
     PRIVATE ${STM32CUBEH7_HAL_INCLUDE}
     PRIVATE ${CMAKE_SOURCE_DIR}/include
     PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
+    PRIVATE ${STM32CUBEH7_BSP_INCLUDE}
 )
 target_compile_options(
     test-hx711

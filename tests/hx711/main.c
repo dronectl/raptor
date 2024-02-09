@@ -1,14 +1,15 @@
+#include "hw_config.h"
 #include "hx711.h"
 #include "stm32h723xx.h"
 #include "stm32h7xx.h"
 #include "stm32h7xx_hal.h"
-#include "stm32h7xx_hal_gpio.h"
+#include "stm32h7xx_hal_rcc.h"
+#include "stm32h7xx_hal_tim.h"
+#include "stm32h7xx_nucleo.h"
 #include <math.h>
 
-#define HX711_PD_SCK_GPIO_PORT GPIOC
-#define HX711_DOUT_GPIO_PORT GPIOC
-#define HX711_DOUT_GPIO_PIN GPIO_PIN_14
-#define HX711_PD_SCK_GPIO_PIN GPIO_PIN_15
+static TIM_HandleTypeDef htim;
+static hx711_settings_t hx711_settings = {0};
 
 #if !defined(HSE_VALUE)
 #define HSE_VALUE ((uint32_t)25000000) /*!< Value of the External oscillator in Hz */
@@ -25,7 +26,6 @@
 uint32_t SystemCoreClock = 64000000;
 uint32_t SystemD2Clock = 64000000;
 const uint8_t D1CorePrescTable[16] = {0, 0, 0, 0, 1, 2, 3, 4, 1, 2, 3, 4, 6, 7, 8, 9};
-I2C_HandleTypeDef hi2c2;
 
 /**
  * @brief  Setup the microcontroller system
@@ -287,65 +287,22 @@ void SystemCoreClockUpdate(void) {
 #endif /* DUAL_CORE && CORE_CM4 */
 }
 
-/**
- * @brief  This function is executed in case of error occurrence.
- * @retval None
- */
-void Error_Handler(void) {
-  __disable_irq();
-  while (1) {
-  }
+void SysTick_Handler(void) {
+  HAL_IncTick();
 }
 
-/**
- * @brief This function handles System tick timer.
- */
-void SysTick_Handler(void) { HAL_IncTick(); }
+void TIM2_IRQHandler(void) {
+  if (htim.Instance == TIM2) {
+    float buf;
+    hx711_read(&buf, &hx711_settings);
+  }
+}
 
 /**
  * Initializes the Global MSP.
  */
 void HAL_MspInit(void) {
   __HAL_RCC_SYSCFG_CLK_ENABLE();
-}
-/**
- * @brief System Clock Configuration
- * @retval None
- */
-void SystemClock_Config(void) {
-  RCC_OscInitTypeDef RCC_OscInitStruct = {0};
-  RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
-  /** Supply configuration update enable
-   */
-  HAL_PWREx_ConfigSupply(PWR_LDO_SUPPLY);
-  /** Configure the main internal regulator output voltage
-   */
-  __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE3);
-  while (!__HAL_PWR_GET_FLAG(PWR_FLAG_VOSRDY)) {
-  }
-  /** Initializes the RCC Oscillators according to the specified parameters
-   * in the RCC_OscInitTypeDef structure.
-   */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
-  RCC_OscInitStruct.HSIState = RCC_HSI_DIV1;
-  RCC_OscInitStruct.HSICalibrationValue = 64;
-  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_NONE;
-  if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK) {
-    Error_Handler();
-  }
-  /** Initializes the CPU, AHB and APB buses clocks
-   */
-  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2 | RCC_CLOCKTYPE_D3PCLK1 | RCC_CLOCKTYPE_D1PCLK1;
-  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_HSI;
-  RCC_ClkInitStruct.SYSCLKDivider = RCC_SYSCLK_DIV1;
-  RCC_ClkInitStruct.AHBCLKDivider = RCC_HCLK_DIV1;
-  RCC_ClkInitStruct.APB3CLKDivider = RCC_APB3_DIV1;
-  RCC_ClkInitStruct.APB1CLKDivider = RCC_APB1_DIV2;
-  RCC_ClkInitStruct.APB2CLKDivider = RCC_APB2_DIV1;
-  RCC_ClkInitStruct.APB4CLKDivider = RCC_APB4_DIV1;
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_1) != HAL_OK) {
-    Error_Handler();
-  }
 }
 
 /**
@@ -355,8 +312,28 @@ void SystemClock_Config(void) {
  */
 static void MX_GPIO_Init(void) {
   GPIO_InitTypeDef gpio;
-  HAL_GPIO_WritePin(HX711_PD_SCK_GPIO_PORT, HX711_PD_SCK_GPIO_PIN, GPIO_PIN_RESET);
   __HAL_RCC_GPIOF_CLK_ENABLE();
+  HAL_GPIO_WritePin(HW_CONFIG_HX711_PD_SCK_GPIO_PORT, HW_CONFIG_HX711_PD_SCK_GPIO_PIN, GPIO_PIN_RESET);
+  gpio.Pin = HW_CONFIG_HX711_PD_SCK_GPIO_PIN;
+  gpio.Mode = GPIO_MODE_OUTPUT_PP;
+  gpio.Pull = GPIO_NOPULL;
+  gpio.Speed = GPIO_SPEED_LOW;
+  HAL_GPIO_Init(HW_CONFIG_HX711_PD_SCK_GPIO_PORT, &gpio);
+  gpio.Pin = HW_CONFIG_HX711_DOUT_GPIO_PIN;
+  gpio.Mode = GPIO_MODE_INPUT;
+  gpio.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(HW_CONFIG_HX711_DOUT_GPIO_PORT, &gpio);
+}
+
+static void MX_TIM_Init(void) {
+  __HAL_RCC_TIM2_CLK_ENABLE();
+  htim.Instance = TIM2;
+  htim.Init.Prescaler = 1000; // prescaler
+  htim.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim.Init.Period = 100;                                      // frequency
+  htim.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;            // frequency
+  htim.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE; // frequency
+  HAL_TIM_Base_Init(&htim);
 }
 
 /**
@@ -365,9 +342,15 @@ static void MX_GPIO_Init(void) {
  */
 int main(void) {
   HAL_Init();
-  SystemClock_Config();
   MX_GPIO_Init();
+  MX_TIM_Init();
+  HAL_NVIC_SetPriority(TIM2_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(TIM2_IRQn);
+  HAL_TIM_Base_Start_IT(&htim);
+  BSP_LED_Init(LED1);
+  hx711_init(&hx711_settings);
   while (1) {
+    BSP_LED_Toggle(LED1);
     HAL_Delay(1000);
   }
 }
