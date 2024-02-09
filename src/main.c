@@ -9,7 +9,6 @@
  *
  */
 
-#include "main.h"
 #include "FreeRTOS.h"
 #include "config.h"
 #include "health.h"
@@ -123,15 +122,12 @@ static void MX_I2C2_Init(void) {
   hi2c2.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
   status = HAL_I2C_Init(&hi2c2);
   if (status != HAL_OK) {
-    EHANDLE(status);
   }
   status = HAL_I2CEx_ConfigAnalogFilter(&hi2c2, I2C_ANALOGFILTER_ENABLE);
   if (status != HAL_OK) {
-    EHANDLE(status);
   }
   status = HAL_I2CEx_ConfigDigitalFilter(&hi2c2, 0);
   if (status != HAL_OK) {
-    EHANDLE(status);
   }
 }
 

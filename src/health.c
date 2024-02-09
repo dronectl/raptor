@@ -2,7 +2,6 @@
 #include "FreeRTOS.h"
 #include "bme280.h"
 #include "health.h"
-#include "main.h"
 #include "stm32h7xx_hal.h"
 #include "task.h"
 
