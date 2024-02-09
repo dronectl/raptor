@@ -1,7 +1,8 @@
 
+#include "hw_config.h"
 #include "hx711.h"
-#include "stm32h723xx.h"
-#include <stdint.h>
+#include "stm32h7xx_hal.h"
+#include "stm32h7xx_hal_gpio.h"
 
 #define SIGN_BIT 0x800000
 #define NEGATIVE_PAD 0xff000000
@@ -21,16 +22,16 @@ static void delay_us(uint8_t micros);
 static void wait_ready(void);
 
 hx711_status_t hx711_shutdown(void) {
-  GPIOF->BSRR &= ~GPIO_BSRR_BS1;
+  HAL_GPIO_WritePin(HW_CONFIG_HX711_PD_SCK_GPIO_PORT, HW_CONFIG_HX711_PD_SCK_GPIO_PIN, GPIO_PIN_RESET);
   delay_us(1);
-  GPIOF->BSRR |= GPIO_BSRR_BS1;
+  HAL_GPIO_WritePin(HW_CONFIG_HX711_PD_SCK_GPIO_PORT, HW_CONFIG_HX711_PD_SCK_GPIO_PIN, GPIO_PIN_SET);
   delay_us(60);
   return HX711_OK;
 }
 
 hx711_status_t hx711_reset(void) {
   hx711_shutdown();
-  GPIOF->BSRR &= ~GPIO_BSRR_BS1;
+  HAL_GPIO_WritePin(HW_CONFIG_HX711_PD_SCK_GPIO_PORT, HW_CONFIG_HX711_PD_SCK_GPIO_PIN, GPIO_PIN_RESET);
   return HX711_OK;
 }
 
@@ -52,10 +53,10 @@ hx711_status_t hx711_read(float *data, hx711_settings_t *settings) {
   wait_ready();
   // read next conversion (Big Endian)
   for (uint8_t i = 24; i > 0; i--) {
-    GPIOF->BSRR |= GPIO_BSRR_BS1;
+    HAL_GPIO_WritePin(HW_CONFIG_HX711_PD_SCK_GPIO_PORT, HW_CONFIG_HX711_PD_SCK_GPIO_PIN, GPIO_PIN_SET);
     delay_us(1);
-    dout |= ((GPIOF->ODR & GPIO_ODR_OD0_Msk) << i);
-    GPIOF->BSRR &= ~GPIO_BSRR_BR1;
+    dout |= HAL_GPIO_ReadPin(HW_CONFIG_HX711_DOUT_GPIO_PORT, HW_CONFIG_HX711_DOUT_GPIO_PIN) << i;
+    HAL_GPIO_WritePin(HW_CONFIG_HX711_PD_SCK_GPIO_PORT, HW_CONFIG_HX711_PD_SCK_GPIO_PIN, GPIO_PIN_RESET);
     delay_us(1);
   }
   // add correct signed padding
@@ -64,9 +65,9 @@ hx711_status_t hx711_read(float *data, hx711_settings_t *settings) {
   }
   // configure next ADC SOC gain and channel select
   for (int i = 0; i < (int)settings->input_select; i++) {
-    GPIOF->BSRR |= GPIO_BSRR_BS1;
+    HAL_GPIO_WritePin(HW_CONFIG_HX711_PD_SCK_GPIO_PORT, HW_CONFIG_HX711_PD_SCK_GPIO_PIN, GPIO_PIN_SET);
     delay_us(1);
-    GPIOF->BSRR &= ~GPIO_BSRR_BR1;
+    HAL_GPIO_WritePin(HW_CONFIG_HX711_PD_SCK_GPIO_PORT, HW_CONFIG_HX711_PD_SCK_GPIO_PIN, GPIO_PIN_RESET);
     delay_us(1);
   }
   // convert sample and return
@@ -85,6 +86,6 @@ static void delay_us(uint8_t micros) {
 }
 
 static void wait_ready(void) {
-  while (!(GPIOF->ODR & GPIO_ODR_OD0_Msk)) {
+  while (!HAL_GPIO_ReadPin(HW_CONFIG_HX711_DOUT_GPIO_PORT, HW_CONFIG_HX711_DOUT_GPIO_PIN)) {
   }
 }
