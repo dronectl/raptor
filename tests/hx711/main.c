@@ -10,6 +10,7 @@
 
 static TIM_HandleTypeDef htim;
 static hx711_settings_t hx711_settings = {0};
+static float hx711_reading;
 
 #if !defined(HSE_VALUE)
 #define HSE_VALUE ((uint32_t)25000000) /*!< Value of the External oscillator in Hz */
@@ -291,10 +292,9 @@ void SysTick_Handler(void) {
   HAL_IncTick();
 }
 
-void TIM2_IRQHandler(void) {
+void TIM17_IRQHandler(void) {
   if (htim.Instance == TIM2) {
-    float buf;
-    hx711_read(&buf, &hx711_settings);
+    hx711_read(&hx711_reading, &hx711_settings);
   }
 }
 
@@ -326,13 +326,19 @@ static void MX_GPIO_Init(void) {
 }
 
 static void MX_TIM_Init(void) {
-  __HAL_RCC_TIM2_CLK_ENABLE();
-  htim.Instance = TIM2;
-  htim.Init.Prescaler = 1000; // prescaler
+  __HAL_RCC_TIM17_CLK_ENABLE();
+  htim.Instance = TIM17;
+  htim.Init.Prescaler = 20 - 1; // prescaler
   htim.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim.Init.Period = 100;                                      // frequency
-  htim.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;            // frequency
-  htim.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE; // frequency
+  htim.Init.Period = 40000 - 1;                     // frequency
+  htim.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1; // frequency
+  HAL_TIM_Base_Init(&htim);
+  __HAL_RCC_TIM13_CLK_ENABLE();
+  htim.Instance = TIM13;
+  htim.Init.Prescaler = 1 - 1; // prescaler
+  htim.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim.Init.Period = 64 - 1;                        // frequency
+  htim.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1; // frequency
   HAL_TIM_Base_Init(&htim);
 }
 
@@ -344,8 +350,8 @@ int main(void) {
   HAL_Init();
   MX_GPIO_Init();
   MX_TIM_Init();
-  HAL_NVIC_SetPriority(TIM2_IRQn, 0, 0);
-  HAL_NVIC_EnableIRQ(TIM2_IRQn);
+  HAL_NVIC_SetPriority(TIM17_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(TIM17_IRQn);
   HAL_TIM_Base_Start_IT(&htim);
   BSP_LED_Init(LED1);
   hx711_init(&hx711_settings);
