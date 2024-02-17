@@ -64,19 +64,6 @@ uint32_t DHCPfineTimer = 0;
 uint8_t DHCP_state = DHCP_OFF;
 #endif
 
-void print_netif_ip(struct netif *netif) {
-  // Ensure that the netif is valid and has an IP address assigned
-  if (netif != NULL && netif_is_up(netif) && netif->ip_addr.addr != 0) {
-    // Convert the IP address to a human-readable string format
-    char ip_str[16];
-    ip4addr_ntoa_r(&netif->ip_addr, ip_str, sizeof(ip_str));
-    // Print the IP address
-    printf("IP Address: %s\n", ip_str);
-  } else {
-    printf("No IP Address assigned to the netif.\n");
-  }
-}
-
 void netconfig_init(void) {
   ip_addr_t ipaddr;
   ip_addr_t netmask;
@@ -200,7 +187,6 @@ void dhcp_task(void *pv_params) {
 
             BSP_LED_On(LED2);
             BSP_LED_Off(LED3);
-            print_netif_ip(netif);
           }
         }
       } break;
