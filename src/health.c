@@ -21,16 +21,16 @@ static void configure_watchdog(void) {
   iwdg_handle.Init.Reload = (32000 * 762) / (16 * 1000); /* 762 ms */
   iwdg_handle.Init.Window = (32000 * 400) / (16 * 1000); /* 400 ms */
   status = HAL_IWDG_Init(&iwdg_handle);
-  if (status != HAL_OK) {
-    // TODO: Handle error
-    // EHANDLE(status);
-  }
+  // if (status != HAL_OK) {
+  //   // TODO: Handle error
+  //   // EHANDLE(status);
+  // }
 }
 
 static void service_watchdog(void) {
   HAL_StatusTypeDef status;
   status = HAL_IWDG_Refresh(&iwdg_handle);
-  if (status != HAL_OK)
+  // if (status != HAL_OK)
   // TODO: Handle error
   // EHANDLE(status);
 }
