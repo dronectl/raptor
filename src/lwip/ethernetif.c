@@ -66,10 +66,8 @@ updated value will be generated in stm32xxxx_hal_conf.h
 ETH_RX_DESC_CNT. 2.b. Rx Buffers must have the same size: ETH_RX_BUFFER_SIZE,
 this value must passed to ETH DMA in the init field (heth.Init.RxBuffLen)
 */
-typedef enum {
-  RX_ALLOC_OK = 0x00,
-  RX_ALLOC_ERROR = 0x01
-} RxAllocStatusTypeDef;
+typedef enum { RX_ALLOC_OK = 0x00,
+               RX_ALLOC_ERROR = 0x01 } RxAllocStatusTypeDef;
 
 typedef struct {
   struct pbuf_custom pbuf_custom;
@@ -79,43 +77,38 @@ typedef struct {
 #if defined(__ICCARM__) /*!< IAR Compiler */
 
 #pragma location = 0x30000000
-ETH_DMADescTypeDef
-    DMARxDscrTab[ETH_RX_DESC_CNT]; /* Ethernet Rx DMA Descriptors */
+ETH_DMADescTypeDef DMARxDscrTab[ETH_RX_DESC_CNT]; /* Ethernet Rx DMA Descriptors */
 #pragma location = 0x30000200
-ETH_DMADescTypeDef
-    DMATxDscrTab[ETH_TX_DESC_CNT]; /* Ethernet Tx DMA Descriptors */
+ETH_DMADescTypeDef DMATxDscrTab[ETH_TX_DESC_CNT]; /* Ethernet Tx DMA Descriptors */
 
 #elif defined(__CC_ARM) /* MDK ARM Compiler */
 
-__attribute__((section(".RxDecripSection"))) ETH_DMADescTypeDef
-    DMARxDscrTab[ETH_RX_DESC_CNT]; /* Ethernet Rx DMA Descriptors */
-__attribute__((section(".TxDecripSection"))) ETH_DMADescTypeDef
-    DMATxDscrTab[ETH_TX_DESC_CNT]; /* Ethernet Tx DMA Descriptors */
+__attribute__((section(".RxDecripSection")))
+ETH_DMADescTypeDef DMARxDscrTab[ETH_RX_DESC_CNT]; /* Ethernet Rx DMA Descriptors */
+__attribute__((section(".TxDecripSection")))
+ETH_DMADescTypeDef DMATxDscrTab[ETH_TX_DESC_CNT]; /* Ethernet Tx DMA Descriptors */
 
 #elif defined(__GNUC__) /* GNU Compiler */
 
-ETH_DMADescTypeDef DMARxDscrTab[ETH_RX_DESC_CNT] __attribute__((
-    section(".RxDecripSection"))); /* Ethernet Rx DMA Descriptors */
-ETH_DMADescTypeDef DMATxDscrTab[ETH_TX_DESC_CNT] __attribute__((
-    section(".TxDecripSection"))); /* Ethernet Tx DMA Descriptors */
+ETH_DMADescTypeDef DMARxDscrTab[ETH_RX_DESC_CNT]
+    __attribute__((section(".RxDecripSection"))); /* Ethernet Rx DMA Descriptors */
+ETH_DMADescTypeDef DMATxDscrTab[ETH_TX_DESC_CNT]
+    __attribute__((section(".TxDecripSection"))); /* Ethernet Tx DMA Descriptors */
 
 #endif
 
 /* Memory Pool Declaration */
-LWIP_MEMPOOL_DECLARE(RX_POOL, ETH_RX_BUFFER_CNT, sizeof(RxBuff_t),
-                     "Zero-copy RX PBUF pool")
+LWIP_MEMPOOL_DECLARE(RX_POOL, ETH_RX_BUFFER_CNT, sizeof(RxBuff_t), "Zero-copy RX PBUF pool")
 
 #if defined(__ICCARM__) /*!< IAR Compiler */
 #pragma location = 0x30000400
 extern u8_t memp_memory_RX_POOL_base[];
 
 #elif defined(__CC_ARM) /* MDK ARM Compiler */
-__attribute__((
-    section(".Rx_PoolSection"))) extern u8_t memp_memory_RX_POOL_base[];
+__attribute__((section(".Rx_PoolSection"))) extern u8_t memp_memory_RX_POOL_base[];
 
 #elif defined(__GNUC__) /* GNU Compiler */
-__attribute__((
-    section(".Rx_PoolSection"))) extern u8_t memp_memory_RX_POOL_base[];
+__attribute__((section(".Rx_PoolSection"))) extern u8_t memp_memory_RX_POOL_base[];
 
 #endif
 
@@ -124,9 +117,8 @@ static uint8_t RxAllocStatus;
 
 osSemaphoreId RxPktSemaphore = NULL; /* Semaphore to signal incoming packets */
 
-TaskHandle_t EthIfThread; /* Handle of the interface thread */
-osSemaphoreId TxPktSemaphore =
-    NULL; /* Semaphore to signal transmit packet complete */
+TaskHandle_t EthIfThread;            /* Handle of the interface thread */
+osSemaphoreId TxPktSemaphore = NULL; /* Semaphore to signal transmit packet complete */
 
 /* Global Ethernet handle */
 ETH_HandleTypeDef EthHandle;
@@ -137,16 +129,13 @@ extern void Error_Handler(void);
 void ethernetif_input(void *argument);
 int32_t ETH_PHY_IO_Init(void);
 int32_t ETH_PHY_IO_DeInit(void);
-int32_t ETH_PHY_IO_ReadReg(uint32_t DevAddr, uint32_t RegAddr,
-                           uint32_t *pRegVal);
-int32_t ETH_PHY_IO_WriteReg(uint32_t DevAddr, uint32_t RegAddr,
-                            uint32_t RegVal);
+int32_t ETH_PHY_IO_ReadReg(uint32_t DevAddr, uint32_t RegAddr, uint32_t *pRegVal);
+int32_t ETH_PHY_IO_WriteReg(uint32_t DevAddr, uint32_t RegAddr, uint32_t RegVal);
 int32_t ETH_PHY_IO_GetTick(void);
 
 lan8742_Object_t LAN8742;
-lan8742_IOCtx_t LAN8742_IOCtx = {ETH_PHY_IO_Init, ETH_PHY_IO_DeInit,
-                                 ETH_PHY_IO_WriteReg, ETH_PHY_IO_ReadReg,
-                                 ETH_PHY_IO_GetTick};
+lan8742_IOCtx_t LAN8742_IOCtx = {ETH_PHY_IO_Init, ETH_PHY_IO_DeInit, ETH_PHY_IO_WriteReg,
+                                 ETH_PHY_IO_ReadReg, ETH_PHY_IO_GetTick};
 
 /* Private functions ---------------------------------------------------------*/
 void pbuf_free_custom(struct pbuf *p);
@@ -200,8 +189,7 @@ static void low_level_init(struct netif *netif) {
 
   /* Set Tx packet config common parameters */
   memset(&TxConfig, 0, sizeof(ETH_TxPacketConfig));
-  TxConfig.Attributes =
-      ETH_TX_PACKETS_FEATURES_CSUM | ETH_TX_PACKETS_FEATURES_CRCPAD;
+  TxConfig.Attributes = ETH_TX_PACKETS_FEATURES_CSUM | ETH_TX_PACKETS_FEATURES_CRCPAD;
   TxConfig.ChecksumCtrl = ETH_CHECKSUM_IPHDR_PAYLOAD_INSERT_PHDR_CALC;
   TxConfig.CRCPadCtrl = ETH_CRC_PAD_INSERT;
 
@@ -347,9 +335,9 @@ static struct pbuf *low_level_input(struct netif *netif) {
  *
  * @param argument the lwip network interface structure for this ethernetif
  */
-void ethernetif_input(void *arguments) {
+void ethernetif_input(void *argument) {
   struct pbuf *p = NULL;
-  struct netif *netif = (struct netif *)arguments;
+  struct netif *netif = (struct netif *)argument;
 
   for (;;) {
     if (osSemaphoreAcquire(RxPktSemaphore, TIME_WAITING_FOR_INPUT) == osOK) {
@@ -391,8 +379,7 @@ err_t ethernetif_init(struct netif *netif) {
    * The last argument should be replaced with your link speed, in units
    * of bits per second.
    */
-  MIB2_INIT_NETIF(netif, snmp_ifType_ethernet_csmacd,
-                  LINK_SPEED_OF_YOUR_NETIF_IN_BPS);
+  MIB2_INIT_NETIF(netif, snmp_ifType_ethernet_csmacd, LINK_SPEED_OF_YOUR_NETIF_IN_BPS);
 
   netif->name[0] = IFNAME0;
   netif->name[1] = IFNAME1;
@@ -502,18 +489,14 @@ void HAL_ETH_MspInit(ETH_HandleTypeDef *heth) {
  * @param  heth: ETH handle
  * @retval None
  */
-void HAL_ETH_RxCpltCallback(ETH_HandleTypeDef *heth) {
-  osSemaphoreRelease(RxPktSemaphore);
-}
+void HAL_ETH_RxCpltCallback(ETH_HandleTypeDef *heth) { osSemaphoreRelease(RxPktSemaphore); }
 
 /**
  * @brief  Ethernet Tx Transfer completed callback
  * @param  heth: ETH handle
  * @retval None
  */
-void HAL_ETH_TxCpltCallback(ETH_HandleTypeDef *heth) {
-  osSemaphoreRelease(TxPktSemaphore);
-}
+void HAL_ETH_TxCpltCallback(ETH_HandleTypeDef *heth) { osSemaphoreRelease(TxPktSemaphore); }
 
 /**
  * @brief  Ethernet DMA transfer error callback
@@ -563,10 +546,8 @@ int32_t ETH_PHY_IO_DeInit(void) { return 0; }
  * @param  pRegVal: pointer to hold the register value
  * @retval 0 if OK -1 if Error
  */
-int32_t ETH_PHY_IO_ReadReg(uint32_t DevAddr, uint32_t RegAddr,
-                           uint32_t *pRegVal) {
-  if (HAL_ETH_ReadPHYRegister(&EthHandle, DevAddr, RegAddr, pRegVal) !=
-      HAL_OK) {
+int32_t ETH_PHY_IO_ReadReg(uint32_t DevAddr, uint32_t RegAddr, uint32_t *pRegVal) {
+  if (HAL_ETH_ReadPHYRegister(&EthHandle, DevAddr, RegAddr, pRegVal) != HAL_OK) {
     return -1;
   }
 
@@ -580,10 +561,8 @@ int32_t ETH_PHY_IO_ReadReg(uint32_t DevAddr, uint32_t RegAddr,
  * @param  RegVal: Value to be written
  * @retval 0 if OK -1 if Error
  */
-int32_t ETH_PHY_IO_WriteReg(uint32_t DevAddr, uint32_t RegAddr,
-                            uint32_t RegVal) {
-  if (HAL_ETH_WritePHYRegister(&EthHandle, DevAddr, RegAddr, RegVal) !=
-      HAL_OK) {
+int32_t ETH_PHY_IO_WriteReg(uint32_t DevAddr, uint32_t RegAddr, uint32_t RegVal) {
+  if (HAL_ETH_WritePHYRegister(&EthHandle, DevAddr, RegAddr, RegVal) != HAL_OK) {
     return -1;
   }
 
@@ -615,8 +594,7 @@ void ethernet_link_thread(void *argument) {
       HAL_ETH_Stop_IT(&EthHandle);
       netif_set_down(netif);
       netif_set_link_down(netif);
-    } else if (!netif_is_link_up(netif) &&
-               (PHYLinkState > LAN8742_STATUS_LINK_DOWN)) {
+    } else if (!netif_is_link_up(netif) && (PHYLinkState > LAN8742_STATUS_LINK_DOWN)) {
       switch (PHYLinkState) {
         case LAN8742_STATUS_100MBITS_FULLDUPLEX:
           duplex = ETH_FULLDUPLEX_MODE;
@@ -674,8 +652,7 @@ void HAL_ETH_RxAllocateCallback(uint8_t **buff) {
   }
 }
 
-void HAL_ETH_RxLinkCallback(void **pStart, void **pEnd, uint8_t *buff,
-                            uint16_t Length) {
+void HAL_ETH_RxLinkCallback(void **pStart, void **pEnd, uint8_t *buff, uint16_t Length) {
   struct pbuf **ppStart = (struct pbuf **)pStart;
   struct pbuf **ppEnd = (struct pbuf **)pEnd;
   struct pbuf *p = NULL;
