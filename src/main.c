@@ -53,9 +53,9 @@ void start_task(void *pv_params) {
   BaseType_t x_returned;
   /* Create tcp_ip stack thread */
   tcpip_init(NULL, NULL);
-
   /* Initialize the LwIP stack */
   netconfig_init();
+  logger_init(LOGGER_TRACE);
   x_returned = xTaskCreate(logger_task, "logging_task", configMINIMAL_STACK_SIZE * 2, NULL,
                            tskIDLE_PRIORITY + 5, &logger_handle);
   configASSERT(logger_handle);
