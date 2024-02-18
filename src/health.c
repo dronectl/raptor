@@ -1,8 +1,7 @@
-
 #include "health.h"
 #include "FreeRTOS.h"
 #include "bme280.h"
-#include "main.h"
+#include "logger.h"
 #include "stm32h7xx_hal.h"
 #include "task.h"
 
@@ -22,16 +21,18 @@ static void configure_watchdog(void) {
   iwdg_handle.Init.Reload = (32000 * 762) / (16 * 1000); /* 762 ms */
   iwdg_handle.Init.Window = (32000 * 400) / (16 * 1000); /* 400 ms */
   status = HAL_IWDG_Init(&iwdg_handle);
-  if (status != HAL_OK) {
-    EHANDLE(status);
-  }
+  // if (status != HAL_OK) {
+  //   // TODO: Handle error
+  //   // EHANDLE(status);
+  // }
 }
 
 static void service_watchdog(void) {
   HAL_StatusTypeDef status;
   status = HAL_IWDG_Refresh(&iwdg_handle);
-  if (status != HAL_OK)
-    EHANDLE(status);
+  // if (status != HAL_OK)
+  // TODO: Handle error
+  // EHANDLE(status);
 }
 #endif // RAPTOR_DEBUG
 
@@ -79,12 +80,15 @@ static enum HealthState fsm_tick(const enum HealthState state) {
 }
 
 void health_main(void *pv_params) {
+  uint32_t ticks;
   const TickType_t delay = 100 / portTICK_PERIOD_MS;
   enum HealthState state = HEALTH_INIT;
   // get i2c2 handle and set bme280
   I2C_HandleTypeDef hi2c2 = *(I2C_HandleTypeDef *)pv_params;
   bme280.i2c = hi2c2;
   while (1) {
+    ticks = HAL_GetTick();
+    trace("[%u] Hello from state: %d", ticks, state);
     state = fsm_tick(state);
     vTaskDelay(delay);
   }

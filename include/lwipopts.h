@@ -74,6 +74,9 @@ a lot of data that needs to be copied, this should be set high. */
    no copy is needed */
 #define LWIP_SUPPORT_CUSTOM_PBUF 1
 
+/* --------- Set hostname of device on network ---------- */
+#define LWIP_NETIF_HOSTNAME 0
+
 /* ---------- IPv4 options ---------- */
 #define LWIP_IPV4 1
 
