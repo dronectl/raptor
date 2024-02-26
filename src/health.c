@@ -1,6 +1,6 @@
+#include "health.h"
 #include "FreeRTOS.h"
 #include "bme280.h"
-#include "health.h"
 #include "logger.h"
 #include "stm32h7xx_hal.h"
 #include "task.h"
@@ -85,6 +85,7 @@ void health_main(void *pv_params) {
   // get i2c2 handle and set bme280
   I2C_HandleTypeDef hi2c2 = *(I2C_HandleTypeDef *)pv_params;
   bme280.i2c = hi2c2;
+  info("Starting health task FSM");
   while (1) {
     state = fsm_tick(state);
     vTaskDelay(delay);
