@@ -8,9 +8,9 @@
  *
  */
 
-#include "logger.h"
 #include "FreeRTOS.h"
 #include "cbuffer.h"
+#include "logger.h"
 #include "lwip/inet.h"
 #include "lwip/sockets.h"
 #include "queue.h"
@@ -52,7 +52,7 @@ static const char *_get_level_str(enum logger_level level);
  * combines the formatted log message with the header.
  *
  */
-static void build_log_string(log_t *log);
+static void build_log_string(log_t *log, char *buffer, size_t size);
 
 /**
  * @brief Initialize queues semaphores and TCPIP logging socket
@@ -104,7 +104,7 @@ void logger_set_level(enum logger_level level) {
  * @return enum Level
  */
 enum logger_level logger_get_level(void) {
-  enum logger_level level;
+  enum logger_level level = LOGGER_TRACE;
   if (xSemaphoreTake(mutex_handle, portMAX_DELAY) == pdTRUE) {
     level = _level;
     xSemaphoreGive(mutex_handle);
@@ -122,7 +122,7 @@ enum logger_level logger_get_level(void) {
  * @param ... variable arguments for string formatter
  */
 void logger_out(const enum logger_level level, const char *func, const int line, const char *fmt, ...) {
-  log_t log;
+  log_t log = {0};
   va_list args;
   // filter output by log level
   if (logger_get_level() > level) {
@@ -134,7 +134,6 @@ void logger_out(const enum logger_level level, const char *func, const int line,
   memcpy(log.func, func, FUNC_NAME_MAX_LEN);
   // variable arguments must be processed here otherwise they will go out of scope
   va_start(args, fmt);
-  // TODO: implement buffer overflow handler (add truncating)
   vsnprintf(log.message, MAX_LOGGING_LINE_LEN, fmt, args);
   va_end(args);
   // write log struct by reference to queue, block for 20 ticks if queue is full
@@ -151,8 +150,9 @@ void logger_task(void *pv_params) {
       if (client_fd < 0) {
         continue;
       }
-      build_log_string(&log);
-      ssize_t bytes_sent = send(client_fd, &log.message, strlen(log.message), 0);
+      char buffer[MAX_LOGGING_LINE_LEN];
+      build_log_string(&log, buffer, MAX_LOGGING_LINE_LEN);
+      ssize_t bytes_sent = send(client_fd, buffer, strlen(buffer), 0);
       /* Check for errors or client disconnect */
       if (bytes_sent <= 0) {
         /* Connection closed by client */
@@ -178,20 +178,16 @@ static const char *_get_level_str(enum logger_level level) {
   }
 }
 
-static void build_log_string(log_t *log) {
-  int inc;
-  char buffer[MAX_LOGGING_LINE_LEN];
-  // TODO: implement overflow checks as certain log sizes will not populated, currently a bug.
-  // copy log message to temp buffer
-  size_t len = strlen(log->message);
-  memcpy(buffer, log->message, len);
-  // add newline and string terminator
-  buffer[len] = '\n';
-  buffer[len + 1] = '\0';
+static void build_log_string(log_t *log, char *buffer, size_t size) {
   const char *level_str = _get_level_str(log->level);
-  // write the logging header message
-  inc = snprintf(log->message, MAX_LOGGING_LINE_LEN, "[ %5s ] %s:%i\t", level_str, log->func,
-                 log->line);
-  // finally append the logging message up to the maximum line length
-  memcpy(log->message + (uint8_t)inc, buffer, MAX_LOGGING_LINE_LEN - inc);
+  int offset = snprintf(buffer, size, "[ %9ld ] %s:%i [ %5s ] \t", (long)log->epoch, log->func, log->line, level_str);
+  int len = strlen(log->message);
+  // overflow check and clamp len
+  if (len + offset > (int)size) {
+    len = size - offset - 1; // leave room for null terminator
+  }
+  // intentional overwrite of previous null character
+  memcpy(buffer + offset, log->message, len);
+  buffer[len + offset] = '\n';
+  buffer[len + offset + 1] = '\0';
 }
