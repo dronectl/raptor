@@ -8,9 +8,9 @@
  *
  */
 
-#include "logger.h"
 #include "FreeRTOS.h"
 #include "cbuffer.h"
+#include "logger.h"
 #include "lwip/inet.h"
 #include "lwip/sockets.h"
 #include "queue.h"
@@ -150,9 +150,9 @@ void logger_task(void *pv_params) {
       if (client_fd < 0) {
         continue;
       }
-      char buffer[MAX_LOGGING_LINE_LEN];
-      build_log_string(&log, buffer, MAX_LOGGING_LINE_LEN);
-      ssize_t bytes_sent = send(client_fd, buffer, strlen(buffer), 0);
+      char log_buffer[MAX_LOGGING_LINE_LEN] = {0};
+      build_log_string(&log, log_buffer, MAX_LOGGING_LINE_LEN);
+      ssize_t bytes_sent = send(client_fd, log_buffer, strlen(log_buffer), 0);
       /* Check for errors or client disconnect */
       if (bytes_sent <= 0) {
         /* Connection closed by client */
