@@ -80,15 +80,13 @@ static enum HealthState fsm_tick(const enum HealthState state) {
 }
 
 void health_main(void *pv_params) {
-  uint32_t ticks;
   const TickType_t delay = 100 / portTICK_PERIOD_MS;
   enum HealthState state = HEALTH_INIT;
   // get i2c2 handle and set bme280
   I2C_HandleTypeDef hi2c2 = *(I2C_HandleTypeDef *)pv_params;
   bme280.i2c = hi2c2;
+  info("Starting health task FSM");
   while (1) {
-    ticks = HAL_GetTick();
-    trace("[%u] Hello from state: %d", ticks, state);
     state = fsm_tick(state);
     vTaskDelay(delay);
   }

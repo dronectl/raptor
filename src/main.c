@@ -62,6 +62,7 @@ void start_task(void *pv_params) {
   if (x_returned != pdPASS) {
     vTaskDelete(logger_handle);
   }
+  info("Created logging task");
   vTaskDelay(100);
   x_returned = xTaskCreate(health_main, "health_task", configMINIMAL_STACK_SIZE, NULL,
                            tskIDLE_PRIORITY + 32, &health_handle);
@@ -69,6 +70,7 @@ void start_task(void *pv_params) {
   if (x_returned != pdPASS) {
     vTaskDelete(health_handle);
   }
+  info("Created health task");
 
   for (;;) {
     /* Delete the Init Thread */
