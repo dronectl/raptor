@@ -8,9 +8,9 @@
  *
  */
 
+#include "logger.h"
 #include "FreeRTOS.h"
 #include "cbuffer.h"
-#include "logger.h"
 #include "lwip/inet.h"
 #include "lwip/sockets.h"
 #include "queue.h"
