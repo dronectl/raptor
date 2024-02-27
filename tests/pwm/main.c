@@ -16,6 +16,7 @@
 
 uint32_t SystemCoreClock = 64000000;
 uint32_t SystemD2Clock = 64000000;
+TIM_HandleTypeDef htimer1;
 const uint8_t D1CorePrescTable[16] = {0, 0, 0, 0, 1, 2, 3, 4, 1, 2, 3, 4, 6, 7, 8, 9};
 
 /**
@@ -345,6 +346,21 @@ static void MX_GPIO_Init(void) {
   __HAL_RCC_GPIOF_CLK_ENABLE();
 }
 
+void timer1_init(void) {
+  TIM_OC_InitTypeDef tim1_pwm_config;
+  htimer1.Instance = TIM1;
+  htimer1.Init.Period = 10000 - 1;
+  htimer1.Init.Prescaler = 4999;
+  if (HAL_TIM_OC_INIT(&htimer1) != HAL_OK) {
+    // Error occurred
+  }
+  memset(&tim1_pwm_config, 0, sizeof(tim1_pwm_config));
+  tim1_pwm_config.OCMode = TIM_OCMODE_PWM1;
+  tim1_pwm_config.OCPolarity = TIM_OCPOLARITY_HIGH;
+  tim1_pwm_config.Pulse = (htimer1.Init.Period * 40) / 100;
+  HAL_TIM_PWM_ConfigChannel(&htimer1, &tim1_pwm_config, TIM_CHANNEL_1);
+}
+
 /**
  * @brief  The application entry point.
  * @retval int
@@ -353,7 +369,20 @@ int main(void) {
   HAL_Init();
   SystemClock_Config();
   MX_GPIO_Init();
-  while (1) {
-    HAL_Delay(1000);
+  timer1_init();
+
+  if (HAL_TIM_PWM_Start(&htimer1, TIM_CHANNEL_1) != HAL_OK) {
+    // Todo: Handle Error
+  }
+  uint64_t brightness = 0;
+  while (brightness < htimer1.Init.Period) {
+    brightness += 20;
+    __HAL_TIM_SET_COMPARE(&htimer1, TIM_CHANNEL_1, brightness);
+    HAL_Delay(1);
+  }
+  while (brightness > 0) {
+    brightness -= 20;
+    __HAL_TIM_SET_COMPARE(&htimer1, TIM_CHANNEL_1, brightness);
+    HAL_Delay(1);
   }
 }
