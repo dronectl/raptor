@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.22)
-
+set(FETCHCONTENT_QUIET FALSE)
 # Fetch the FreeRTOS Kernel and pass configuration for build
 function(fetch_freertos_kernel HEAP PORT CONFIG_FILE_DIRECTORY)
   include(FetchContent)

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.22)
-
+set(FETCHCONTENT_QUIET FALSE)
 # Fetch cube h7 headers and middlewares
 function(fetch_cubeh7)
   include(FetchContent)
