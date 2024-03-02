@@ -10,6 +10,7 @@ function(fetch_freertos_kernel HEAP PORT CONFIG_FILE_DIRECTORY)
     freertos_kernel
     GIT_REPOSITORY https://github.com/FreeRTOS/FreeRTOS-Kernel.git
     GIT_TAG V10.5.1
+    GIT_PROGRESS TRUE
   )
   add_library(freertos_config INTERFACE)
   target_include_directories(freertos_config SYSTEM INTERFACE include)

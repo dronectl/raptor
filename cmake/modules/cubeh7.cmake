@@ -7,7 +7,8 @@ function(fetch_cubeh7)
   FetchContent_Declare(
     stm32h7
     GIT_REPOSITORY https://github.com/STMicroelectronics/STM32CubeH7.git
-    GIT_TAG v1.11.0
+    GIT_TAG v1.11.1
+    GIT_PROGRESS TRUE
   )
   FetchContent_MakeAvailable(stm32h7)
   set(
