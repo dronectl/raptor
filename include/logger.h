@@ -26,7 +26,6 @@
 #define LOGGING_LEVEL 1
 #endif
 
-// logging levels
 enum logger_level {
   LOGGER_TRACE,
   LOGGER_INFO,
@@ -40,7 +39,14 @@ enum logger_level logger_get_level(void);
 void logger_set_level(enum logger_level level);
 void logger_init(const enum logger_level level);
 void logger_out(enum logger_level level, const char *func, int line, const char *fmt, ...);
-void logger_task(void *pv_params);
+
+/**
+ * @brief Logger RTOS task main. Listen on TCPIP socket for inbound connections and stream logs to remote host.
+ * NOTE: This logging server implementation may only handle one remote connection at a time
+ *
+ * @param[in] argument RTOS arguments
+ */
+void logger_main(void *argument);
 
 #ifndef critical
 #define critical(...) __CRITICAL(__VA_ARGS__, "")

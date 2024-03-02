@@ -29,6 +29,6 @@ typedef struct health_report_t {
   float pressure;
 } health_report_t;
 
-void health_main(void *pv_params);
+void health_main(void *argument);
 
 #endif // __HEALTH_H__
