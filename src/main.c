@@ -64,20 +64,20 @@ WWDG_HandleTypeDef hwwdg1;
 osThreadId_t health_tid;
 const osThreadAttr_t health_task_attr = {
   .name = "health_task",
-  .stack_size = 128 * 4,
+  .stack_size = 128 * 8,
   .priority = osPriorityNormal,
 };
 osThreadId_t logger_tid;
 const osThreadAttr_t logger_task_attr = {
   .name = "logger_task",
-  .stack_size = 128 * 4,
+  .stack_size = 128 * 8,
   .priority = osPriorityLow,
 };
 osThreadId_t genesis_tid;
 const osThreadAttr_t genesis_task_attr = {
   .name = "genesis_task",
   .stack_size = 128 * 8,
-  .priority = osPriorityNormal,
+  .priority = osPriorityHigh,
 };
 
 /* USER CODE BEGIN PV */
@@ -1005,23 +1005,17 @@ static void MX_GPIO_Init(void) {
 /* USER CODE BEGIN Header_StartDefaultTask */
 
 __NO_RETURN void genesis_task(void *argument) {
-  MX_LWIP_Init();
+  netconfig_init();
+  health_tid = osThreadNew(health_main, &hi2c1, &health_task_attr);
+  logger_tid = osThreadNew(logger_main, NULL, &logger_task_attr);
+  for (;;) {
+    osDelay(1);
+  }
 }
 
 void initialize_rtos(void) {
   logger_init(LOGGER_TRACE);
   genesis_tid = osThreadNew(genesis_task, NULL, &genesis_task_attr);
-  if (genesis_tid == NULL) {
-    return;
-  }
-  health_tid = osThreadNew(health_main, &hi2c1, &health_task_attr);
-  if (health_tid == NULL) {
-    return;
-  }
-  logger_tid = osThreadNew(logger_main, NULL, &logger_task_attr);
-  if (logger_tid == NULL) {
-    return;
-  }
 }
 
 /**

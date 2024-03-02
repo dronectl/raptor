@@ -68,7 +68,8 @@ __NO_RETURN void health_main(void *argument) {
   info("Starting health task FSM");
   while (1) {
     BSP_LED_Toggle(LED1);
-    state = fsm_tick(state);
+    // state = fsm_tick(state);
     osDelay(1000);
+    info("toggling");
   }
 }
