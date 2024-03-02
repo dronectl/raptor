@@ -52,7 +52,7 @@ set(STM32H723_ABI "aapcs" CACHE INTERNAL "Compiler ABI")
 
 # configure compile commands for CMSIS and compiler
 # use hardware fpu and use mthumb optimization (does not affect debug mode)
-set(STM32H723_COMPILE_FLAGS -D${STM32H723_MCU} -DUSE_HAL_DRIVER -mcpu=${STM32H723_ARM_ARCH} -mfpu=${STM32H723_FPU_ARCH} -mabi=${STM32H723_ABI} -mfloat-abi=hard -mthumb CACHE INTERNAL "STM32H723_COMPILE_FLAGS")
+set(STM32H723_COMPILE_FLAGS -mcpu=${STM32H723_ARM_ARCH} -mfpu=${STM32H723_FPU_ARCH} -mabi=${STM32H723_ABI} -mfloat-abi=hard -mthumb -D${STM32H723_MCU} -DUSE_HAL_DRIVER -DSTM32_THREAD_SAFE_STRATEGY=4 CACHE INTERNAL "STM32H723_COMPILE_FLAGS")
 message(STATUS "Exporting linker script path")
 get_filename_component(LINKER_SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/utils/STM32H723ZGTX_FLASH.ld ABSOLUTE)
 message(DEBUG "Linker script: ${LINKER_SCRIPT}")
