@@ -18,9 +18,10 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include "cmsis_os.h"
+#include "cmsis_os2.h"
+#include "health.h"
+#include "logger.h"
 #include "lwip.h"
-#include "stm32h7xx_nucleo.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -59,11 +60,24 @@ UART_HandleTypeDef huart9;
 UART_HandleTypeDef huart3;
 WWDG_HandleTypeDef hwwdg1;
 
-osThreadId_t genesis_task_handle;
-const osThreadAttr_t genesis_task_attributes = {
+/* RTOS Thread declaration */
+osThreadId_t health_tid;
+const osThreadAttr_t health_task_attr = {
+  .name = "health_task",
+  .stack_size = 128 * 4,
+  .priority = osPriorityNormal,
+};
+osThreadId_t logger_tid;
+const osThreadAttr_t logger_task_attr = {
+  .name = "logger_task",
+  .stack_size = 128 * 4,
+  .priority = osPriorityLow,
+};
+osThreadId_t genesis_tid;
+const osThreadAttr_t genesis_task_attr = {
   .name = "genesis_task",
   .stack_size = 128 * 8,
-  .priority = (osPriority_t)osPriorityNormal,
+  .priority = osPriorityNormal,
 };
 
 /* USER CODE BEGIN PV */
@@ -90,7 +104,11 @@ static void MX_RTC_Init(void);
 #ifndef RAPTOR_DEBUG
 static void MX_WWDG1_Init(void);
 #endif // RAPTOR_DEBUG
-void genesis_task(void *argument);
+
+/**
+ * @brief Initialize CMSIS v2 RTOS Constructs
+ */
+void initialize_rtos(void);
 
 /* USER CODE BEGIN PFP */
 
@@ -160,35 +178,7 @@ int main(void) {
 
   /* Init scheduler */
   osKernelInitialize();
-
-  /* USER CODE BEGIN RTOS_MUTEX */
-  /* add mutexes, ... */
-  /* USER CODE END RTOS_MUTEX */
-
-  /* USER CODE BEGIN RTOS_SEMAPHORES */
-  /* add semaphores, ... */
-  /* USER CODE END RTOS_SEMAPHORES */
-
-  /* USER CODE BEGIN RTOS_TIMERS */
-  /* start timers, add new ones, ... */
-  /* USER CODE END RTOS_TIMERS */
-
-  /* USER CODE BEGIN RTOS_QUEUES */
-  /* add queues, ... */
-  /* USER CODE END RTOS_QUEUES */
-
-  /* Create the thread(s) */
-  /* creation of defaultTask */
-  genesis_task_handle = osThreadNew(genesis_task, NULL, &genesis_task_attributes);
-
-  /* USER CODE BEGIN RTOS_THREADS */
-  /* add threads, ... */
-  /* USER CODE END RTOS_THREADS */
-
-  /* USER CODE BEGIN RTOS_EVENTS */
-  /* add events, ... */
-  /* USER CODE END RTOS_EVENTS */
-
+  initialize_rtos();
   /* Start scheduler */
   osKernelStart();
 
@@ -1013,23 +1003,25 @@ static void MX_GPIO_Init(void) {
 /* USER CODE END 4 */
 
 /* USER CODE BEGIN Header_StartDefaultTask */
-/**
- * @brief  Function implementing the defaultTask thread.
- * @param  argument: Not used
- * @retval None
- */
-/* USER CODE END Header_StartDefaultTask */
-void genesis_task(void *argument) {
-  /* init code for LWIP */
+
+__NO_RETURN void genesis_task(void *argument) {
   MX_LWIP_Init();
-  /* USER CODE BEGIN 5 */
-  BSP_LED_Init(LED1);
-  /* Infinite loop */
-  for (;;) {
-    BSP_LED_Toggle(LED1);
-    osDelay(1000);
+}
+
+void initialize_rtos(void) {
+  logger_init(LOGGER_TRACE);
+  genesis_tid = osThreadNew(genesis_task, NULL, &genesis_task_attr);
+  if (genesis_tid == NULL) {
+    return;
   }
-  /* USER CODE END 5 */
+  health_tid = osThreadNew(health_main, &hi2c1, &health_task_attr);
+  if (health_tid == NULL) {
+    return;
+  }
+  logger_tid = osThreadNew(logger_main, NULL, &logger_task_attr);
+  if (logger_tid == NULL) {
+    return;
+  }
 }
 
 /**
