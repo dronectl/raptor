@@ -25,6 +25,7 @@
 #include "logger.h"
 #include "lwip/netif.h"
 #include "lwip/tcpip.h"
+#include "netif/ethernet.h"
 #include "stm32h7xx_nucleo.h"
 
 /* Private variables ---------------------------------------------------------*/
@@ -137,6 +138,7 @@ void StartThread(void *argument) {
   tcpip_init(NULL, NULL);
   /* Initialize the LwIP stack */
   Netif_Config();
+  logger_init(LOGGER_TRACE);
   logger_tid = osThreadNew(logger_main, NULL, &logger_task_attr);
   health_tid = osThreadNew(health_main, &hi2c1, &health_task_attr);
   /* Initialize webserver demo */
@@ -183,7 +185,6 @@ int main(void) {
 
   /* Init scheduler */
   osKernelInitialize();
-  // logger_init(LOGGER_TRACE);
   attr.name = "Start";
   attr.stack_size = configMINIMAL_STACK_SIZE * 2;
   attr.priority = osPriorityNormal;

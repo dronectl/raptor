@@ -195,10 +195,10 @@ static void low_level_init(struct netif *netif) {
 
   /* create a binary semaphore used for informing ethernetif of frame reception
    */
-  RxPktSemaphore = osSemaphoreNew(1, 1, NULL);
+  RxPktSemaphore = osSemaphoreNew(1, 0, NULL);
   /* create a binary semaphore used for informing ethernetif of frame
    * transmission */
-  TxPktSemaphore = osSemaphoreNew(1, 1, NULL);
+  TxPktSemaphore = osSemaphoreNew(1, 0, NULL);
 
   /* create the task that handles the ETH_MAC */
   memset(&attributes, 0x0, sizeof(osThreadAttr_t));
