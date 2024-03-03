@@ -1,13 +1,14 @@
+#include "lwip.h"
 #include "cmsis_os2.h"
 #include "lwip/opt.h"
+#include "lwip/tcpip.h"
+#include "netif/ethernet.h"
 #include "stm32h7xx_hal.h"
 #include "stm32h7xx_nucleo.h"
 #if LWIP_DHCP
 #include "lwip/dhcp.h"
 #endif
-#include "app_ethernet.h"
 #include "ethernetif.h"
-#include "task.h"
 
 /*Static IP ADDRESS: IP_ADDR0.IP_ADDR1.IP_ADDR2.IP_ADDR3 */
 #define IP_ADDR0 ((uint8_t)192U)
@@ -34,8 +35,19 @@
 
 uint32_t EthernetLinkTimer;
 struct netif gnetif;
-TaskHandle_t link_handle;
-TaskHandle_t dhcp_handle;
+/* RTOS Thread declaration */
+osThreadId_t link_tid;
+const osThreadAttr_t link_task_attr = {
+  .name = "link_task",
+  .stack_size = 128 * 8,
+  .priority = osPriorityNormal,
+};
+osThreadId_t dhcp_tid;
+const osThreadAttr_t dhcp_task_attr = {
+  .name = "dhcp_task",
+  .stack_size = 128 * 8,
+  .priority = osPriorityNormal,
+};
 #if LWIP_DHCP
 #define MAX_DHCP_TRIES 4
 uint32_t DHCPfineTimer = 0;
@@ -51,6 +63,7 @@ void netconfig_init(void) {
   ip_addr_t ipaddr;
   ip_addr_t netmask;
   ip_addr_t gw;
+  tcpip_init(NULL, NULL);
 
 #if LWIP_DHCP
   ip_addr_set_zero_ip4(&ipaddr);
@@ -62,32 +75,17 @@ void netconfig_init(void) {
   IP4_ADDR(&netmask, NETMASK_ADDR0, NETMASK_ADDR1, NETMASK_ADDR2, NETMASK_ADDR3);
   IP4_ADDR(&gw, GW_ADDR0, GW_ADDR1, GW_ADDR2, GW_ADDR3);
 #endif
-
   /* add the network interface */
-  netif_add(&gnetif, &ipaddr, &netmask, &gw, NULL, &ethernetif_init, &ethernetif_input);
-
+  netif_add(&gnetif, &ipaddr, &netmask, &gw, NULL, &ethernetif_init, &ethernet_input);
   /*  Registers the default network interface */
   netif_set_default(&gnetif);
-
   ethernet_link_status_updated(&gnetif);
-  BaseType_t x_returned;
 #if LWIP_NETIF_LINK_CALLBACK
   netif_set_link_callback(&gnetif, ethernet_link_status_updated);
-  x_returned = xTaskCreate(ethernet_link_thread, "eth_link_task", configMINIMAL_STACK_SIZE, &gnetif,
-                           tskIDLE_PRIORITY + 24, &link_handle);
-  configASSERT(link_handle);
-  if (x_returned != pdPASS) {
-    vTaskDelete(link_handle);
-  }
+  link_tid = osThreadNew(ethernet_link_thread, &gnetif, &link_task_attr);
 #endif
-
 #if LWIP_DHCP
-  x_returned = xTaskCreate(dhcp_task, "dhcp_task", configMINIMAL_STACK_SIZE, &gnetif,
-                           tskIDLE_PRIORITY + 16, &dhcp_handle);
-  configASSERT(dhcp_handle);
-  if (x_returned != pdPASS) {
-    vTaskDelete(dhcp_handle);
-  }
+  link_tid = osThreadNew(dhcp_task, &gnetif, &dhcp_task_attr);
 #endif
 }
 
