@@ -1,24 +1,5 @@
-/* USER CODE BEGIN Header */
-/**
- ******************************************************************************
- * @file    stm32h7xx_it.c
- * @brief   Interrupt Service Routines.
- ******************************************************************************
- * @attention
- *
- * Copyright (c) 2024 STMicroelectronics.
- * All rights reserved.
- *
- * This software is licensed under terms that can be found in the LICENSE file
- * in the root directory of this software component.
- * If no LICENSE file comes with this software, it is provided AS-IS.
- *
- ******************************************************************************
- */
-/* USER CODE END Header */
-
-/* Includes ------------------------------------------------------------------*/
 #include "stm32h7xx_it.h"
+#include "cmsis_os2.h"
 #include "main.h"
 
 extern DMA_HandleTypeDef hdma_adc1;
@@ -102,15 +83,11 @@ void UsageFault_Handler(void) {
 }
 
 /**
- * @brief This function handles Debug monitor.
+ * @brief  This function handles Debug Monitor exception.
+ * @param  None
+ * @retval None
  */
 void DebugMon_Handler(void) {
-  /* USER CODE BEGIN DebugMonitor_IRQn 0 */
-
-  /* USER CODE END DebugMonitor_IRQn 0 */
-  /* USER CODE BEGIN DebugMonitor_IRQn 1 */
-
-  /* USER CODE END DebugMonitor_IRQn 1 */
 }
 
 /******************************************************************************/

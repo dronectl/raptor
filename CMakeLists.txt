@@ -50,7 +50,7 @@ fetch_cubeh7()
 add_executable(
   ${EXECUTABLE}
   src/main.c
-  src/lwip/lwip.c
+  src/lwip/app_ethernet.c
   src/lwip/ethernetif.c
   src/drivers/hx711.c
   src/drivers/bme280.c

@@ -18,7 +18,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "ethernetif.h"
-#include "lan8742.h"
+#include "../Components/lan8742/lan8742.h"
 #include "lwip/snmp.h"
 #include "lwip/stats.h"
 #include "lwip/tcpip.h"

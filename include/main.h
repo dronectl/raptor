@@ -22,41 +22,31 @@
 #ifndef __MAIN_H
 #define __MAIN_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-/* Includes ------------------------------------------------------------------*/
 #include "stm32h7xx_hal.h"
+#include "stm32h7xx_nucleo.h"
 
-/* Private includes ----------------------------------------------------------*/
-/* USER CODE BEGIN Includes */
+/*Static IP ADDRESS*/
+#define IP_ADDR0 ((uint8_t)192U)
+#define IP_ADDR1 ((uint8_t)168U)
+#define IP_ADDR2 ((uint8_t)0U)
+#define IP_ADDR3 ((uint8_t)10U)
 
-/* USER CODE END Includes */
+/*NETMASK*/
+#define NETMASK_ADDR0 ((uint8_t)255U)
+#define NETMASK_ADDR1 ((uint8_t)255U)
+#define NETMASK_ADDR2 ((uint8_t)255U)
+#define NETMASK_ADDR3 ((uint8_t)0U)
 
-/* Exported types ------------------------------------------------------------*/
-/* USER CODE BEGIN ET */
-
-/* USER CODE END ET */
-
-/* Exported constants --------------------------------------------------------*/
-/* USER CODE BEGIN EC */
-
-/* USER CODE END EC */
-
-/* Exported macro ------------------------------------------------------------*/
-/* USER CODE BEGIN EM */
-
-/* USER CODE END EM */
+/*Gateway Address*/
+#define GW_ADDR0 ((uint8_t)192U)
+#define GW_ADDR1 ((uint8_t)168U)
+#define GW_ADDR2 ((uint8_t)0U)
+#define GW_ADDR3 ((uint8_t)1U)
 
 void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
 
 /* Exported functions prototypes ---------------------------------------------*/
 void Error_Handler(void);
-
-/* USER CODE BEGIN EFP */
-
-/* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
 #define B1_Pin GPIO_PIN_13
@@ -153,13 +143,5 @@ void Error_Handler(void);
 #define SWO_GPIO_Port GPIOB
 #define LED_YELLOW_Pin GPIO_PIN_1
 #define LED_YELLOW_GPIO_Port GPIOE
-
-/* USER CODE BEGIN Private defines */
-
-/* USER CODE END Private defines */
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif /* __MAIN_H */

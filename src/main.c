@@ -18,31 +18,14 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "app_ethernet.h"
 #include "cmsis_os2.h"
+#include "ethernetif.h"
 #include "health.h"
 #include "logger.h"
-#include "lwip.h"
+#include "lwip/netif.h"
+#include "lwip/tcpip.h"
 #include "stm32h7xx_nucleo.h"
-
-/* Private includes ----------------------------------------------------------*/
-/* USER CODE BEGIN Includes */
-
-/* USER CODE END Includes */
-
-/* Private typedef -----------------------------------------------------------*/
-/* USER CODE BEGIN PTD */
-
-/* USER CODE END PTD */
-
-/* Private define ------------------------------------------------------------*/
-/* USER CODE BEGIN PD */
-
-/* USER CODE END PD */
-
-/* Private macro -------------------------------------------------------------*/
-/* USER CODE BEGIN PM */
-
-/* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
 ADC_HandleTypeDef hadc1;
@@ -65,19 +48,21 @@ WWDG_HandleTypeDef hwwdg1;
 osThreadId_t health_tid;
 const osThreadAttr_t health_task_attr = {
   .name = "health_task",
-  .stack_size = 128 * 8,
+  .stack_size = configMINIMAL_STACK_SIZE,
   .priority = osPriorityNormal,
 };
 osThreadId_t logger_tid;
 const osThreadAttr_t logger_task_attr = {
   .name = "logger_task",
-  .stack_size = 512 * 8,
+  .stack_size = configMINIMAL_STACK_SIZE * 2,
   .priority = osPriorityLow,
 };
 
-/* USER CODE BEGIN PV */
-
-/* USER CODE END PV */
+struct netif gnetif; /* network interface structure */
+osThreadAttr_t attr;
+osThreadId_t StartHandle;
+osThreadId_t LinkHandle;
+osThreadId_t DHCPHandle;
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
@@ -99,55 +84,84 @@ static void MX_RTC_Init(void);
 #ifndef RAPTOR_DEBUG
 static void MX_WWDG1_Init(void);
 #endif // RAPTOR_DEBUG
+void StartThread(void *argument);
 
-/* USER CODE END PFP */
+static void Netif_Config(void) {
+  ip_addr_t ipaddr;
+  ip_addr_t netmask;
+  ip_addr_t gw;
 
-/* Private user code ---------------------------------------------------------*/
-/* USER CODE BEGIN 0 */
+#if LWIP_DHCP
+  ip_addr_set_zero_ip4(&ipaddr);
+  ip_addr_set_zero_ip4(&netmask);
+  ip_addr_set_zero_ip4(&gw);
+#else
+  IP_ADDR4(&ipaddr, IP_ADDR0, IP_ADDR1, IP_ADDR2, IP_ADDR3);
+  IP_ADDR4(&netmask, NETMASK_ADDR0, NETMASK_ADDR1, NETMASK_ADDR2, NETMASK_ADDR3);
+  IP_ADDR4(&gw, GW_ADDR0, GW_ADDR1, GW_ADDR2, GW_ADDR3);
+#endif /* LWIP_DHCP */
 
-/* USER CODE END 0 */
+  /* add the network interface */
+  netif_add(&gnetif, &ipaddr, &netmask, &gw, NULL, &ethernetif_init, &ethernet_input);
+
+  /*  Registers the default network interface. */
+  netif_set_default(&gnetif);
+
+  ethernet_link_status_updated(&gnetif);
+
+#if LWIP_NETIF_LINK_CALLBACK
+  netif_set_link_callback(&gnetif, ethernet_link_status_updated);
+
+  attr.name = "ethlink_task";
+  attr.stack_size = configMINIMAL_STACK_SIZE;
+  attr.priority = osPriorityNormal;
+  LinkHandle = osThreadNew(ethernet_link_thread, &gnetif, &attr);
+#endif
+
+#if LWIP_DHCP
+  /* Start DHCPClient */
+  attr.name = "dhcp_task";
+  attr.stack_size = configMINIMAL_STACK_SIZE;
+  attr.priority = osPriorityBelowNormal;
+  DHCPHandle = osThreadNew(dhcp_task, &gnetif, &attr);
+#endif
+}
+
+/**
+ * @brief  Start Thread
+ * @param  argument not used
+ * @retval None
+ */
+void StartThread(void *argument) {
+  /* Create tcp_ip stack thread */
+  tcpip_init(NULL, NULL);
+  /* Initialize the LwIP stack */
+  Netif_Config();
+  logger_tid = osThreadNew(logger_main, NULL, &logger_task_attr);
+  health_tid = osThreadNew(health_main, &hi2c1, &health_task_attr);
+  /* Initialize webserver demo */
+  for (;;) {
+    /* Delete the Init Thread */
+    osThreadTerminate(StartHandle);
+  }
+}
 
 /**
  * @brief  The application entry point.
  * @retval int
  */
 int main(void) {
-  /* USER CODE BEGIN 1 */
-
-  /* USER CODE END 1 */
-  /* Enable the CPU Cache */
-
-  /* Enable I-Cache---------------------------------------------------------*/
   SCB_EnableICache();
-
-  /* Enable D-Cache---------------------------------------------------------*/
   SCB_EnableDCache();
-
-  /* MCU Configuration--------------------------------------------------------*/
-
-  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
   HAL_Init();
-
-  /* USER CODE BEGIN Init */
-
-  /* USER CODE END Init */
-
-  /* Configure the system clock */
   SystemClock_Config();
-
-  /* Configure the peripherals common clocks */
   PeriphCommonClock_Config();
-
-  /* USER CODE BEGIN SysInit */
-
-  /* USER CODE END SysInit */
-
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_DMA_Init();
   MX_FDCAN1_Init();
   MX_I2C1_Init();
-  // MX_SDMMC1_SD_Init();
+  MX_SDMMC1_SD_Init();
   MX_TIM1_Init();
   MX_UART7_Init();
   MX_UART9_Init();
@@ -169,22 +183,15 @@ int main(void) {
 
   /* Init scheduler */
   osKernelInitialize();
-  logger_init(LOGGER_TRACE);
-  netconfig_init();
-  logger_tid = osThreadNew(logger_main, NULL, &logger_task_attr);
-  health_tid = osThreadNew(health_main, &hi2c1, &health_task_attr);
+  // logger_init(LOGGER_TRACE);
+  attr.name = "Start";
+  attr.stack_size = configMINIMAL_STACK_SIZE * 2;
+  attr.priority = osPriorityNormal;
+  StartHandle = osThreadNew(StartThread, NULL, &attr);
   /* Start scheduler */
   osKernelStart();
-
-  /* We should never get here as control is now taken by the scheduler */
-  /* Infinite loop */
-  /* USER CODE BEGIN WHILE */
   while (1) {
-    /* USER CODE END WHILE */
-
-    /* USER CODE BEGIN 3 */
   }
-  /* USER CODE END 3 */
 }
 
 /**
@@ -646,9 +653,8 @@ static void MX_SDMMC1_SD_Init(void) {
   hsd1.Init.BusWide = SDMMC_BUS_WIDE_4B;
   hsd1.Init.HardwareFlowControl = SDMMC_HARDWARE_FLOW_CONTROL_DISABLE;
   hsd1.Init.ClockDiv = 0;
-  if (HAL_SD_Init(&hsd1) != HAL_OK) {
-    Error_Handler();
-  }
+  HAL_SD_Init(&hsd1);
+
   /* USER CODE BEGIN SDMMC1_Init 2 */
 
   /* USER CODE END SDMMC1_Init 2 */
@@ -990,26 +996,6 @@ static void MX_GPIO_Init(void) {
 
   /* USER CODE BEGIN MX_GPIO_Init_2 */
   /* USER CODE END MX_GPIO_Init_2 */
-}
-
-/**
- * @brief  Period elapsed callback in non blocking mode
- * @note   This function is called  when TIM2 interrupt took place, inside
- * HAL_TIM_IRQHandler(). It makes a direct call to HAL_IncTick() to increment
- * a global variable "uwTick" used as application time base.
- * @param  htim : TIM handle
- * @retval None
- */
-void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
-  /* USER CODE BEGIN Callback 0 */
-
-  /* USER CODE END Callback 0 */
-  if (htim->Instance == TIM2) {
-    HAL_IncTick();
-  }
-  /* USER CODE BEGIN Callback 1 */
-
-  /* USER CODE END Callback 1 */
 }
 
 /**
