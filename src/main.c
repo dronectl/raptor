@@ -22,6 +22,7 @@
 #include "health.h"
 #include "logger.h"
 #include "lwip.h"
+#include "stm32h7xx_nucleo.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -70,7 +71,7 @@ const osThreadAttr_t health_task_attr = {
 osThreadId_t logger_tid;
 const osThreadAttr_t logger_task_attr = {
   .name = "logger_task",
-  .stack_size = 128 * 8,
+  .stack_size = 512 * 8,
   .priority = osPriorityLow,
 };
 
@@ -162,13 +163,16 @@ int main(void) {
   /* USER CODE BEGIN 2 */
 
   /* USER CODE END 2 */
+  BSP_LED_Init(LED1);
+  BSP_LED_Init(LED2);
+  BSP_LED_Init(LED3);
 
   /* Init scheduler */
   osKernelInitialize();
   logger_init(LOGGER_TRACE);
   netconfig_init();
-  health_tid = osThreadNew(health_main, &hi2c1, &health_task_attr);
   logger_tid = osThreadNew(logger_main, NULL, &logger_task_attr);
+  health_tid = osThreadNew(health_main, &hi2c1, &health_task_attr);
   /* Start scheduler */
   osKernelStart();
 

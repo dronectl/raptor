@@ -133,13 +133,13 @@ __NO_RETURN void logger_main(void *argument) {
   log_t log;
   int client_fd;
   if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-    return;
+    __BKPT(0);
   }
   address.sin_family = AF_INET;
   address.sin_port = htons(LOGGING_PORT);
   address.sin_addr.s_addr = INADDR_ANY;
   if (bind(sock, (struct sockaddr *)&address, sizeof(address)) < 0) {
-    return;
+    __BKPT(0);
   }
   listen(sock, 5);
   info("Initialized logger");

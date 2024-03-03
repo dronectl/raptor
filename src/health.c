@@ -60,7 +60,6 @@ static enum HealthState fsm_tick(const enum HealthState state) {
 }
 
 __NO_RETURN void health_main(void *argument) {
-  BSP_LED_Init(LED1);
   enum HealthState state = HEALTH_INIT;
   // get i2c2 handle and set bme280
   I2C_HandleTypeDef hi2c = *(I2C_HandleTypeDef *)argument;

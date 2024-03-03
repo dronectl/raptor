@@ -39,13 +39,13 @@ struct netif gnetif;
 osThreadId_t link_tid;
 const osThreadAttr_t link_task_attr = {
   .name = "link_task",
-  .stack_size = 128 * 2,
+  .stack_size = 128 * 4,
   .priority = osPriorityNormal,
 };
 osThreadId_t dhcp_tid;
 const osThreadAttr_t dhcp_task_attr = {
   .name = "dhcp_task",
-  .stack_size = 128 * 2,
+  .stack_size = 128 * 4,
   .priority = osPriorityNormal,
 };
 #if LWIP_DHCP
