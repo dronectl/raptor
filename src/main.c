@@ -73,12 +73,6 @@ const osThreadAttr_t logger_task_attr = {
   .stack_size = 128 * 8,
   .priority = osPriorityLow,
 };
-osThreadId_t genesis_tid;
-const osThreadAttr_t genesis_task_attr = {
-  .name = "genesis_task",
-  .stack_size = 128 * 8,
-  .priority = osPriorityHigh,
-};
 
 /* USER CODE BEGIN PV */
 
@@ -104,13 +98,6 @@ static void MX_RTC_Init(void);
 #ifndef RAPTOR_DEBUG
 static void MX_WWDG1_Init(void);
 #endif // RAPTOR_DEBUG
-
-/**
- * @brief Initialize CMSIS v2 RTOS Constructs
- */
-void initialize_rtos(void);
-
-/* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
 
@@ -178,7 +165,10 @@ int main(void) {
 
   /* Init scheduler */
   osKernelInitialize();
-  initialize_rtos();
+  logger_init(LOGGER_TRACE);
+  netconfig_init();
+  health_tid = osThreadNew(health_main, &hi2c1, &health_task_attr);
+  logger_tid = osThreadNew(logger_main, NULL, &logger_task_attr);
   /* Start scheduler */
   osKernelStart();
 
@@ -996,26 +986,6 @@ static void MX_GPIO_Init(void) {
 
   /* USER CODE BEGIN MX_GPIO_Init_2 */
   /* USER CODE END MX_GPIO_Init_2 */
-}
-
-/* USER CODE BEGIN 4 */
-
-/* USER CODE END 4 */
-
-/* USER CODE BEGIN Header_StartDefaultTask */
-
-__NO_RETURN void genesis_task(void *argument) {
-  netconfig_init();
-  health_tid = osThreadNew(health_main, &hi2c1, &health_task_attr);
-  logger_tid = osThreadNew(logger_main, NULL, &logger_task_attr);
-  for (;;) {
-    osDelay(1);
-  }
-}
-
-void initialize_rtos(void) {
-  logger_init(LOGGER_TRACE);
-  genesis_tid = osThreadNew(genesis_task, NULL, &genesis_task_attr);
 }
 
 /**

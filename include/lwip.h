@@ -16,8 +16,6 @@
 
 /* Exported macro ------------------------------------------------------------*/
 /* Exported functions ------------------------------------------------------- */
+void netconfig_init(void);
 void ethernet_link_status_updated(struct netif *netif);
-#if LWIP_DHCP
-void dhcp_task(void *pv_params);
-#endif
 #endif /* __LWIP_H__ */

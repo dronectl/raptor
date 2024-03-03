@@ -20,45 +20,14 @@
 /* Includes ------------------------------------------------------------------*/
 #include "stm32h7xx_it.h"
 #include "main.h"
-/* Private includes ----------------------------------------------------------*/
-/* USER CODE BEGIN Includes */
-/* USER CODE END Includes */
 
-/* Private typedef -----------------------------------------------------------*/
-/* USER CODE BEGIN TD */
-
-/* USER CODE END TD */
-
-/* Private define ------------------------------------------------------------*/
-/* USER CODE BEGIN PD */
-
-/* USER CODE END PD */
-
-/* Private macro -------------------------------------------------------------*/
-/* USER CODE BEGIN PM */
-
-/* USER CODE END PM */
-
-/* Private variables ---------------------------------------------------------*/
-/* USER CODE BEGIN PV */
-
-/* USER CODE END PV */
-
-/* Private function prototypes -----------------------------------------------*/
-/* USER CODE BEGIN PFP */
-
-/* USER CODE END PFP */
-
-/* Private user code ---------------------------------------------------------*/
-/* USER CODE BEGIN 0 */
-
-/* USER CODE END 0 */
-
-/* External variables --------------------------------------------------------*/
 extern DMA_HandleTypeDef hdma_adc1;
 extern DMA_HandleTypeDef hdma_adc2;
 extern DMA_HandleTypeDef hdma_adc3;
 extern TIM_HandleTypeDef htim2;
+extern ETH_HandleTypeDef EthHandle;
+
+void ETH_IRQHandler(void);
 
 /* USER CODE BEGIN EV */
 
@@ -206,3 +175,10 @@ void TIM2_IRQHandler(void) {
 /* USER CODE BEGIN 1 */
 
 /* USER CODE END 1 */
+
+/**
+ * @brief  This function handles Ethernet interrupt request.
+ * @param  None
+ * @retval None
+ */
+void ETH_IRQHandler(void) { HAL_ETH_IRQHandler(&EthHandle); }

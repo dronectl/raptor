@@ -39,13 +39,13 @@ struct netif gnetif;
 osThreadId_t link_tid;
 const osThreadAttr_t link_task_attr = {
   .name = "link_task",
-  .stack_size = 128 * 8,
+  .stack_size = 128 * 2,
   .priority = osPriorityNormal,
 };
 osThreadId_t dhcp_tid;
 const osThreadAttr_t dhcp_task_attr = {
   .name = "dhcp_task",
-  .stack_size = 128 * 8,
+  .stack_size = 128 * 2,
   .priority = osPriorityNormal,
 };
 #if LWIP_DHCP
@@ -53,6 +53,8 @@ const osThreadAttr_t dhcp_task_attr = {
 uint32_t DHCPfineTimer = 0;
 uint8_t DHCP_state = DHCP_OFF;
 #endif
+
+static void dhcp_task(void *argument);
 
 /**
  * @brief  Setup the network interface
@@ -83,9 +85,15 @@ void netconfig_init(void) {
 #if LWIP_NETIF_LINK_CALLBACK
   netif_set_link_callback(&gnetif, ethernet_link_status_updated);
   link_tid = osThreadNew(ethernet_link_thread, &gnetif, &link_task_attr);
+  if (link_tid == NULL) {
+    return;
+  }
 #endif
 #if LWIP_DHCP
-  link_tid = osThreadNew(dhcp_task, &gnetif, &dhcp_task_attr);
+  dhcp_tid = osThreadNew(dhcp_task, &gnetif, &dhcp_task_attr);
+  if (dhcp_tid == NULL) {
+    return;
+  }
 #endif
 }
 
@@ -122,7 +130,7 @@ void ethernet_link_status_updated(struct netif *netif) {
  * @param  argument: network interface
  * @retval None
  */
-void dhcp_task(void *argument) {
+static void dhcp_task(void *argument) {
   struct netif *netif = (struct netif *)argument;
   ip_addr_t ipaddr;
   ip_addr_t netmask;
