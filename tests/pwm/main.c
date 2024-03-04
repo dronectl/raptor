@@ -17,7 +17,7 @@
 
 uint32_t SystemCoreClock = 64000000;
 uint32_t SystemD2Clock = 64000000;
-TIM_HandleTypeDef htimer1;
+TIM_HandleTypeDef htimer2;
 const uint8_t D1CorePrescTable[16] = {0, 0, 0, 0, 1, 2, 3, 4, 1, 2, 3, 4, 6, 7, 8, 9};
 
 /**
@@ -403,29 +403,34 @@ void SystemClock_Config(void) {
 static void MX_GPIO_Init(void) {
   // Configure GPIO pin for LED
   GPIO_InitTypeDef GPIO_InitStruct = {0};
-  __HAL_RCC_GPIOB_CLK_ENABLE();
-  GPIO_InitStruct.Pin = GPIO_PIN_1;
-  GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+  __HAL_RCC_GPIOE_CLK_ENABLE();
+  GPIO_InitStruct.Pin = GPIO_PIN_11;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  GPIO_InitStruct.Alternate = GPIO_AF1_TIM1;
-  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
-  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_1, GPIO_PIN_RESET);
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+  // GPIO_InitStruct.Alternate = GPIO_AF1_TIM1;
+  HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
+  // HAL_GPIO_WritePin(GPIOE, GPIO_PIN_9, GPIO_PIN_RESET);
+  // HAL_GPIO_WritePin(GPIOE, GPIO_PIN_9, GPIO_PIN_SET);
 }
 
 void timer1_init(void) {
-  TIM_OC_InitTypeDef tim1_pwm_config;
-  htimer1.Instance = TIM1;
-  htimer1.Init.Period = 10000 - 1;
-  htimer1.Init.Prescaler = 4999;
-  if (HAL_TIM_OC_Init(&htimer1) != HAL_OK) {
+  TIM_OC_InitTypeDef tim2_pwm_config;
+  htimer2.Instance = TIM2;
+  htimer2.Init.Period = 10000 - 1;
+  htimer2.Init.Prescaler = 4;
+  if (HAL_TIM_OC_Init(&htimer2) != HAL_OK) {
     // Error occurred
+    Error_Handler();
   }
-  memset(&tim1_pwm_config, 0, sizeof(tim1_pwm_config));
-  tim1_pwm_config.OCMode = TIM_OCMODE_PWM1;
-  tim1_pwm_config.OCPolarity = TIM_OCPOLARITY_HIGH;
-  tim1_pwm_config.Pulse = (htimer1.Init.Period * 40) / 100;
-  HAL_TIM_PWM_ConfigChannel(&htimer1, &tim1_pwm_config, TIM_CHANNEL_1);
+  memset(&tim2_pwm_config, 0, sizeof(tim2_pwm_config));
+  tim2_pwm_config.OCMode = TIM_OCMODE_PWM2;
+  tim2_pwm_config.OCPolarity = TIM_OCPOLARITY_HIGH;
+  tim2_pwm_config.Pulse = 0;
+  if (HAL_TIM_PWM_ConfigChannel(&htimer2, &tim2_pwm_config, TIM_CHANNEL_2) != HAL_OK) {
+    Error_Handler();
+  }
+  HAL_TIM_PWM_ConfigChannel(&htimer2, &tim2_pwm_config, TIM_CHANNEL_2);
 }
 
 /**
@@ -438,19 +443,19 @@ int main(void) {
   MX_GPIO_Init();
   timer1_init();
 
-  if (HAL_TIM_PWM_Start(&htimer1, TIM_CHANNEL_1) != HAL_OK) {
-    // Todo: Handle Error
+  if (HAL_TIM_PWM_Start(&htimer2, TIM_CHANNEL_2) != HAL_OK) {
+    Error_Handler();
   }
   uint64_t brightness = 0;
   while (1) {
-    while (brightness < htimer1.Init.Period) {
-      brightness += 20;
-      __HAL_TIM_SET_COMPARE(&htimer1, TIM_CHANNEL_1, brightness);
+    while (brightness < htimer2.Init.Period) {
+      brightness += 2000;
+      __HAL_TIM_SET_COMPARE(&htimer2, TIM_CHANNEL_2, brightness);
       HAL_Delay(1);
     }
     while (brightness > 0) {
-      brightness -= 20;
-      __HAL_TIM_SET_COMPARE(&htimer1, TIM_CHANNEL_1, brightness);
+      brightness -= 2000;
+      __HAL_TIM_SET_COMPARE(&htimer2, TIM_CHANNEL_2, brightness);
       HAL_Delay(1);
     }
   }
