@@ -46,7 +46,7 @@ void logger_out(enum logger_level level, const char *func, int line, const char 
  *
  * @param[in] argument RTOS arguments
  */
-void logger_main(void *argument);
+void logger_task(void *pv_params);
 
 #ifndef critical
 #define critical(...) __CRITICAL(__VA_ARGS__, "")

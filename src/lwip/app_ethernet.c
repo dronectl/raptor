@@ -23,8 +23,10 @@
 #if LWIP_DHCP
 #include "lwip/dhcp.h"
 #endif
+#include "FreeRTOS.h"
 #include "app_ethernet.h"
 #include "ethernetif.h"
+#include "task.h"
 
 /*Static IP ADDRESS: IP_ADDR0.IP_ADDR1.IP_ADDR2.IP_ADDR3 */
 #define IP_ADDR0 ((uint8_t)192U)
@@ -147,7 +149,9 @@ void dhcp_task(void *pv_params) {
       default:
         break;
     }
-    osDelay(500);
+
+    /* wait 500 ms */
+    vTaskDelay(pdMS_TO_TICKS(500));
   }
 }
 #endif /* LWIP_DHCP */
