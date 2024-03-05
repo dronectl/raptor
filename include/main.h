@@ -22,31 +22,41 @@
 #ifndef __MAIN_H
 #define __MAIN_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/* Includes ------------------------------------------------------------------*/
 #include "stm32h7xx_hal.h"
-#include "stm32h7xx_nucleo.h"
 
-/*Static IP ADDRESS*/
-#define IP_ADDR0 ((uint8_t)192U)
-#define IP_ADDR1 ((uint8_t)168U)
-#define IP_ADDR2 ((uint8_t)0U)
-#define IP_ADDR3 ((uint8_t)10U)
+/* Private includes ----------------------------------------------------------*/
+/* USER CODE BEGIN Includes */
 
-/*NETMASK*/
-#define NETMASK_ADDR0 ((uint8_t)255U)
-#define NETMASK_ADDR1 ((uint8_t)255U)
-#define NETMASK_ADDR2 ((uint8_t)255U)
-#define NETMASK_ADDR3 ((uint8_t)0U)
+/* USER CODE END Includes */
 
-/*Gateway Address*/
-#define GW_ADDR0 ((uint8_t)192U)
-#define GW_ADDR1 ((uint8_t)168U)
-#define GW_ADDR2 ((uint8_t)0U)
-#define GW_ADDR3 ((uint8_t)1U)
+/* Exported types ------------------------------------------------------------*/
+/* USER CODE BEGIN ET */
+
+/* USER CODE END ET */
+
+/* Exported constants --------------------------------------------------------*/
+/* USER CODE BEGIN EC */
+
+/* USER CODE END EC */
+
+/* Exported macro ------------------------------------------------------------*/
+/* USER CODE BEGIN EM */
+
+/* USER CODE END EM */
 
 void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
 
 /* Exported functions prototypes ---------------------------------------------*/
 void Error_Handler(void);
+
+/* USER CODE BEGIN EFP */
+
+/* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
 #define B1_Pin GPIO_PIN_13
@@ -81,6 +91,8 @@ void Error_Handler(void);
 #define ADC_LC1_P_GPIO_Port GPIOA
 #define ADC_LC1_N_Pin GPIO_PIN_5
 #define ADC_LC1_N_GPIO_Port GPIOA
+#define BUZZER_Pin GPIO_PIN_6
+#define BUZZER_GPIO_Port GPIOA
 #define RMII_CRS_DV_Pin GPIO_PIN_7
 #define RMII_CRS_DV_GPIO_Port GPIOA
 #define RMII_RXD0_Pin GPIO_PIN_4
@@ -121,6 +133,8 @@ void Error_Handler(void);
 #define STLK_VCP_TX_GPIO_Port GPIOD
 #define USB_FS_PWR_EN_Pin GPIO_PIN_10
 #define USB_FS_PWR_EN_GPIO_Port GPIOD
+#define RPM_CNTR_Pin GPIO_PIN_5
+#define RPM_CNTR_GPIO_Port GPIOG
 #define USB_FS_OVCR_Pin GPIO_PIN_7
 #define USB_FS_OVCR_GPIO_Port GPIOG
 #define USB_FS_VBUS_Pin GPIO_PIN_9
@@ -143,5 +157,13 @@ void Error_Handler(void);
 #define SWO_GPIO_Port GPIOB
 #define LED_YELLOW_Pin GPIO_PIN_1
 #define LED_YELLOW_GPIO_Port GPIOE
+
+/* USER CODE BEGIN Private defines */
+
+/* USER CODE END Private defines */
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __MAIN_H */
