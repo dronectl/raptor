@@ -6,3 +6,9 @@ build/
 .settings/
 .cache/
 .clangd
+cube/*
+!cube/raptor.ioc
+!cube/raptor.pdf
+!cube/raptor.txt
+!cube/raptor debug.launch
+!cube/README.md
