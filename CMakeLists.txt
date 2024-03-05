@@ -10,7 +10,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # global project name
 set(EXECUTABLE "raptor")
 set(CMAKE_C_EXTENSIONS OFF)
-set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_STANDARD 99)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 
 project(
@@ -58,8 +58,8 @@ add_executable(
   src/cbuffer.c
   src/logger.c
   src/freertos.c
+  src/stcore/sysmem.c
   src/stcore/syscalls.c
-  src/stcore/newlib_lock_glue.c
   src/stcore/stm32h7xx_it.c
   src/stcore/stm32h7xx_hal_msp.c
   src/stcore/stm32h7xx_hal_timebase_tim.c
