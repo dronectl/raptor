@@ -18,36 +18,32 @@ TaskHandle_t logger_handle;
 TaskHandle_t link_handle;
 TaskHandle_t dhcp_handle;
 struct netif gnetif;
+
 ADC_HandleTypeDef hadc1;
 ADC_HandleTypeDef hadc2;
 ADC_HandleTypeDef hadc3;
 DMA_HandleTypeDef hdma_adc1;
 DMA_HandleTypeDef hdma_adc2;
 DMA_HandleTypeDef hdma_adc3;
-
 FDCAN_HandleTypeDef hfdcan1;
-
 I2C_HandleTypeDef hi2c1;
-
 RTC_HandleTypeDef hrtc;
-
 SD_HandleTypeDef hsd1;
-
 TIM_HandleTypeDef htim1;
 TIM_HandleTypeDef htim13;
-
 UART_HandleTypeDef huart7;
 UART_HandleTypeDef huart9;
 UART_HandleTypeDef huart3;
 
 /* Private function prototypes -----------------------------------------------*/
-void SystemClock_Config(void);
-void PeriphCommonClock_Config(void);
+static void SystemClock_Config(void);
+static void PeriphCommonClock_Config(void);
+static void MPU_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_DMA_Init(void);
 static void MX_FDCAN1_Init(void);
 static void MX_I2C1_Init(void);
-// static void MX_SDMMC1_SD_Init(void);
+static void MX_SDMMC1_SD_Init(void);
 static void MX_TIM1_Init(void);
 static void MX_UART7_Init(void);
 static void MX_UART9_Init(void);
@@ -71,19 +67,6 @@ static void system_clock_config(void);
 static void bsp_config(void);
 static void mpu_config(void);
 static void cpu_cache_enable(void);
-
-/**
- * @brief  This function is executed in case of error occurrence.
- * @retval None
- */
-void Error_Handler(void) {
-  /* USER CODE BEGIN Error_Handler_Debug */
-  /* User can add his own implementation to report the HAL error return state */
-  __disable_irq();
-  while (1) {
-  }
-  /* USER CODE END Error_Handler_Debug */
-}
 
 void start_task(void *pv_params) {
   BaseType_t x_returned;
@@ -161,11 +144,6 @@ static void netconfig_init(void) {
     vTaskDelete(dhcp_handle);
   }
 #endif
-}
-
-static void bsp_config(void) {
-  BSP_LED_Init(LED2);
-  BSP_LED_Init(LED3);
 }
 
 /**
@@ -256,193 +234,10 @@ static void system_clock_config(void) {
 }
 
 /**
- * @brief  Configure the MPU attributes
- * @param  None
- * @retval None
- */
-static void mpu_config(void) {
-  MPU_Region_InitTypeDef MPU_InitStruct;
-  /* Disable the MPU */
-  HAL_MPU_Disable();
-  /* Configure the MPU as Strongly ordered for not defined regions */
-  MPU_InitStruct.Enable = MPU_REGION_ENABLE;
-  MPU_InitStruct.BaseAddress = 0x00;
-  MPU_InitStruct.Size = MPU_REGION_SIZE_4GB;
-  MPU_InitStruct.AccessPermission = MPU_REGION_NO_ACCESS;
-  MPU_InitStruct.IsBufferable = MPU_ACCESS_NOT_BUFFERABLE;
-  MPU_InitStruct.IsCacheable = MPU_ACCESS_NOT_CACHEABLE;
-  MPU_InitStruct.IsShareable = MPU_ACCESS_SHAREABLE;
-  MPU_InitStruct.Number = MPU_REGION_NUMBER0;
-  MPU_InitStruct.TypeExtField = MPU_TEX_LEVEL0;
-  MPU_InitStruct.SubRegionDisable = 0x87;
-  MPU_InitStruct.DisableExec = MPU_INSTRUCTION_ACCESS_DISABLE;
-  HAL_MPU_ConfigRegion(&MPU_InitStruct);
-  /* Configure the MPU attributes as Device not cacheable
-     for ETH DMA descriptors */
-  MPU_InitStruct.Enable = MPU_REGION_ENABLE;
-  MPU_InitStruct.BaseAddress = 0x30000000;
-  MPU_InitStruct.Size = MPU_REGION_SIZE_1KB;
-  MPU_InitStruct.AccessPermission = MPU_REGION_FULL_ACCESS;
-  MPU_InitStruct.IsBufferable = MPU_ACCESS_BUFFERABLE;
-  MPU_InitStruct.IsCacheable = MPU_ACCESS_NOT_CACHEABLE;
-  MPU_InitStruct.IsShareable = MPU_ACCESS_NOT_SHAREABLE;
-  MPU_InitStruct.Number = MPU_REGION_NUMBER1;
-  MPU_InitStruct.TypeExtField = MPU_TEX_LEVEL0;
-  MPU_InitStruct.SubRegionDisable = 0x00;
-  MPU_InitStruct.DisableExec = MPU_INSTRUCTION_ACCESS_ENABLE;
-  HAL_MPU_ConfigRegion(&MPU_InitStruct);
-  /* Configure the MPU attributes as Normal Non Cacheable
-     for LwIP RAM heap which contains the Tx buffers */
-  MPU_InitStruct.Enable = MPU_REGION_ENABLE;
-  MPU_InitStruct.BaseAddress = 0x30004000;
-  MPU_InitStruct.Size = MPU_REGION_SIZE_16KB;
-  MPU_InitStruct.AccessPermission = MPU_REGION_FULL_ACCESS;
-  MPU_InitStruct.IsBufferable = MPU_ACCESS_NOT_BUFFERABLE;
-  MPU_InitStruct.IsCacheable = MPU_ACCESS_NOT_CACHEABLE;
-  MPU_InitStruct.IsShareable = MPU_ACCESS_SHAREABLE;
-  MPU_InitStruct.Number = MPU_REGION_NUMBER2;
-  MPU_InitStruct.TypeExtField = MPU_TEX_LEVEL1;
-  MPU_InitStruct.SubRegionDisable = 0x00;
-  MPU_InitStruct.DisableExec = MPU_INSTRUCTION_ACCESS_ENABLE;
-  HAL_MPU_ConfigRegion(&MPU_InitStruct);
-  /* Enable the MPU */
-  HAL_MPU_Enable(MPU_PRIVILEGED_DEFAULT);
-}
-
-/**
- * @brief  CPU L1-Cache enable.
- * @param  None
- * @retval None
- */
-static void cpu_cache_enable(void) {
-  /* Enable I-Cache */
-  SCB_EnableICache();
-  /* Enable D-Cache */
-  SCB_EnableDCache();
-}
-
-/* Private includes ----------------------------------------------------------*/
-/* USER CODE BEGIN Includes */
-
-/* USER CODE END Includes */
-
-/* Private typedef -----------------------------------------------------------*/
-/* USER CODE BEGIN PTD */
-
-/* USER CODE END PTD */
-
-/* Private define ------------------------------------------------------------*/
-/* USER CODE BEGIN PD */
-
-/* USER CODE END PD */
-
-/* Private macro -------------------------------------------------------------*/
-/* USER CODE BEGIN PM */
-
-/* USER CODE END PM */
-
-/* Private variables ---------------------------------------------------------*/
-
-/* USER CODE BEGIN PV */
-
-/* USER CODE END PV */
-
-/* USER CODE BEGIN PFP */
-
-/* USER CODE END PFP */
-
-/* Private user code ---------------------------------------------------------*/
-/* USER CODE BEGIN 0 */
-
-/* USER CODE END 0 */
-
-/**
- * @brief  The application entry point.
- * @retval int
- */
-int main(void) {
-  /* USER CODE BEGIN 1 */
-
-  /* USER CODE END 1 */
-  /* Enable the CPU Cache */
-
-  /* Configure the MPU attributes as Device memory for ETH DMA descriptors */
-  mpu_config();
-
-  /* Enable the CPU Cache */
-  cpu_cache_enable();
-
-  /* Configure the system clock to 520 MHz */
-
-  /* MCU Configuration--------------------------------------------------------*/
-
-  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-  HAL_Init();
-  system_clock_config();
-  /* USER CODE BEGIN Init */
-
-  /* USER CODE END Init */
-
-  // /* Configure the system clock */
-  // SystemClock_Config();
-
-  // /* Configure the peripherals common clocks */
-  // PeriphCommonClock_Config();
-
-  /* USER CODE BEGIN SysInit */
-
-  /* USER CODE END SysInit */
-
-  /* Initialize all configured peripherals */
-  MX_GPIO_Init();
-  MX_DMA_Init();
-  MX_FDCAN1_Init();
-  MX_I2C1_Init();
-  // MX_SDMMC1_SD_Init();
-  MX_TIM1_Init();
-  MX_UART7_Init();
-  MX_UART9_Init();
-  MX_USART3_UART_Init();
-  MX_USB_OTG_HS_USB_Init();
-  MX_ADC1_Init();
-  MX_ADC2_Init();
-  MX_ADC3_Init();
-  MX_RTC_Init();
-#ifndef RAPTOR_DEBUG
-  MX_WWDG1_Init();
-#endif // RAPTOR_DEBUG
-  MX_TIM13_Init();
-  /* USER CODE BEGIN 2 */
-
-  /* USER CODE END 2 */
-
-  /* Configure the LEDs ...*/
-  bsp_config();
-  BaseType_t x_returned;
-  x_returned = xTaskCreate(start_task, "start_task", configMINIMAL_STACK_SIZE * 2, NULL,
-                           tskIDLE_PRIORITY + 24, &start_handle);
-  configASSERT(start_handle);
-  if (x_returned != pdPASS) {
-    vTaskDelete(start_handle);
-  }
-  vTaskStartScheduler();
-
-  /* We should never get here as control is now taken by the scheduler */
-  /* Infinite loop */
-  /* USER CODE BEGIN WHILE */
-  while (1) {
-    /* USER CODE END WHILE */
-
-    /* USER CODE BEGIN 3 */
-  }
-  /* USER CODE END 3 */
-}
-
-/**
  * @brief System Clock Configuration
  * @retval None
  */
-void SystemClock_Config(void) {
+static void SystemClock_Config(void) {
   RCC_OscInitTypeDef RCC_OscInitStruct = {0};
   RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
 
@@ -498,7 +293,7 @@ void SystemClock_Config(void) {
  * @brief Peripherals Common Clock Configuration
  * @retval None
  */
-void PeriphCommonClock_Config(void) {
+static void PeriphCommonClock_Config(void) {
   RCC_PeriphCLKInitTypeDef PeriphClkInitStruct = {0};
 
   /** Initializes the peripherals clock
@@ -516,6 +311,60 @@ void PeriphCommonClock_Config(void) {
   if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct) != HAL_OK) {
     Error_Handler();
   }
+}
+
+/**
+ * @brief  Configure the MPU attributes
+ * @param  None
+ * @retval None
+ */
+static void MPU_Config(void) {
+  MPU_Region_InitTypeDef MPU_InitStruct;
+  /* Disable the MPU */
+  HAL_MPU_Disable();
+  /* Configure the MPU as Strongly ordered for not defined regions */
+  MPU_InitStruct.Enable = MPU_REGION_ENABLE;
+  MPU_InitStruct.BaseAddress = 0x00;
+  MPU_InitStruct.Size = MPU_REGION_SIZE_4GB;
+  MPU_InitStruct.AccessPermission = MPU_REGION_NO_ACCESS;
+  MPU_InitStruct.IsBufferable = MPU_ACCESS_NOT_BUFFERABLE;
+  MPU_InitStruct.IsCacheable = MPU_ACCESS_NOT_CACHEABLE;
+  MPU_InitStruct.IsShareable = MPU_ACCESS_SHAREABLE;
+  MPU_InitStruct.Number = MPU_REGION_NUMBER0;
+  MPU_InitStruct.TypeExtField = MPU_TEX_LEVEL0;
+  MPU_InitStruct.SubRegionDisable = 0x87;
+  MPU_InitStruct.DisableExec = MPU_INSTRUCTION_ACCESS_DISABLE;
+  HAL_MPU_ConfigRegion(&MPU_InitStruct);
+  /* Configure the MPU attributes as Device not cacheable
+     for ETH DMA descriptors */
+  MPU_InitStruct.Enable = MPU_REGION_ENABLE;
+  MPU_InitStruct.BaseAddress = 0x30000000;
+  MPU_InitStruct.Size = MPU_REGION_SIZE_1KB;
+  MPU_InitStruct.AccessPermission = MPU_REGION_FULL_ACCESS;
+  MPU_InitStruct.IsBufferable = MPU_ACCESS_BUFFERABLE;
+  MPU_InitStruct.IsCacheable = MPU_ACCESS_NOT_CACHEABLE;
+  MPU_InitStruct.IsShareable = MPU_ACCESS_NOT_SHAREABLE;
+  MPU_InitStruct.Number = MPU_REGION_NUMBER1;
+  MPU_InitStruct.TypeExtField = MPU_TEX_LEVEL0;
+  MPU_InitStruct.SubRegionDisable = 0x00;
+  MPU_InitStruct.DisableExec = MPU_INSTRUCTION_ACCESS_ENABLE;
+  HAL_MPU_ConfigRegion(&MPU_InitStruct);
+  /* Configure the MPU attributes as Normal Non Cacheable
+     for LwIP RAM heap which contains the Tx buffers */
+  MPU_InitStruct.Enable = MPU_REGION_ENABLE;
+  MPU_InitStruct.BaseAddress = 0x30004000;
+  MPU_InitStruct.Size = MPU_REGION_SIZE_16KB;
+  MPU_InitStruct.AccessPermission = MPU_REGION_FULL_ACCESS;
+  MPU_InitStruct.IsBufferable = MPU_ACCESS_NOT_BUFFERABLE;
+  MPU_InitStruct.IsCacheable = MPU_ACCESS_NOT_CACHEABLE;
+  MPU_InitStruct.IsShareable = MPU_ACCESS_SHAREABLE;
+  MPU_InitStruct.Number = MPU_REGION_NUMBER2;
+  MPU_InitStruct.TypeExtField = MPU_TEX_LEVEL1;
+  MPU_InitStruct.SubRegionDisable = 0x00;
+  MPU_InitStruct.DisableExec = MPU_INSTRUCTION_ACCESS_ENABLE;
+  HAL_MPU_ConfigRegion(&MPU_InitStruct);
+  /* Enable the MPU */
+  HAL_MPU_Enable(MPU_PRIVILEGED_DEFAULT);
 }
 
 /**
@@ -897,9 +746,8 @@ static void MX_SDMMC1_SD_Init(void) {
   hsd1.Init.BusWide = SDMMC_BUS_WIDE_4B;
   hsd1.Init.HardwareFlowControl = SDMMC_HARDWARE_FLOW_CONTROL_DISABLE;
   hsd1.Init.ClockDiv = 0;
-  if (HAL_SD_Init(&hsd1) != HAL_OK) {
-    Error_Handler();
-  }
+  // CS TODO: Investigate failure on NUCLEO-H723ZG (https://github.com/dronectl/raptor/issues/48)
+  HAL_SD_Init(&hsd1);
   /* USER CODE BEGIN SDMMC1_Init 2 */
 
   /* USER CODE END SDMMC1_Init 2 */
@@ -1291,23 +1139,59 @@ static void MX_GPIO_Init(void) {
 }
 
 /**
- * @brief  Period elapsed callback in non blocking mode
- * @note   This function is called  when TIM2 interrupt took place, inside
- * HAL_TIM_IRQHandler(). It makes a direct call to HAL_IncTick() to increment
- * a global variable "uwTick" used as application time base.
- * @param  htim : TIM handle
+ * @brief  The application entry point.
+ * @retval int
+ */
+int main(void) {
+  MPU_Config();
+  SCB_EnableICache();
+  SCB_EnableDCache();
+  BSP_LED_Init(LED1);
+  BSP_LED_Init(LED2);
+  BSP_LED_Init(LED3);
+  HAL_Init();
+  system_clock_config();
+  MX_GPIO_Init();
+  MX_DMA_Init();
+  MX_FDCAN1_Init();
+  MX_I2C1_Init();
+  MX_SDMMC1_SD_Init();
+  MX_TIM1_Init();
+  MX_UART7_Init();
+  MX_UART9_Init();
+  MX_USART3_UART_Init();
+  MX_USB_OTG_HS_USB_Init();
+  MX_ADC1_Init();
+  MX_ADC2_Init();
+  MX_ADC3_Init();
+  MX_RTC_Init();
+#ifndef RAPTOR_DEBUG
+  MX_WWDG1_Init();
+#endif // RAPTOR_DEBUG
+  MX_TIM13_Init();
+  BaseType_t x_returned;
+  x_returned = xTaskCreate(start_task, "start_task", configMINIMAL_STACK_SIZE * 2, NULL,
+                           tskIDLE_PRIORITY + 24, &start_handle);
+  configASSERT(start_handle);
+  if (x_returned != pdPASS) {
+    vTaskDelete(start_handle);
+  }
+  vTaskStartScheduler();
+  while (1) {
+  }
+}
+
+/**
+ * @brief  This function is executed in case of error occurrence.
  * @retval None
  */
-void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
-  /* USER CODE BEGIN Callback 0 */
-
-  /* USER CODE END Callback 0 */
-  if (htim->Instance == TIM2) {
-    HAL_IncTick();
+void Error_Handler(void) {
+  /* USER CODE BEGIN Error_Handler_Debug */
+  /* User can add his own implementation to report the HAL error return state */
+  __disable_irq();
+  while (1) {
   }
-  /* USER CODE BEGIN Callback 1 */
-
-  /* USER CODE END Callback 1 */
+  /* USER CODE END Error_Handler_Debug */
 }
 
 #ifdef USE_FULL_ASSERT
