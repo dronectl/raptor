@@ -1,5 +1,4 @@
 cmake_minimum_required(VERSION 3.22)
-
 # Fetch cube h7 headers and middlewares
 function(fetch_cubeh7)
   include(FetchContent)
@@ -7,7 +6,8 @@ function(fetch_cubeh7)
   FetchContent_Declare(
     stm32h7
     GIT_REPOSITORY https://github.com/STMicroelectronics/STM32CubeH7.git
-    GIT_TAG v1.11.0
+    GIT_TAG v1.11.1
+    GIT_PROGRESS TRUE
   )
   FetchContent_MakeAvailable(stm32h7)
   set(
@@ -71,29 +71,10 @@ function(fetch_cubeh7)
     ${LWIP_SRC}
     CACHE INTERNAL "LWIP_SRC"
   )
-  file(
-    GLOB
-    STM32CUBEH7_HAL_SRC
-    CONFIGURE_DEPENDS
-    "${stm32h7_SOURCE_DIR}/Drivers/STM32H7xx_HAL_Driver/Src/*.c"
-  )
-  list(
-    REMOVE_ITEM
-    STM32CUBEH7_HAL_SRC
-    "${stm32h7_SOURCE_DIR}/Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_timebase_rtc_alarm_template.c"
-    "${stm32h7_SOURCE_DIR}/Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_timebase_rtc_wakeup_template.c"
-    "${stm32h7_SOURCE_DIR}/Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_i2s_ex.c"
-  )
-  # Remove all low level source files (Low level files include '_ll_' substring)
-  set(hal_only "")
-  foreach(item ${STM32CUBEH7_HAL_SRC})
-    if(NOT ${item} MATCHES "_ll_")
-      list(APPEND hal_only ${item})
-    endif()
-  endforeach()
+  # HAL source to be included in CMakeLists.txt
   set(
     STM32CUBEH7_HAL_SRC
-    ${hal_only}
+    ${stm32h7_SOURCE_DIR}/Drivers/STM32H7xx_HAL_Driver/Src
     CACHE INTERNAL "STM32CUBEH7_HAL_SRC"
   )
   message(DEBUG "Exporting include paths: ${STM32CUBEH7_HAL_INCLUDE} ${STM32CUBEH7_CMSIS_INCLUDE} ${STM32CUBEH7_FREERTOS_INCLUDE} ${STM32CUBEH7_BSP_INCLUDE} ${LWIP_INCLUDE}")

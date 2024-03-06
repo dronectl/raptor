@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 3.22)
+set(FETCHCONTENT_QUIET FALSE)
 # Load toolchain files
 set(CMAKE_TOOLCHAIN_FILE ${CMAKE_CURRENT_SOURCE_DIR}/cmake/toolchains/stm32h723.cmake)
 # specify module path
@@ -52,19 +53,51 @@ add_executable(
   src/main.c
   src/lwip/app_ethernet.c
   src/lwip/ethernetif.c
-  src/stcore/syscalls.c
   src/drivers/hx711.c
   src/drivers/bme280.c
-  src/stcore/sysmem.c
   src/health.c
   src/cbuffer.c
   src/logger.c
-  src/freertos_openocd.c
+  src/freertos.c
+  src/stcore/sysmem.c
+  src/stcore/syscalls.c
   src/stcore/stm32h7xx_it.c
   src/stcore/stm32h7xx_hal_msp.c
   src/stcore/stm32h7xx_hal_timebase_tim.c
   src/stcore/startup_stm32h723zgtx.s
   src/stcore/system_stm32h7xx.c
+  ${STM32CUBEH7_HAL_SRC}/stm32h7xx_hal_adc.c
+  ${STM32CUBEH7_HAL_SRC}/stm32h7xx_hal_adc_ex.c
+  ${STM32CUBEH7_HAL_SRC}/stm32h7xx_hal_rcc.c
+  ${STM32CUBEH7_HAL_SRC}/stm32h7xx_hal_rcc_ex.c
+  ${STM32CUBEH7_HAL_SRC}/stm32h7xx_hal_gpio.c
+  ${STM32CUBEH7_HAL_SRC}/stm32h7xx_hal_dma.c
+  ${STM32CUBEH7_HAL_SRC}/stm32h7xx_hal_dma_ex.c
+  ${STM32CUBEH7_HAL_SRC}/stm32h7xx_hal_mdma.c
+  ${STM32CUBEH7_HAL_SRC}/stm32h7xx_hal_hsem.c
+  ${STM32CUBEH7_HAL_SRC}/stm32h7xx_hal_wwdg.c
+  ${STM32CUBEH7_HAL_SRC}/stm32h7xx_hal_fdcan.c
+  ${STM32CUBEH7_HAL_SRC}/stm32h7xx_hal_exti.c
+  ${STM32CUBEH7_HAL_SRC}/stm32h7xx_hal_eth_ex.c
+  ${STM32CUBEH7_HAL_SRC}/stm32h7xx_hal_eth.c
+  ${STM32CUBEH7_HAL_SRC}/stm32h7xx_hal_rtc.c
+  ${STM32CUBEH7_HAL_SRC}/stm32h7xx_hal_rtc_ex.c
+  ${STM32CUBEH7_HAL_SRC}/stm32h7xx_hal_uart.c
+  ${STM32CUBEH7_HAL_SRC}/stm32h7xx_hal_uart_ex.c
+  ${STM32CUBEH7_HAL_SRC}/stm32h7xx_hal_cortex.c
+  ${STM32CUBEH7_HAL_SRC}/stm32h7xx_hal_flash.c
+  ${STM32CUBEH7_HAL_SRC}/stm32h7xx_hal_flash_ex.c
+  ${STM32CUBEH7_HAL_SRC}/stm32h7xx_hal_pwr.c
+  ${STM32CUBEH7_HAL_SRC}/stm32h7xx_hal_pwr_ex.c
+  ${STM32CUBEH7_HAL_SRC}/stm32h7xx_hal_i2c.c
+  ${STM32CUBEH7_HAL_SRC}/stm32h7xx_hal_i2c_ex.c
+  ${STM32CUBEH7_HAL_SRC}/stm32h7xx_hal_sd.c
+  ${STM32CUBEH7_HAL_SRC}/stm32h7xx_hal_sd_ex.c
+  ${STM32CUBEH7_HAL_SRC}/stm32h7xx_hal_tim.c
+  ${STM32CUBEH7_HAL_SRC}/stm32h7xx_hal_tim_ex.c
+  ${STM32CUBEH7_HAL_SRC}/stm32h7xx_ll_sdmmc.c
+  ${STM32CUBEH7_HAL_SRC}/stm32h7xx_ll_delayblock.c
+  ${STM32CUBEH7_HAL_SRC}/stm32h7xx_hal.c
   ${STM32CUBEH7_SRC}/Drivers/BSP/Components/lan8742/lan8742.c
   ${STM32CUBEH7_SRC}/Drivers/BSP/STM32H7xx_Nucleo/stm32h7xx_nucleo.c
   ${LWIP_SRC}

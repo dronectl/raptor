@@ -24,6 +24,7 @@ jobs:
       run: |
         sudo apt update -y
         sudo apt install -y clang-format
+        echo `clang-format --version`
       env:
         DEBIAN_FRONTEND: noninteractive
     - name: run clang formatter
