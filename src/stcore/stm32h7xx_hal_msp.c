@@ -23,6 +23,8 @@ extern DMA_HandleTypeDef hdma_adc1;
 extern DMA_HandleTypeDef hdma_adc2;
 extern DMA_HandleTypeDef hdma_adc3;
 
+void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
+
 /**
  * Initializes the Global MSP.
  */
@@ -34,31 +36,13 @@ void HAL_MspInit(void) {
   __HAL_RCC_SYSCFG_CLK_ENABLE();
 
   /* System interrupt init*/
+  /* PendSV_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(PendSV_IRQn, 15, 0);
 
   /* USER CODE BEGIN MspInit 1 */
 
   /* USER CODE END MspInit 1 */
 }
-
-void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
-// /**
-//  * Initializes the Global MSP.
-//  */
-// void HAL_MspInit(void) {
-//   /* USER CODE BEGIN MspInit 0 */
-
-//   /* USER CODE END MspInit 0 */
-
-//   __HAL_RCC_SYSCFG_CLK_ENABLE();
-
-//   /* System interrupt init*/
-//   /* PendSV_IRQn interrupt configuration */
-//   HAL_NVIC_SetPriority(PendSV_IRQn, 15, 0);
-
-//   /* USER CODE BEGIN MspInit 1 */
-
-//   /* USER CODE END MspInit 1 */
-// }
 
 static uint32_t HAL_RCC_ADC12_CLK_ENABLED = 0;
 
@@ -610,47 +594,6 @@ void HAL_TIM_Base_MspInit(TIM_HandleTypeDef *htim_base) {
   }
 }
 
-void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim) {
-  GPIO_InitTypeDef GPIO_InitStruct = {0};
-  if (htim->Instance == TIM1) {
-    /* USER CODE BEGIN TIM1_MspPostInit 0 */
-
-    /* USER CODE END TIM1_MspPostInit 0 */
-    __HAL_RCC_GPIOE_CLK_ENABLE();
-    /**TIM1 GPIO Configuration
-    PE9     ------> TIM1_CH1
-    */
-    GPIO_InitStruct.Pin = ESC_PWM_Pin;
-    GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-    GPIO_InitStruct.Alternate = GPIO_AF1_TIM1;
-    HAL_GPIO_Init(ESC_PWM_GPIO_Port, &GPIO_InitStruct);
-
-    /* USER CODE BEGIN TIM1_MspPostInit 1 */
-
-    /* USER CODE END TIM1_MspPostInit 1 */
-  } else if (htim->Instance == TIM13) {
-    /* USER CODE BEGIN TIM13_MspPostInit 0 */
-
-    /* USER CODE END TIM13_MspPostInit 0 */
-
-    __HAL_RCC_GPIOA_CLK_ENABLE();
-    /**TIM13 GPIO Configuration
-    PA6     ------> TIM13_CH1
-    */
-    GPIO_InitStruct.Pin = BUZZER_Pin;
-    GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-    GPIO_InitStruct.Alternate = GPIO_AF9_TIM13;
-    HAL_GPIO_Init(BUZZER_GPIO_Port, &GPIO_InitStruct);
-
-    /* USER CODE BEGIN TIM13_MspPostInit 1 */
-
-    /* USER CODE END TIM13_MspPostInit 1 */
-  }
-}
 /**
  * @brief TIM_PWM MSP De-Initialization
  * This function freeze the hardware resources used in this example

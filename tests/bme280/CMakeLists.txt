@@ -1,6 +1,20 @@
 add_executable(
     test 
-    ${STM32CUBEH7_HAL_SRC}
+    ${STM32CUBEH7_HAL_SRC}/stm32h7xx_hal_rcc.c
+    ${STM32CUBEH7_HAL_SRC}/stm32h7xx_hal_rcc_ex.c
+    ${STM32CUBEH7_HAL_SRC}/stm32h7xx_hal_hsem.c
+    ${STM32CUBEH7_HAL_SRC}/stm32h7xx_hal_cortex.c
+    ${STM32CUBEH7_HAL_SRC}/stm32h7xx_hal_flash.c
+    ${STM32CUBEH7_HAL_SRC}/stm32h7xx_hal_flash_ex.c
+    ${STM32CUBEH7_HAL_SRC}/stm32h7xx_hal_pwr.c
+    ${STM32CUBEH7_HAL_SRC}/stm32h7xx_hal_pwr_ex.c
+    ${STM32CUBEH7_HAL_SRC}/stm32h7xx_hal_gpio.c
+    ${STM32CUBEH7_HAL_SRC}/stm32h7xx_hal_i2c.c
+    ${STM32CUBEH7_HAL_SRC}/stm32h7xx_hal_i2c_ex.c
+    ${STM32CUBEH7_HAL_SRC}/stm32h7xx_hal_tim.c
+    ${STM32CUBEH7_HAL_SRC}/stm32h7xx_hal_tim_ex.c
+    ${STM32CUBEH7_HAL_SRC}/stm32h7xx_ll_delayblock.c
+    ${STM32CUBEH7_HAL_SRC}/stm32h7xx_hal.c
     ${CMAKE_SOURCE_DIR}/src/drivers/bme280.c
     startup_stm32h723zgtx.s
     main.c

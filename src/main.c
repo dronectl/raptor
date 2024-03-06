@@ -45,6 +45,7 @@ static void MX_FDCAN1_Init(void);
 static void MX_I2C1_Init(void);
 static void MX_SDMMC1_SD_Init(void);
 static void MX_TIM1_Init(void);
+static void MX_TIM13_Init(void);
 static void MX_UART7_Init(void);
 static void MX_UART9_Init(void);
 static void MX_USART3_UART_Init(void);
@@ -57,16 +58,11 @@ static void MX_RTC_Init(void);
 WWDG_HandleTypeDef hwwdg1;
 static void MX_WWDG1_Init(void);
 #endif // RAPTOR_DEBUG
-static void MX_TIM13_Init(void);
-void StartDefaultTask(void *argument);
+static void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
 
 /* Private function prototypes -----------------------------------------------*/
 static void start_task(void *pv_params);
 static void netconfig_init(void);
-static void system_clock_config(void);
-static void bsp_config(void);
-static void mpu_config(void);
-static void cpu_cache_enable(void);
 
 void start_task(void *pv_params) {
   BaseType_t x_returned;
@@ -144,93 +140,6 @@ static void netconfig_init(void) {
     vTaskDelete(dhcp_handle);
   }
 #endif
-}
-
-/**
- * @brief  System Clock Configuration
- *         The system Clock is configured as follow :
- *            System Clock source            = PLL (HSE BYPASS)
- *            SYSCLK(Hz)                     = 520000000 (CPU Clock)
- *            HCLK(Hz)                       = 260000000 (AXI and AHBs Clock)
- *            AHB Prescaler                  = 2
- *            D1 APB3 Prescaler              = 2 (APB3 Clock  130MHz)
- *            D2 APB1 Prescaler              = 2 (APB1 Clock  130MHz)
- *            D2 APB2 Prescaler              = 2 (APB2 Clock  130MHz)
- *            D3 APB4 Prescaler              = 2 (APB4 Clock  130MHz)
- *            HSE Frequency(Hz)              = 8000000
- *            PLL_M                          = 4
- *            PLL_N                          = 260
- *            PLL_P                          = 1
- *            PLL_Q                          = 4
- *            PLL_R                          = 2
- *            VDD(V)                         = 3.3
- *            Flash Latency(WS)              = 3
- * @param  None
- * @retval None
- */
-static void system_clock_config(void) {
-  RCC_ClkInitTypeDef RCC_ClkInitStruct;
-  RCC_OscInitTypeDef RCC_OscInitStruct;
-  HAL_StatusTypeDef ret = HAL_OK;
-
-  /*!< Supply configuration update enable */
-  HAL_PWREx_ConfigSupply(PWR_LDO_SUPPLY);
-  /* The voltage scaling allows optimizing the power consumption when the device
-     is clocked below the maximum system frequency, to update the voltage
-     scaling value regarding system frequency refer to product datasheet.  */
-  __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE0);
-  while (!__HAL_PWR_GET_FLAG(PWR_FLAG_VOSRDY)) {
-  }
-  /* Enable D2 domain SRAM1 Clock (0x30000000 AXI)*/
-  __HAL_RCC_D2SRAM1_CLK_ENABLE();
-  /* Enable HSE Oscillator and activate PLL with HSE as source */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
-  RCC_OscInitStruct.HSEState = RCC_HSE_BYPASS;
-  RCC_OscInitStruct.HSIState = RCC_HSI_OFF;
-  RCC_OscInitStruct.CSIState = RCC_CSI_OFF;
-  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
-  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
-  RCC_OscInitStruct.PLL.PLLM = 4;
-  RCC_OscInitStruct.PLL.PLLN = 260;
-  RCC_OscInitStruct.PLL.PLLFRACN = 0;
-  RCC_OscInitStruct.PLL.PLLP = 1;
-  RCC_OscInitStruct.PLL.PLLR = 2;
-  RCC_OscInitStruct.PLL.PLLQ = 4;
-  RCC_OscInitStruct.PLL.PLLVCOSEL = RCC_PLL1VCOWIDE;
-  RCC_OscInitStruct.PLL.PLLRGE = RCC_PLL1VCIRANGE_1;
-  ret = HAL_RCC_OscConfig(&RCC_OscInitStruct);
-  if (ret != HAL_OK) {
-    while (1)
-      ;
-  }
-  /* Select PLL as system clock source and configure  bus clocks dividers */
-  RCC_ClkInitStruct.ClockType = (RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_D1PCLK1 |
-                                 RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2 | RCC_CLOCKTYPE_D3PCLK1);
-  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
-  RCC_ClkInitStruct.SYSCLKDivider = RCC_SYSCLK_DIV1;
-  RCC_ClkInitStruct.AHBCLKDivider = RCC_HCLK_DIV2;
-  RCC_ClkInitStruct.APB3CLKDivider = RCC_APB3_DIV2;
-  RCC_ClkInitStruct.APB1CLKDivider = RCC_APB1_DIV2;
-  RCC_ClkInitStruct.APB2CLKDivider = RCC_APB2_DIV2;
-  RCC_ClkInitStruct.APB4CLKDivider = RCC_APB4_DIV2;
-  ret = HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_3);
-  if (ret != HAL_OK) {
-    while (1)
-      ;
-  }
-  /*
-    Note : The activation of the I/O Compensation Cell is recommended with
-    communication  interfaces (GPIO, SPI, FMC, OSPI ...)  when  operating at
-    high frequencies(please refer to product datasheet) The I/O Compensation
-    Cell activation  procedure requires :
-          - The activation of the CSI clock
-          - The activation of the SYSCFG clock
-          - Enabling the I/O Compensation Cell : setting bit[0] of register
-    SYSCFG_CCCSR
-  */
-  __HAL_RCC_CSI_ENABLE();
-  __HAL_RCC_SYSCFG_CLK_ENABLE();
-  HAL_EnableCompensationCell();
 }
 
 /**
@@ -1138,6 +1047,48 @@ static void MX_GPIO_Init(void) {
   /* USER CODE END MX_GPIO_Init_2 */
 }
 
+static void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim) {
+  GPIO_InitTypeDef GPIO_InitStruct = {0};
+  if (htim->Instance == TIM1) {
+    /* USER CODE BEGIN TIM1_MspPostInit 0 */
+
+    /* USER CODE END TIM1_MspPostInit 0 */
+    __HAL_RCC_GPIOE_CLK_ENABLE();
+    /**TIM1 GPIO Configuration
+    PE9     ------> TIM1_CH1
+    */
+    GPIO_InitStruct.Pin = ESC_PWM_Pin;
+    GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+    GPIO_InitStruct.Alternate = GPIO_AF1_TIM1;
+    HAL_GPIO_Init(ESC_PWM_GPIO_Port, &GPIO_InitStruct);
+
+    /* USER CODE BEGIN TIM1_MspPostInit 1 */
+
+    /* USER CODE END TIM1_MspPostInit 1 */
+  } else if (htim->Instance == TIM13) {
+    /* USER CODE BEGIN TIM13_MspPostInit 0 */
+
+    /* USER CODE END TIM13_MspPostInit 0 */
+
+    __HAL_RCC_GPIOA_CLK_ENABLE();
+    /**TIM13 GPIO Configuration
+    PA6     ------> TIM13_CH1
+    */
+    GPIO_InitStruct.Pin = BUZZER_Pin;
+    GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+    GPIO_InitStruct.Alternate = GPIO_AF9_TIM13;
+    HAL_GPIO_Init(BUZZER_GPIO_Port, &GPIO_InitStruct);
+
+    /* USER CODE BEGIN TIM13_MspPostInit 1 */
+
+    /* USER CODE END TIM13_MspPostInit 1 */
+  }
+}
+
 /**
  * @brief  The application entry point.
  * @retval int
@@ -1150,7 +1101,8 @@ int main(void) {
   BSP_LED_Init(LED2);
   BSP_LED_Init(LED3);
   HAL_Init();
-  system_clock_config();
+  SystemClock_Config();
+  PeriphCommonClock_Config();
   MX_GPIO_Init();
   MX_DMA_Init();
   MX_FDCAN1_Init();
