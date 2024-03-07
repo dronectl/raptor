@@ -17,7 +17,7 @@
 
 uint32_t SystemCoreClock = 64000000;
 uint32_t SystemD2Clock = 64000000;
-TIM_HandleTypeDef htimer2;
+TIM_HandleTypeDef htimer1;
 const uint8_t D1CorePrescTable[16] = {0, 0, 0, 0, 1, 2, 3, 4, 1, 2, 3, 4, 6, 7, 8, 9};
 
 /**
@@ -295,102 +295,53 @@ void Error_Handler(void) {
  */
 void SysTick_Handler(void) { HAL_IncTick(); }
 
-/**
- * Initializes the Global MSP.
- */
-void HAL_MspInit(void) {
-  // Here will do low level processor specific inits.
-  // 1. Set up the priority grouping of the arm cortex mx processor
-  HAL_NVIC_SetPriorityGrouping(NVIC_PRIORITYGROUP_4);
-
-  // 2. Enable the required system exceptions of the arm cortex mx processor
-  SCB->SHCSR |= 0x7 << 16; // usage fault, memory fault and bus fault system exceptions
-
-  // 3. configure the priority for the system exceptions
-  HAL_NVIC_SetPriority(MemoryManagement_IRQn, 0, 0);
-  HAL_NVIC_SetPriority(BusFault_IRQn, 0, 0);
-  HAL_NVIC_SetPriority(UsageFault_IRQn, 0, 0);
-}
-
-void HAL_TIM_PWM_MspInit(TIM_HandleTypeDef *htim) {
-  GPIO_InitTypeDef tim2OC_ch_gpios;
-  // 1. enable the peripheral clock for the timer2 peripheral
-  __HAL_RCC_TIM2_CLK_ENABLE();
-  __HAL_RCC_GPIOA_CLK_ENABLE();
-
-  // 2. Configure gpios to behave as timer2 channel 1,2,3 and 4
-  /* PA0 --> TIM2_CH1
-  PA1 --> TIM2_CH2
-  PB10 --> TIM2_CH3
-  PB2 --> TIM2_CH4 */
-
-  tim2OC_ch_gpios.Pin = GPIO_PIN_0;
-  tim2OC_ch_gpios.Mode = GPIO_MODE_AF_PP;
-  tim2OC_ch_gpios.Pull = GPIO_PULLDOWN;
-  tim2OC_ch_gpios.Speed = GPIO_SPEED_FREQ_LOW;
-  tim2OC_ch_gpios.Alternate = GPIO_AF1_TIM2;
-  HAL_GPIO_Init(GPIOA, &tim2OC_ch_gpios);
-
-  // 3. nvic settings
-  HAL_NVIC_SetPriority(TIM2_IRQn, 15, 0);
-  HAL_NVIC_EnableIRQ(TIM2_IRQn);
-}
-
-void HAL_UART_MspInit(UART_HandleTypeDef *huart) {
-  GPIO_InitTypeDef gpio_uart;
-  // here we are going to do the low level inits. of the USART2 peripheral
-
-  // 1. enable the clock for the USART2 peripheral as well as for GPIOA peripheral
-  __HAL_RCC_USART2_CLK_ENABLE();
-  __HAL_RCC_GPIOA_CLK_ENABLE();
-
-  // 2 . Do the pin muxing configurations
-  gpio_uart.Pin = GPIO_PIN_7;
-  gpio_uart.Mode = GPIO_MODE_AF_PP;
-  gpio_uart.Pull = GPIO_PULLUP;
-  gpio_uart.Speed = GPIO_SPEED_FREQ_LOW;
-  gpio_uart.Alternate = GPIO_AF7_USART2; // UART2_TX
-  HAL_GPIO_Init(GPIOA, &gpio_uart);
-
-  gpio_uart.Pin = GPIO_PIN_3; // UART2_RX
-  HAL_GPIO_Init(GPIOA, &gpio_uart);
-  // 3 . Enable the IRQ and set up the priority (NVIC settings )
-  HAL_NVIC_EnableIRQ(USART2_IRQn);
-  HAL_NVIC_SetPriority(USART2_IRQn, 15, 0);
-}
-
 void SystemClock_Config(void) {
   RCC_OscInitTypeDef RCC_OscInitStruct = {0};
   RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
+
   /** Supply configuration update enable
    */
   HAL_PWREx_ConfigSupply(PWR_LDO_SUPPLY);
+
   /** Configure the main internal regulator output voltage
    */
-  __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE3);
+  __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE0);
+
   while (!__HAL_PWR_GET_FLAG(PWR_FLAG_VOSRDY)) {
   }
+
   /** Initializes the RCC Oscillators according to the specified parameters
    * in the RCC_OscInitTypeDef structure.
    */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
-  RCC_OscInitStruct.HSIState = RCC_HSI_DIV1;
-  RCC_OscInitStruct.HSICalibrationValue = 64;
-  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_NONE;
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI48 | RCC_OSCILLATORTYPE_HSE;
+  RCC_OscInitStruct.HSEState = RCC_HSE_BYPASS;
+  RCC_OscInitStruct.HSI48State = RCC_HSI48_ON;
+  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
+  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
+  RCC_OscInitStruct.PLL.PLLM = 4;
+  RCC_OscInitStruct.PLL.PLLN = 275;
+  RCC_OscInitStruct.PLL.PLLP = 1;
+  RCC_OscInitStruct.PLL.PLLQ = 4;
+  RCC_OscInitStruct.PLL.PLLR = 2;
+  RCC_OscInitStruct.PLL.PLLRGE = RCC_PLL1VCIRANGE_1;
+  RCC_OscInitStruct.PLL.PLLVCOSEL = RCC_PLL1VCOWIDE;
+  RCC_OscInitStruct.PLL.PLLFRACN = 0;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK) {
     Error_Handler();
   }
+
   /** Initializes the CPU, AHB and APB buses clocks
    */
   RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2 | RCC_CLOCKTYPE_D3PCLK1 | RCC_CLOCKTYPE_D1PCLK1;
-  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_HSI;
+  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.SYSCLKDivider = RCC_SYSCLK_DIV1;
-  RCC_ClkInitStruct.AHBCLKDivider = RCC_HCLK_DIV1;
-  RCC_ClkInitStruct.APB3CLKDivider = RCC_APB3_DIV1;
+  RCC_ClkInitStruct.AHBCLKDivider = RCC_HCLK_DIV2;
+  RCC_ClkInitStruct.APB3CLKDivider = RCC_APB3_DIV2;
   RCC_ClkInitStruct.APB1CLKDivider = RCC_APB1_DIV2;
-  RCC_ClkInitStruct.APB2CLKDivider = RCC_APB2_DIV1;
-  RCC_ClkInitStruct.APB4CLKDivider = RCC_APB4_DIV1;
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_1) != HAL_OK) {
+  RCC_ClkInitStruct.APB2CLKDivider = RCC_APB2_DIV2;
+  RCC_ClkInitStruct.APB4CLKDivider = RCC_APB4_DIV2;
+
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_3) != HAL_OK) {
     Error_Handler();
   }
 }
@@ -404,33 +355,47 @@ static void MX_GPIO_Init(void) {
   // Configure GPIO pin for LED
   GPIO_InitTypeDef GPIO_InitStruct = {0};
   __HAL_RCC_GPIOE_CLK_ENABLE();
-  GPIO_InitStruct.Pin = GPIO_PIN_11;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pin = GPIO_PIN_9;
+  GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
-  // GPIO_InitStruct.Alternate = GPIO_AF1_TIM1;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  GPIO_InitStruct.Alternate = GPIO_AF1_TIM1;
   HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
-  // HAL_GPIO_WritePin(GPIOE, GPIO_PIN_9, GPIO_PIN_RESET);
-  // HAL_GPIO_WritePin(GPIOE, GPIO_PIN_9, GPIO_PIN_SET);
 }
 
 void timer1_init(void) {
-  TIM_OC_InitTypeDef tim2_pwm_config;
-  htimer2.Instance = TIM2;
-  htimer2.Init.Period = 10000 - 1;
-  htimer2.Init.Prescaler = 4;
-  if (HAL_TIM_OC_Init(&htimer2) != HAL_OK) {
-    // Error occurred
+  TIM_OC_InitTypeDef tim1_pwm_config;
+  htimer1.Instance = TIM1;
+  htimer1.Init.Period = 10000 - 1;
+  htimer1.Init.Prescaler = 4;
+  if (HAL_TIM_PWM_Init(&htimer1) != HAL_OK) {
     Error_Handler();
   }
-  memset(&tim2_pwm_config, 0, sizeof(tim2_pwm_config));
-  tim2_pwm_config.OCMode = TIM_OCMODE_PWM2;
-  tim2_pwm_config.OCPolarity = TIM_OCPOLARITY_HIGH;
-  tim2_pwm_config.Pulse = 0;
-  if (HAL_TIM_PWM_ConfigChannel(&htimer2, &tim2_pwm_config, TIM_CHANNEL_2) != HAL_OK) {
+
+  memset(&tim1_pwm_config, 0, sizeof(tim1_pwm_config));
+
+  tim1_pwm_config.OCMode = TIM_OCMODE_PWM1;
+  tim1_pwm_config.OCPolarity = TIM_OCPOLARITY_HIGH;
+
+  tim1_pwm_config.Pulse = (htimer1.Init.Period * 25) / 100;
+  if (HAL_TIM_PWM_ConfigChannel(&htimer1, &tim1_pwm_config, TIM_CHANNEL_1) != HAL_OK) {
     Error_Handler();
   }
-  HAL_TIM_PWM_ConfigChannel(&htimer2, &tim2_pwm_config, TIM_CHANNEL_2);
+
+  // tim1_pwm_config.Pulse = (htimer1.Init.Period * 45) / 100;
+  // if (HAL_TIM_PWM_ConfigChannel(&htimer1, &tim1_pwm_config, TIM_CHANNEL_2) != HAL_OK) {
+  //   Error_Handler();
+  // }
+
+  // tim1_pwm_config.Pulse = (htimer1.Init.Period * 75) / 100;
+  // if (HAL_TIM_PWM_ConfigChannel(&htimer1, &tim1_pwm_config, TIM_CHANNEL_3) != HAL_OK) {
+  //   Error_Handler();
+  // }
+
+  // tim1_pwm_config.Pulse = (htimer1.Init.Period * 95) / 100;
+  // if (HAL_TIM_PWM_ConfigChannel(&htimer1, &tim1_pwm_config, TIM_CHANNEL_4) != HAL_OK) {
+  //   Error_Handler();
+  // }
 }
 
 /**
@@ -442,21 +407,22 @@ int main(void) {
   SystemClock_Config();
   MX_GPIO_Init();
   timer1_init();
-
-  if (HAL_TIM_PWM_Start(&htimer2, TIM_CHANNEL_2) != HAL_OK) {
+  if (HAL_TIM_PWM_Start(&htimer1, TIM_CHANNEL_1) != HAL_OK) {
     Error_Handler();
   }
-  uint64_t brightness = 0;
-  while (1) {
-    while (brightness < htimer2.Init.Period) {
-      brightness += 2000;
-      __HAL_TIM_SET_COMPARE(&htimer2, TIM_CHANNEL_2, brightness);
-      HAL_Delay(1);
-    }
-    while (brightness > 0) {
-      brightness -= 2000;
-      __HAL_TIM_SET_COMPARE(&htimer2, TIM_CHANNEL_2, brightness);
-      HAL_Delay(1);
-    }
-  }
+  while (1)
+    ;
+  // uint64_t brightness = 0;
+  // while (1) {
+  //   while (brightness < htimer1.Init.Period) {
+  //     brightness += 2000;
+  //     __HAL_TIM_SET_COMPARE(&htimer1, TIM_CHANNEL_1, brightness);
+  //     HAL_Delay(1);
+  //   }
+  //   while (brightness > 0) {
+  //     brightness -= 2000;
+  //     __HAL_TIM_SET_COMPARE(&htimer1, TIM_CHANNEL_1, brightness);
+  //     HAL_Delay(1);
+  //   }
+  // }
 }
