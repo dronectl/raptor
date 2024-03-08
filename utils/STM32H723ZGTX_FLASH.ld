@@ -36,11 +36,11 @@ _Min_Stack_Size = 0x1000;	/* required amount of stack */
 /* Memories definition */
 MEMORY
 {
-  ITCMRAM    (xrw)    : ORIGIN = 0x00000000,   LENGTH = 64K
-  RAM    (xrw)    : ORIGIN = 0x20000000,   LENGTH = 128K
-  ROM    (rx)    : ORIGIN = 0x08000000,   LENGTH = 1024K
-  RAM_D2 (xrw)      : ORIGIN = 0x30000000, LENGTH = 288K
-  
+  ITCMRAM    (rw)    : ORIGIN = 0x00000000,   LENGTH = 64K
+  RAM        (rw)    : ORIGIN = 0x20000000,   LENGTH = 128K
+  RAM_D2     (rw)    : ORIGIN = 0x30000000,   LENGTH = 288K
+  ROX        (rx)    : ORIGIN = 0x08000000,   LENGTH = 1024K
+  ROM        (r)    : ORIGIN = 0x080FA000,   LENGTH = 1024K
 }
 
 /* Sections */
@@ -69,7 +69,7 @@ SECTIONS
 
     . = ALIGN(4);
     _etext = .;        /* define a global symbols at end of code */
-  } >ROM
+  } >ROX
 
   /* Constant data into "ROM" Rom type memory */
   .rodata :
@@ -136,7 +136,6 @@ SECTIONS
 
     . = ALIGN(4);
     _edata = .;        /* define a global symbol at data end */
-    
   } >RAM AT> ROM
 
   /* Uninitialized data section into "RAM" Ram type memory */
