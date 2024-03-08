@@ -2,7 +2,6 @@ set(EXECUTABLE "test-pwm")
 add_executable(
     ${EXECUTABLE} 
     ${STM32CUBEH7_HAL_SRC}
-    ${CMAKE_SOURCE_DIR}/src/drivers/bme280.c
     startup_stm32h723zgtx.s
     main.c
 )
