@@ -89,6 +89,8 @@ add_executable(
   ${STM32CUBEH7_HAL_SRC}/stm32h7xx_hal_flash_ex.c
   ${STM32CUBEH7_HAL_SRC}/stm32h7xx_hal_pwr.c
   ${STM32CUBEH7_HAL_SRC}/stm32h7xx_hal_pwr_ex.c
+  ${STM32CUBEH7_HAL_SRC}/stm32h7xx_hal_spi.c
+  ${STM32CUBEH7_HAL_SRC}/stm32h7xx_hal_spi_ex.c
   ${STM32CUBEH7_HAL_SRC}/stm32h7xx_hal_i2c.c
   ${STM32CUBEH7_HAL_SRC}/stm32h7xx_hal_i2c_ex.c
   ${STM32CUBEH7_HAL_SRC}/stm32h7xx_hal_sd.c
