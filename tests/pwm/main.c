@@ -1,3 +1,4 @@
+#include "pwm.h"
 #include "stm32h7xx.h"
 #include "stm32h7xx_hal.h"
 #include <math.h>
@@ -17,7 +18,6 @@
 
 uint32_t SystemCoreClock = 64000000;
 uint32_t SystemD2Clock = 64000000;
-TIM_HandleTypeDef htimer1;
 const uint8_t D1CorePrescTable[16] = {0, 0, 0, 0, 1, 2, 3, 4, 1, 2, 3, 4, 6, 7, 8, 9};
 
 /**
@@ -347,64 +347,6 @@ void SystemClock_Config(void) {
 }
 
 /**
- * @brief GPIO Initialization Function
- * @param None
- * @retval None
- */
-static void MX_GPIO_Init(void) {
-  // Configure GPIO pin for LED
-  GPIO_InitTypeDef GPIO_InitStruct = {0};
-  __HAL_RCC_GPIOC_CLK_ENABLE();
-  __HAL_RCC_GPIOH_CLK_ENABLE();
-  __HAL_RCC_GPIOA_CLK_ENABLE();
-  __HAL_RCC_GPIOB_CLK_ENABLE();
-  __HAL_RCC_GPIOE_CLK_ENABLE();
-  __HAL_RCC_GPIOD_CLK_ENABLE();
-  __HAL_RCC_GPIOG_CLK_ENABLE();
-  GPIO_InitStruct.Pin = GPIO_PIN_9;
-  GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  GPIO_InitStruct.Alternate = GPIO_AF1_TIM1;
-  HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
-}
-
-void timer1_init(void) {
-  TIM_OC_InitTypeDef tim1_pwm_config;
-  htimer1.Instance = TIM1;
-  htimer1.Init.Period = 10000 - 1;
-  htimer1.Init.Prescaler = 4;
-  if (HAL_TIM_PWM_Init(&htimer1) != HAL_OK) {
-    Error_Handler();
-  }
-
-  memset(&tim1_pwm_config, 0, sizeof(tim1_pwm_config));
-
-  tim1_pwm_config.OCMode = TIM_OCMODE_PWM1;
-  tim1_pwm_config.OCPolarity = TIM_OCPOLARITY_HIGH;
-
-  tim1_pwm_config.Pulse = (htimer1.Init.Period * 25) / 100;
-  if (HAL_TIM_PWM_ConfigChannel(&htimer1, &tim1_pwm_config, TIM_CHANNEL_1) != HAL_OK) {
-    Error_Handler();
-  }
-
-  // tim1_pwm_config.Pulse = (htimer1.Init.Period * 45) / 100;
-  // if (HAL_TIM_PWM_ConfigChannel(&htimer1, &tim1_pwm_config, TIM_CHANNEL_2) != HAL_OK) {
-  //   Error_Handler();
-  // }
-
-  // tim1_pwm_config.Pulse = (htimer1.Init.Period * 75) / 100;
-  // if (HAL_TIM_PWM_ConfigChannel(&htimer1, &tim1_pwm_config, TIM_CHANNEL_3) != HAL_OK) {
-  //   Error_Handler();
-  // }
-
-  // tim1_pwm_config.Pulse = (htimer1.Init.Period * 95) / 100;
-  // if (HAL_TIM_PWM_ConfigChannel(&htimer1, &tim1_pwm_config, TIM_CHANNEL_4) != HAL_OK) {
-  //   Error_Handler();
-  // }
-}
-
-/**
  * @brief  The application entry point.
  * @retval int
  */
@@ -412,26 +354,17 @@ int main(void) {
   HAL_Init();
   SystemClock_Config();
   __HAL_RCC_SYSCFG_CLK_ENABLE();
-  __HAL_RCC_TIM1_CLK_ENABLE();
-  timer1_init();
-  MX_GPIO_Init();
-  if (HAL_TIM_PWM_Start(&htimer1, TIM_CHANNEL_1) != HAL_OK) {
-    Error_Handler();
-  }
+  TIM_HandleTypeDef htimer1;
+  TIM_OC_InitTypeDef tim_output_cmp_cfg;
+  pwm_t pwm_init_params = {0};
+
+  pwm_init_params.duty_cycle = 40;
+  pwm_init_params.period = 10000;
+  pwm_init_params.polarity = true;
+  pwm_init_params.prescaler = 4;
+  pwm_init_params.tim_oc_mode = PWM_OC_DEFAULT;
+  pwm_tim_channel_1_init(&htimer1, &tim_output_cmp_cfg, &pwm_init_params);
   while (1) {
     HAL_Delay(1);
   }
-  // uint64_t brightness = 0;
-  // while (1) {
-  //   while (brightness < htimer1.Init.Period) {
-  //     brightness += 2000;
-  //     __HAL_TIM_SET_COMPARE(&htimer1, TIM_CHANNEL_1, brightness);
-  //     HAL_Delay(1);
-  //   }
-  //   while (brightness > 0) {
-  //     brightness -= 2000;
-  //     __HAL_TIM_SET_COMPARE(&htimer1, TIM_CHANNEL_1, brightness);
-  //     HAL_Delay(1);
-  //   }
-  // }
 }

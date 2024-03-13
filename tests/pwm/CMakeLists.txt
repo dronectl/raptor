@@ -16,6 +16,7 @@ add_executable(
     ${STM32CUBEH7_HAL_SRC}/stm32h7xx_hal_tim_ex.c
     ${STM32CUBEH7_HAL_SRC}/stm32h7xx_ll_delayblock.c
     ${STM32CUBEH7_HAL_SRC}/stm32h7xx_hal.c
+    ${CMAKE_SOURCE_DIR}/src/drivers/pwm.c
     startup_stm32h723zgtx.s
     main.c
 )

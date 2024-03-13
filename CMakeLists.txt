@@ -55,6 +55,7 @@ add_executable(
   src/lwip/ethernetif.c
   src/drivers/hx711.c
   src/drivers/bme280.c
+  src/drivers/pwm.c
   src/health.c
   src/cbuffer.c
   src/logger.c
