@@ -8,25 +8,22 @@
  *
  */
 
-#include "logger.h"
-#include "FreeRTOS.h"
 #include "cbuffer.h"
+#include "cmsis_os2.h"
+#include "logger.h"
 #include "lwip/inet.h"
 #include "lwip/sockets.h"
-#include "queue.h"
-#include "semphr.h"
 #include <stdarg.h>
 #include <string.h>
 
 #define FUNC_NAME_MAX_LEN 20
-#define QUEUE_ITEM_SIZE sizeof(log_t)
 
 /**
  * @brief Log message struct.
  *
  */
 typedef struct log_t {
-  TickType_t epoch;                   // current CPU epoch
+  uint32_t epoch;                     // current CPU epoch
   enum logger_level level;            // log level
   int line;                           // line number
   char func[FUNC_NAME_MAX_LEN];       // function name
@@ -34,9 +31,11 @@ typedef struct log_t {
 } log_t;
 
 static int sock, size;
-struct sockaddr_in address, remotehost;
-static SemaphoreHandle_t mutex_handle;
-static QueueHandle_t queue_handle;
+static struct sockaddr_in address, remotehost;
+static osMessageQueueId_t queue_id;
+static osMessageQueueAttr_t attrs = {
+    .name = "log_queue",
+};
 static enum logger_level _level = LOGGER_DISABLE;
 
 /**
@@ -46,6 +45,24 @@ static enum logger_level _level = LOGGER_DISABLE;
  * @return char*
  */
 static const char *_get_level_str(enum logger_level level);
+
+/**
+ * @brief Set the program log level.
+ *
+ * @param level target logging level
+ */
+void logger_set_level(enum logger_level level) {
+  _level = level;
+}
+
+/**
+ * @brief Get the program log level.
+ *
+ * @return enum Level
+ */
+enum logger_level logger_get_level(void) {
+  return _level;
+}
 
 /**
  * @brief Construct log string message from log struct. This method builds the log header and
@@ -60,56 +77,12 @@ static void build_log_string(log_t *log, char *buffer, size_t size);
  * @param level logging level configuration
  */
 void logger_init(const enum logger_level level) {
-  /* Create a mutex type semaphore. */
-  mutex_handle = xSemaphoreCreateMutex();
-  if (mutex_handle == NULL) {
-    return;
-  }
   /* Create the queue, storing the returned handle in the xQueue variable. */
-  queue_handle = xQueueCreate(MAX_LOGGING_CBUFFER_SIZE, QUEUE_ITEM_SIZE);
-  if (queue_handle == NULL) {
+  queue_id = osMessageQueueNew(MAX_LOGGING_CBUFFER_SIZE, sizeof(log_t), &attrs);
+  if (queue_id == NULL) {
     return;
   }
   logger_set_level(level);
-  /* create a TCP socket */
-  if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-    return;
-  }
-  address.sin_family = AF_INET;
-  address.sin_port = htons(LOGGING_PORT);
-  address.sin_addr.s_addr = INADDR_ANY;
-  if (bind(sock, (struct sockaddr *)&address, sizeof(address)) < 0) {
-    return;
-  }
-  listen(sock, 5);
-}
-
-/**
- * @brief Set the program log level. Blocks indefinitely until resource is
- * available.
- *
- * @param level target logging level
- */
-void logger_set_level(enum logger_level level) {
-  if (xSemaphoreTake(mutex_handle, portMAX_DELAY) == pdTRUE) {
-    _level = level;
-    xSemaphoreGive(mutex_handle);
-  }
-}
-
-/**
- * @brief Get the program log level. Blocks indefintely until resource is
- * available.
- *
- * @return enum Level
- */
-enum logger_level logger_get_level(void) {
-  enum logger_level level = LOGGER_TRACE;
-  if (xSemaphoreTake(mutex_handle, portMAX_DELAY) == pdTRUE) {
-    level = _level;
-    xSemaphoreGive(mutex_handle);
-  }
-  return level;
 }
 
 /**
@@ -128,7 +101,7 @@ void logger_out(const enum logger_level level, const char *func, const int line,
   if (logger_get_level() > level) {
     return;
   }
-  log.epoch = xTaskGetTickCount();
+  log.epoch = osKernelGetTickCount();
   log.level = level;
   log.line = line;
   memcpy(log.func, func, FUNC_NAME_MAX_LEN);
@@ -136,17 +109,25 @@ void logger_out(const enum logger_level level, const char *func, const int line,
   va_start(args, fmt);
   vsnprintf(log.message, MAX_LOGGING_LINE_LEN, fmt, args);
   va_end(args);
-  // write log struct by reference to queue, block for 20 ticks if queue is full
-  xQueueSendToBack(queue_handle, (void *)&log, 20);
+  osMessageQueuePut(queue_id, (void *)&log, 0, 0);
 }
 
-void logger_task(void *pv_params) {
+__NO_RETURN void logger_task(void __attribute__((unused)) * argument) {
   log_t log;
   int client_fd;
+  if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+    osThreadExit();
+  }
+  address.sin_family = AF_INET;
+  address.sin_port = htons(LOGGING_PORT);
+  address.sin_addr.s_addr = INADDR_ANY;
+  if (bind(sock, (struct sockaddr *)&address, sizeof(address)) < 0) {
+    osThreadExit();
+  }
   while (1) {
     client_fd = accept(sock, (struct sockaddr *)&remotehost, (socklen_t *)&size);
     while (1) {
-      xQueueReceive(queue_handle, &log, portMAX_DELAY);
+      osMessageQueueGet(queue_id, &log, NULL, osWaitForever);
       if (client_fd < 0) {
         continue;
       }
