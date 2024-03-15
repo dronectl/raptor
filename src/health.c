@@ -1,9 +1,7 @@
-#include "health.h"
-#include "FreeRTOS.h"
 #include "bme280.h"
+#include "health.h"
 #include "logger.h"
 #include "stm32h7xx_hal.h"
-#include "task.h"
 
 static health_report_t health_report;
 
@@ -26,7 +24,7 @@ static enum HealthState fsm_tick(const enum HealthState state) {
     case HEALTH_SERVICE:
       next_state = HEALTH_READ;
       break;
-    case HEALTH_READ: {
+    case HEALTH_READ:
       // read from alive sensors
       bme280_trigger_read(&bme280, &bme280_meas);
       health_report.humidity = bme280_meas.humidity;
@@ -34,7 +32,6 @@ static enum HealthState fsm_tick(const enum HealthState state) {
       health_report.temperature = bme280_meas.temperature;
       next_state = HEALTH_REPORT;
       break;
-    }
     case HEALTH_REPORT:
       // export health alive telemetry
       next_state = HEALTH_SERVICE;
@@ -46,15 +43,14 @@ static enum HealthState fsm_tick(const enum HealthState state) {
   return next_state;
 }
 
-void health_main(void *pv_params) {
-  const TickType_t delay = 100 / portTICK_PERIOD_MS;
+__NO_RETURN void health_main(void *argument) {
   enum HealthState state = HEALTH_INIT;
   // get i2c2 handle and set bme280
-  I2C_HandleTypeDef hi2c2 = *(I2C_HandleTypeDef *)pv_params;
+  I2C_HandleTypeDef hi2c2 = *(I2C_HandleTypeDef *)argument;
   bme280.i2c = hi2c2;
   info("Starting health task FSM");
   while (1) {
     state = fsm_tick(state);
-    vTaskDelay(delay);
+    osDelay(100);
   }
 }

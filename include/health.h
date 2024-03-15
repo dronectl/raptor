@@ -3,6 +3,7 @@
 #define __HEALTH_H__
 
 #include <stdint.h>
+#include "cmsis_os2.h"
 
 /**
  * @brief Health FSM States
@@ -29,6 +30,7 @@ typedef struct health_report_t {
   float pressure;
 } health_report_t;
 
-void health_main(void *pv_params);
+__NO_RETURN void health_main(void *argument);
 
 #endif // __HEALTH_H__
+
