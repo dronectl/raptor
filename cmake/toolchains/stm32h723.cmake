@@ -29,8 +29,8 @@ execute_process(
 )
 
 # add handler for unfound resources
-if (${BINUTILS_PATH} STREQUAL "")
-  message(FATAL "Could not locate ${TOOLCHAIN_PREFIX} compiler and utilities.")
+if ("${BINUTILS_PATH}" STREQUAL "")
+  message(FATAL_ERROR "Could not locate ${TOOLCHAIN_PREFIX} compiler and utilities.")
 endif()
 
 # get the filename components path

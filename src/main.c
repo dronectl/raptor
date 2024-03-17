@@ -1,38 +1,56 @@
-#include "main.h"
-#include "FreeRTOS.h"
 #include "app_ethernet.h"
-#include "config.h"
+#include "cmsis_os2.h"
 #include "ethernetif.h"
 #include "health.h"
 #include "logger.h"
 #include "lwip/tcpip.h"
+#include "main.h"
 #include "netif/ethernet.h"
 #include "stm32h723xx.h"
 #include "stm32h7xx_hal.h"
 #include "stm32h7xx_nucleo.h"
-#include "task.h"
 
-#if defined(__ICCARM__) /*!< IAR Compiler */
+#if defined(__ICCARM__)
 #pragma location = 0x30000000
-ETH_DMADescTypeDef DMARxDscrTab[ETH_RX_DESC_CNT]; /* Ethernet Rx DMA Descriptors */
+ETH_DMADescTypeDef DMARxDscrTab[ETH_RX_DESC_CNT];
 #pragma location = 0x30000200
-ETH_DMADescTypeDef DMATxDscrTab[ETH_TX_DESC_CNT]; /* Ethernet Tx DMA Descriptors */
-
-#elif defined(__CC_ARM) /* MDK ARM Compiler */
-
-__attribute__((at(0x30000000))) ETH_DMADescTypeDef DMARxDscrTab[ETH_RX_DESC_CNT]; /* Ethernet Rx DMA Descriptors */
-__attribute__((at(0x30000200))) ETH_DMADescTypeDef DMATxDscrTab[ETH_TX_DESC_CNT]; /* Ethernet Tx DMA Descriptors */
-
+ETH_DMADescTypeDef DMATxDscrTab[ETH_TX_DESC_CNT];
+#elif defined(__CC_ARM)
+__attribute__((at(0x30000000))) ETH_DMADescTypeDef DMARxDscrTab[ETH_RX_DESC_CNT];
+__attribute__((at(0x30000200))) ETH_DMADescTypeDef DMATxDscrTab[ETH_TX_DESC_CNT];
 #elif defined(__GNUC__) /* GNU Compiler */
-ETH_DMADescTypeDef DMARxDscrTab[ETH_RX_DESC_CNT] __attribute__((section(".RxDecripSection"))); /* Ethernet Rx DMA Descriptors */
-ETH_DMADescTypeDef DMATxDscrTab[ETH_TX_DESC_CNT] __attribute__((section(".TxDecripSection"))); /* Ethernet Tx DMA Descriptors */
+ETH_DMADescTypeDef DMARxDscrTab[ETH_RX_DESC_CNT] __attribute__((section(".RxDecripSection")));
+ETH_DMADescTypeDef DMATxDscrTab[ETH_TX_DESC_CNT] __attribute__((section(".TxDecripSection")));
 #endif
 
-TaskHandle_t start_handle;
-TaskHandle_t health_handle;
-TaskHandle_t logger_handle;
-TaskHandle_t link_handle;
-TaskHandle_t dhcp_handle;
+// task attributes
+const osThreadAttr_t genesis_attr = {
+    .name = "genesis_attr",
+    .priority = osPriorityNormal,
+};
+const osThreadAttr_t health_attr = {
+    .name = "health_attr",
+    .priority = osPriorityNormal1,
+};
+const osThreadAttr_t logger_attr = {
+    .name = "logger_attr",
+    .priority = osPriorityLow,
+};
+const osThreadAttr_t link_attr = {
+    .name = "link_attr",
+    .priority = osPriorityNormal,
+};
+const osThreadAttr_t dhcp_attr = {
+    .name = "dhcp_attr",
+    .priority = osPriorityNormal,
+};
+
+// task handles
+static osThreadId_t genesis_handle;
+static osThreadId_t health_handle;
+static osThreadId_t logger_handle;
+static osThreadId_t link_handle;
+static osThreadId_t dhcp_handle;
 struct netif gnetif;
 
 ADC_HandleTypeDef hadc1;
@@ -79,7 +97,7 @@ WWDG_HandleTypeDef hwwdg1;
 static void MX_WWDG1_Init(void);
 #endif // RAPTOR_DEBUG
 static void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
-static void start_task(void *pv_params);
+static __NO_RETURN void genesis_task(void *argument);
 static void netconfig_init(void);
 
 /**
@@ -116,45 +134,28 @@ int main(void) {
   MX_WWDG1_Init();
 #endif // RAPTOR_DEBUG
   MX_TIM13_Init();
-  BaseType_t x_returned;
-  x_returned = xTaskCreate(start_task, "start_task", configMINIMAL_STACK_SIZE * 2, NULL,
-                           tskIDLE_PRIORITY + 24, &start_handle);
-  configASSERT(start_handle);
-  if (x_returned != pdPASS) {
-    vTaskDelete(start_handle);
+  osKernelInitialize();
+  genesis_handle = osThreadNew(genesis_task, NULL, &genesis_attr);
+  if (genesis_handle != NULL) {
   }
-  vTaskStartScheduler();
+  osKernelStart();
   while (1) {
   }
 }
 
-static void start_task(void *pv_params) {
-  BaseType_t x_returned;
-  /* Create tcp_ip stack thread */
+static __NO_RETURN void genesis_task(void __attribute__((unused)) * argument) {
   tcpip_init(NULL, NULL);
-  /* Initialize the LwIP stack */
   netconfig_init();
   logger_init(LOGGER_TRACE);
-  x_returned = xTaskCreate(logger_task, "logging_task", configMINIMAL_STACK_SIZE * 2, NULL,
-                           tskIDLE_PRIORITY + 5, &logger_handle);
-  configASSERT(logger_handle);
-  if (x_returned != pdPASS) {
-    vTaskDelete(logger_handle);
+  logger_handle = osThreadNew(logger_task, NULL, &logger_attr);
+  if (logger_handle == NULL) {
   }
   info("Created logging task");
-  vTaskDelay(100);
-  x_returned = xTaskCreate(health_main, "health_task", configMINIMAL_STACK_SIZE, NULL,
-                           tskIDLE_PRIORITY + 32, &health_handle);
-  configASSERT(health_handle);
-  if (x_returned != pdPASS) {
-    vTaskDelete(health_handle);
+  health_handle = osThreadNew(health_main, NULL, &health_attr);
+  if (health_handle == NULL) {
   }
   info("Created health task");
-
-  for (;;) {
-    /* Delete the Init Thread */
-    vTaskDelete(start_handle);
-  }
+  osThreadExit();
 }
 
 /**
@@ -166,7 +167,6 @@ static void netconfig_init(void) {
   ip_addr_t ipaddr;
   ip_addr_t netmask;
   ip_addr_t gw;
-
 #if LWIP_DHCP
   ip_addr_set_zero_ip4(&ipaddr);
   ip_addr_set_zero_ip4(&netmask);
@@ -177,31 +177,21 @@ static void netconfig_init(void) {
   IP4_ADDR(&netmask, NETMASK_ADDR0, NETMASK_ADDR1, NETMASK_ADDR2, NETMASK_ADDR3);
   IP4_ADDR(&gw, GW_ADDR0, GW_ADDR1, GW_ADDR2, GW_ADDR3);
 #endif
-
   /* add the network interface */
   netif_add(&gnetif, &ipaddr, &netmask, &gw, NULL, &ethernetif_init, &ethernet_input);
-
   /*  Registers the default network interface */
   netif_set_default(&gnetif);
-
   ethernet_link_status_updated(&gnetif);
-  BaseType_t x_returned;
 #if LWIP_NETIF_LINK_CALLBACK
   netif_set_link_callback(&gnetif, ethernet_link_status_updated);
-  x_returned = xTaskCreate(ethernet_link_thread, "eth_link_task", configMINIMAL_STACK_SIZE, &gnetif,
-                           tskIDLE_PRIORITY + 24, &link_handle);
-  configASSERT(link_handle);
-  if (x_returned != pdPASS) {
-    vTaskDelete(link_handle);
+  link_handle = osThreadNew(ethernet_link_thread, &gnetif, &link_attr);
+  if (link_handle == NULL) {
   }
 #endif
 
 #if LWIP_DHCP
-  x_returned = xTaskCreate(dhcp_task, "dhcp_task", configMINIMAL_STACK_SIZE, &gnetif,
-                           tskIDLE_PRIORITY + 16, &dhcp_handle);
-  configASSERT(dhcp_handle);
-  if (x_returned != pdPASS) {
-    vTaskDelete(dhcp_handle);
+  dhcp_handle = osThreadNew(dhcp_task, &gnetif, &dhcp_attr);
+  if (dhcp_handle == NULL) {
   }
 #endif
 }

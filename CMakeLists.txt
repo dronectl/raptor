@@ -53,7 +53,6 @@ add_executable(
   src/main.c
   src/lwip/app_ethernet.c
   src/lwip/ethernetif.c
-  src/drivers/hx711.c
   src/drivers/bme280.c
   src/drivers/pwm.c
   src/health.c
