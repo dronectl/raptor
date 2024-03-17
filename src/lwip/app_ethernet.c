@@ -23,10 +23,9 @@
 #if LWIP_DHCP
 #include "lwip/dhcp.h"
 #endif
-#include "FreeRTOS.h"
 #include "app_ethernet.h"
+#include "cmsis_os2.h"
 #include "ethernetif.h"
-#include "task.h"
 
 /*Static IP ADDRESS: IP_ADDR0.IP_ADDR1.IP_ADDR2.IP_ADDR3 */
 #define IP_ADDR0 ((uint8_t)192U)
@@ -92,8 +91,8 @@ void ethernet_link_status_updated(struct netif *netif) {
  * @param  argument: network interface
  * @retval None
  */
-void dhcp_task(void *pv_params) {
-  struct netif *netif = (struct netif *)pv_params;
+void dhcp_task(void *argument) {
+  struct netif *netif = (struct netif *)argument;
   ip_addr_t ipaddr;
   ip_addr_t netmask;
   ip_addr_t gw;
@@ -151,7 +150,7 @@ void dhcp_task(void *pv_params) {
     }
 
     /* wait 500 ms */
-    vTaskDelay(pdMS_TO_TICKS(500));
+    osDelay(500);
   }
 }
 #endif /* LWIP_DHCP */

@@ -17,9 +17,8 @@
  */
 
 /* Includes ------------------------------------------------------------------*/
+#include "stm32h7xx_hal.h" // IYWU pragma: export
 #include "stm32h7xx_it.h"
-#include "FreeRTOS.h"
-#include "stm32h7xx_hal.h"
 
 /******************************************************************************/
 /*            Cortex-M7 Processor Exceptions Handlers                         */

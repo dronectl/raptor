@@ -1,6 +1,5 @@
 #include "app_ethernet.h"
 #include "cmsis_os2.h"
-#include "config.h"
 #include "ethernetif.h"
 #include "health.h"
 #include "logger.h"
@@ -24,43 +23,26 @@ ETH_DMADescTypeDef DMARxDscrTab[ETH_RX_DESC_CNT] __attribute__((section(".RxDecr
 ETH_DMADescTypeDef DMATxDscrTab[ETH_TX_DESC_CNT] __attribute__((section(".TxDecripSection")));
 #endif
 
-// Stack allocations
-static uint64_t genesis_stack[64];
-static uint64_t health_stack[64];
-static uint64_t logger_stack[64];
-static uint64_t link_stack[64];
-static uint64_t dhcp_stack[64];
-
 // task attributes
 const osThreadAttr_t genesis_attr = {
     .name = "genesis_attr",
     .priority = osPriorityNormal,
-    .stack_mem = genesis_stack,
-    .stack_size = sizeof(genesis_stack),
 };
 const osThreadAttr_t health_attr = {
     .name = "health_attr",
     .priority = osPriorityNormal1,
-    .stack_mem = health_stack,
-    .stack_size = sizeof(health_stack),
 };
 const osThreadAttr_t logger_attr = {
     .name = "logger_attr",
     .priority = osPriorityLow,
-    .stack_mem = logger_stack,
-    .stack_size = sizeof(logger_stack),
 };
 const osThreadAttr_t link_attr = {
     .name = "link_attr",
-    .stack_mem = link_stack,
     .priority = osPriorityNormal,
-    .stack_size = sizeof(link_stack),
 };
 const osThreadAttr_t dhcp_attr = {
     .name = "dhcp_attr",
     .priority = osPriorityNormal,
-    .stack_mem = dhcp_stack,
-    .stack_size = sizeof(dhcp_stack),
 };
 
 // task handles
@@ -115,7 +97,7 @@ WWDG_HandleTypeDef hwwdg1;
 static void MX_WWDG1_Init(void);
 #endif // RAPTOR_DEBUG
 static void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
-static void genesis_task(void *argument);
+static __NO_RETURN void genesis_task(void *argument);
 static void netconfig_init(void);
 
 /**
@@ -169,7 +151,6 @@ static __NO_RETURN void genesis_task(void __attribute__((unused)) * argument) {
   if (logger_handle == NULL) {
   }
   info("Created logging task");
-  osDelay(100);
   health_handle = osThreadNew(health_main, NULL, &health_attr);
   if (health_handle == NULL) {
   }
