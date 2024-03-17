@@ -17,7 +17,7 @@
  */
 
 /* Includes ------------------------------------------------------------------*/
-#include "stm32h7xx_hal.h" // IYWU pragma: export
+#include "stm32h7xx_hal.h" // IWYU pragma: export
 #include "stm32h7xx_it.h"
 
 /******************************************************************************/

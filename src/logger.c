@@ -8,7 +8,6 @@
  *
  */
 
-#include "cbuffer.h"
 #include "cmsis_os2.h"
 #include "logger.h"
 #include "lwip/inet.h"

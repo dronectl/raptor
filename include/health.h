@@ -1,8 +1,6 @@
-
 #ifndef __HEALTH_H__
 #define __HEALTH_H__
 
-#include <stdint.h>
 #include "cmsis_os2.h"
 
 /**
@@ -33,4 +31,3 @@ typedef struct health_report_t {
 __NO_RETURN void health_main(void *argument);
 
 #endif // __HEALTH_H__
-

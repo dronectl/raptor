@@ -1,7 +1,7 @@
 #include "bme280.h"
 #include "health.h"
 #include "logger.h"
-#include "stm32h7xx_hal.h"
+#include "stm32h7xx_hal.h" // IWYU pragma: export
 
 static health_report_t health_report;
 
