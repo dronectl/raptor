@@ -2,7 +2,7 @@
 
 Modified: 2024-01
 
-This document will provide the resources developers need to get started working on the firmware for this project.
+This document will provide the resources developers need to get started working on the firmware for this project. We control our software versions tightly to reduce developer entropy. Please reference our required software documentation [here](https://www.notion.so/kolapo/Required-Software-1a9d1be387aa4bab9edf3ddc469ea800?pvs=4) for the correct software versions. For each section it is implied that you install the version referenced in this document.
 
 ## Navigation
 1. [Toolchain Installation](#toolchain-installation)
@@ -16,7 +16,7 @@ This document will provide the resources developers need to get started working 
 
 
 ## Toolchain Installation
-We first need to install the ARM toolchain on our local development machine. The CGT is on version 10.3 at the time of writing. Note that these downloads are large and may take some time.
+We first need to install the ARM toolchain on our local development machine. Note that these downloads are large and may take some time.
 
 > Note for Windows Installations - The binary files included as part of these software installations should be included as part of your system path. If the installer has the option, be sure to enable system path discovery.
 
@@ -26,31 +26,30 @@ Get the CMSIS `arm-none-eabi-gcc` toolchain for ARM Cortex microcontrollers:
 brew install --cask gcc-arm-embedded
 ```
 ### Windows
-Download version 10.3 from the windows install link [here](https://developer.arm.com/downloads/-/gnu-rm)
+Download the required version from the windows install link [here](https://developer.arm.com/downloads/-/gnu-rm)
 
 ## OpenOCD Installation
-This demo version 0.11.0 which at the time of writing is the latest `openocd` version
 
 ### MacOSX
-Get `openocd` using `brew`:
+Get `openocd` using `brew`. Be sure to specify the required version:
 ```bash
-brew install openocd
+brew install open-ocd@0.11.0
 ```
 
 ### Windows
-Download xPack OpenOCD v0.11.0-5 (xpack-openocd-0.11.0-5-win32-x64.zip) from the github release link [here](https://github.com/xpack-dev-tools/openocd-xpack/releases)
+Download xPack OpenOCD from the github release link [here](https://github.com/xpack-dev-tools/openocd-xpack/releases)
 
 ## CMake Installation
-This demo requires a minimum `cmake` version 3.24 to build.
+This project is built using CMake as the backend.
 
 ### MacOSX
-Install `cmake` using `brew`:
+Install `cmake` using `brew`. Be sure to specify the required version:
 ```bash
-brew install cmake
+brew install cmake@3.39.0
 ```
 
 ### Windows
-Download version `3.34` or higher from the windows install link [here](https://cmake.org/download/)
+Download the required version from the windows install link [here](https://cmake.org/download/)
 
 ## VSCode Setup
 
