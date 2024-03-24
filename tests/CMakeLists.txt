@@ -1,5 +1,5 @@
 enable_testing()
 
-# Include and add each test subdirectory
+# integration tests
 add_subdirectory(bme280)
 add_subdirectory(pwm)
