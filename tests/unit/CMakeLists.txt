@@ -39,7 +39,7 @@ include_directories(${RAPTOR_ROOT}/include)
 add_executable(
   ${EXECUTABLE}
   ${RAPTOR_ROOT}/src/sysreg.c
-  test.cc
+  test_sysreg.cc
 )
 
 target_link_libraries(
