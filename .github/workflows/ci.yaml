@@ -88,9 +88,16 @@ jobs:
         uses: jwlawson/actions-setup-cmake@v1.14
         with:
           cmake-version: '3.22.x'
-      - name: build
+      - name: build integration test binaries
         run: |
           mkdir $GITHUB_WORKSPACE/build
           cd build
           cmake .. -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTS=On
           make -j`nproc`
+      - name: build unittests
+        run: |
+          mkdir $GITHUB_WORKSPACE/tests/unit/build
+          cmake tests/unit/build
+          cmake --build tests/unit/build
+      - name: run unittests
+        run: ctest --test-dir tests/unit/build
