@@ -17,7 +17,7 @@ TEST(SysRegTest, SysRegU16) {
   uint16_t buffer;
   EXPECT_EQ(sysreg_set_u16(SYSREG_GPU16, &data), SYSREG_OK) << "setter returned non-zero status code";
   EXPECT_EQ(sysreg_get_u16(SYSREG_GPU16, &buffer), SYSREG_OK) << "getter returned non-zero status code";
-  EXPECT_EQ(buffer, 255) << "Register R/W failed";
+  EXPECT_EQ(buffer, 65535) << "Register R/W failed";
 }
 
 TEST(SysRegTest, SysRegU32) {
