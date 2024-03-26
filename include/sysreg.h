@@ -26,6 +26,18 @@ typedef int sysreg_status_t;
 #define SYSREG_RANGE_ERR (sysreg_status_t)6
 
 /**
+ * @brief Semantic Versioning encoding 4 bytes
+ */
+#define SYSREG_SEMVER_MAJOR_OFFSET 24
+#define SYSREG_SEMVER_MINOR_OFFSET 16
+#define SYSREG_SEMVER_PATCH_OFFSET 8
+#define SYSREG_SEMVER_REVISION_OFFSET 0
+#define SYSREG_SEMVER_MAJOR_MSK (0xFF << SYSREG_SEMVER_MAJOR_OFFSET)
+#define SYSREG_SEMVER_MINOR_MSK (0xFF << SYSREG_SEMVER_MINOR_OFFSET)
+#define SYSREG_SEMVER_PATCH_MSK (0xFF << SYSREG_SEMVER_PATCH_OFFSET)
+#define SYSREG_SEMVER_REVISION_MSK (0xFF << SYSREG_SEMVER_REVISION_OFFSET)
+
+/**
  * @brief System register access API
  * 
  *   7   6   5   4   3   2   1   0 
@@ -40,7 +52,11 @@ typedef int sysreg_status_t;
 #define SYSREG_ACCESS_L (1 << SYSREG_ACCESS_L_OFFSET)
 
 typedef struct sysreg_t {
-  uint16_t uuid;
+  uint8_t gpu8; // general purpose u8 register
+  uint16_t gpu16; // general purpose u16 register
+  uint32_t gpu32; // general purpose u32 register
+  float gpf32; // general purpose f32 register
+  uint32_t uuid;
   uint8_t sys_stat;
   uint32_t hw_version;
   uint32_t fw_version;
@@ -50,12 +66,29 @@ typedef struct sysreg_t {
 /**
  * @brief System register access offsets
  */
-#define SYSREG_UUID offsetof(sysreg_t, uuid)
+#define SYSREG_GPU8 offsetof(sysreg_t, gpu8)
+#define SYSREG_GPU16 offsetof(sysreg_t, gpu16)
+#define SYSREG_GPU32 offsetof(sysreg_t, gpu32)
+#define SYSREG_GPF32 offsetof(sysreg_t, gpf32)
 #define SYSREG_SYS_STAT offsetof(sysreg_t, sys_stat)
 #define SYSREG_HW_VERSION offsetof(sysreg_t, hw_version)
 #define SYSREG_FW_VERSION offsetof(sysreg_t, fw_version)
 #define SYSREG_SETPOINT offsetof(sysreg_t, setpoint)
 
+/**
+ * @brief System register reset
+ */
+#define SYSREG_UUID_RESET (uint32_t)0xDECAFBAD 
+#define SYSREG_SYS_STAT_RESET (uint8_t)0x0
+#define SYSREG_HW_VERSION_RESET (uint32_t)0x10000 // v0.1.0
+#define SYSREG_FW_VERSION_RESET (uint32_t)0x10000 // v0.1.0
+
+/**
+ * @brief Sanitize register reset values are in min/max and set registers to default.
+ * Registers without a default are set to 0 by zero initialization
+ *
+ * @return status code
+ */
 sysreg_status_t sysreg_init(void);
 sysreg_status_t sysreg_reset(void);
 sysreg_status_t sysreg_set_access(size_t offset, uint8_t access);

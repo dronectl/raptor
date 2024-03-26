@@ -10,6 +10,7 @@
  */
 
 #include "sysreg.h"
+#include <float.h>
 #include <math.h>
 #include <assert.h>
 #include <string.h>
@@ -44,56 +45,96 @@ typedef struct reg_conf_t {
 
 // clang-format off
 static reg_conf_t register_config[] = {
+
   {
-    .offset = SYSREG_SYS_STAT,
-    .dtype=DTYPE_U8,
+    .offset = SYSREG_GPU8,
+    .dtype = DTYPE_U8,
     .access = SYSREG_ACCESS_R | SYSREG_ACCESS_W,
     .reset = {.u8 = 0},
-    .min={.u8 = 0},
-    .max={.u8=100}
+    .min = {.u8 = 0},
+    .max = {.u8 = 255}
   },
   {
-    .offset = SYSREG_UUID,
-    .dtype=DTYPE_U16,
-    .access = SYSREG_ACCESS_W,
+    .offset = SYSREG_GPU16,
+    .dtype = DTYPE_U16,
+    .access = SYSREG_ACCESS_R | SYSREG_ACCESS_W,
     .reset = {.u16 = 0},
-    .min={.u16 = 0},
-    .max={.u16=1000}
+    .min = {.u16 = 0},
+    .max = {.u16 = 65535}
+  },
+  {
+    .offset = SYSREG_GPU32,
+    .dtype = DTYPE_U32,
+    .access = SYSREG_ACCESS_R | SYSREG_ACCESS_W,
+    .reset = {.u32 = 0},
+    .min = {.u32 = 0},
+    .max = {.u32 = 4294967295}
+  },
+  {
+    .offset = SYSREG_GPF32,
+    .dtype = DTYPE_F32,
+    .access = SYSREG_ACCESS_R | SYSREG_ACCESS_W,
+    .reset = {.f32 = 0},
+    .min= {.f32 = -FLT_MAX},
+    .max= {.f32 = FLT_MAX}
   },
   {
     .offset = SYSREG_HW_VERSION,
-    .dtype=DTYPE_U16,
+    .dtype = DTYPE_U16,
     .access = SYSREG_ACCESS_W,
     .reset = {.u16 = 0},
-    .min={.u16 = 0},
-    .max={.u16=1000}
+    .min = {.u16 = 0},
+    .max = {.u16 = 1000}
   },
   {
     .offset = SYSREG_FW_VERSION,
-    .dtype=DTYPE_U16,
+    .dtype = DTYPE_U16,
     .access = SYSREG_ACCESS_W,
     .reset = {.u16 = 0},
-    .min={.u16 = 0},
-    .max={.u16=1000}
+    .min= {.u16 = 0},
+    .max= {.u16 = 1000}
   },
   {
     .offset = SYSREG_SETPOINT,
-    .dtype=DTYPE_F32,
+    .dtype = DTYPE_F32,
     .access = SYSREG_ACCESS_L | SYSREG_ACCESS_R,
     .reset = {.f32 = 0.0f},
-    .min={.f32=-4.0f},
-    .max={.f32=500.0f}
+    .min = {.f32 = -FLT_MAX},
+    .max = {.f32 = FLT_MAX}
   },
 };
 // clang-format on
 
 #define SYSREG_NUM_REGISTERS sizeof(register_config) / sizeof(reg_conf_t)
 
-static sysreg_status_t _get_reg_config(size_t offset, reg_conf_t *config);
-static sysreg_status_t _verify_write(reg_conf_t *config, dtype_t dtype);
-static sysreg_status_t _verify_read(reg_conf_t *config, dtype_t dtype);
+/**
+ * @brief Get register configuration
+ *
+ * @param[in] offset register offset
+ * @param[in,out] config register configuration
+ * @return status code
+ */
+static sysreg_status_t _get_reg_config(const size_t offset, reg_conf_t *config);
 
-static sysreg_status_t _get_reg_config(size_t offset, reg_conf_t *config) {
+/**
+ * @brief Sanitize register write at offset is permitted by type and access checks
+ *
+ * @param[in] config sysreg configuration
+ * @param[in] dtype data type of request
+ * @return status code
+ */
+static sysreg_status_t _sanitize_write(const reg_conf_t *config, const dtype_t dtype);
+
+/**
+ * @brief Sanitize register read at offset is permitted by type and access checks
+ *
+ * @param[in] config sysreg configuration
+ * @param[in] dtype data type of request
+ * @return status code
+ */
+static sysreg_status_t _sanitize_read(const reg_conf_t *config, const dtype_t dtype);
+
+static sysreg_status_t _get_reg_config(const size_t offset, reg_conf_t *config) {
   sysreg_status_t status = SYSREG_OK;
   for (size_t i = 0; i < SYSREG_NUM_REGISTERS; i++) {
     if (offset == register_config[i].offset) {
@@ -107,7 +148,7 @@ static sysreg_status_t _get_reg_config(size_t offset, reg_conf_t *config) {
   return status;
 }
 
-static sysreg_status_t _verify_write(reg_conf_t *config, dtype_t dtype) {
+static sysreg_status_t _sanitize_write(const reg_conf_t *config, const dtype_t dtype) {
   if (!(config->access & SYSREG_ACCESS_W)) {
     return SYSREG_ACCESS_ERR;
   }
@@ -117,7 +158,7 @@ static sysreg_status_t _verify_write(reg_conf_t *config, dtype_t dtype) {
   return SYSREG_OK;
 }
 
-static sysreg_status_t _verify_read(reg_conf_t *config, dtype_t dtype) {
+static sysreg_status_t _sanitize_read(const reg_conf_t *config, const dtype_t dtype) {
   if (!(config->access & SYSREG_ACCESS_R)) {
     return SYSREG_ACCESS_ERR;
   }
@@ -214,11 +255,11 @@ sysreg_status_t sysreg_get_u8(size_t offset, uint8_t *data) {
   if (status != SYSREG_OK) {
     return status;
   }
-  status = _verify_read(&config, DTYPE_U8);
+  status = _sanitize_read(&config, DTYPE_U8);
   if (status != SYSREG_OK) {
     return status;
   }
-  memcpy(data, &registers + offset, sizeof(uint8_t));
+  memcpy(data, (uint8_t *)&registers + offset, sizeof(uint8_t));
   return SYSREG_OK;
 }
 
@@ -229,7 +270,7 @@ sysreg_status_t sysreg_set_u8(size_t offset, const uint8_t *data) {
   if (status != SYSREG_OK) {
     return status;
   }
-  status = _verify_write(&config, DTYPE_U8);
+  status = _sanitize_write(&config, DTYPE_U8);
   if (status != SYSREG_OK) {
     return status;
   }
@@ -239,7 +280,7 @@ sysreg_status_t sysreg_set_u8(size_t offset, const uint8_t *data) {
   } else if (value > config.max.u8) {
     value = config.max.u8;
   }
-  memcpy(&registers + offset, &value, sizeof(float));
+  memcpy((uint8_t *)&registers + offset, &value, sizeof(uint8_t));
   return SYSREG_OK;
 }
 
@@ -250,11 +291,11 @@ sysreg_status_t sysreg_get_u16(size_t offset, uint16_t *data) {
   if (status != SYSREG_OK) {
     return status;
   }
-  status = _verify_read(&config, DTYPE_U16);
+  status = _sanitize_read(&config, DTYPE_U16);
   if (status != SYSREG_OK) {
     return status;
   }
-  memcpy(data, &registers + offset, sizeof(uint16_t));
+  memcpy(data, (uint8_t *)&registers + offset, sizeof(uint16_t));
   return SYSREG_OK;
 }
 
@@ -265,7 +306,7 @@ sysreg_status_t sysreg_set_u16(size_t offset, const uint16_t *data) {
   if (status != SYSREG_OK) {
     return status;
   }
-  status = _verify_write(&config, DTYPE_U16);
+  status = _sanitize_write(&config, DTYPE_U16);
   if (status != SYSREG_OK) {
     return status;
   }
@@ -275,7 +316,7 @@ sysreg_status_t sysreg_set_u16(size_t offset, const uint16_t *data) {
   } else if (value > config.max.u16) {
     value = config.max.u16;
   }
-  memcpy(&registers + offset, &value, sizeof(uint16_t));
+  memcpy((uint8_t *)&registers + offset, &value, sizeof(uint16_t));
   return SYSREG_OK;
 }
 
@@ -286,11 +327,11 @@ sysreg_status_t sysreg_get_u32(size_t offset, uint32_t *data) {
   if (status != SYSREG_OK) {
     return status;
   }
-  status = _verify_read(&config, DTYPE_U32);
+  status = _sanitize_read(&config, DTYPE_U32);
   if (status != SYSREG_OK) {
     return status;
   }
-  memcpy(data, &registers + offset, sizeof(uint32_t));
+  memcpy(data, (uint8_t *)&registers + offset, sizeof(uint32_t));
   return SYSREG_OK;
 }
 
@@ -301,17 +342,17 @@ sysreg_status_t sysreg_set_u32(size_t offset, const uint32_t *data) {
   if (status != SYSREG_OK) {
     return status;
   }
-  status = _verify_write(&config, DTYPE_U16);
+  status = _sanitize_write(&config, DTYPE_U32);
   if (status != SYSREG_OK) {
     return status;
   }
-  uint16_t value = *data;
+  uint32_t value = *data;
   if (value < config.min.u32) {
     value = config.min.u32;
   } else if (value > config.max.u32) {
     value = config.max.u32;
   }
-  memcpy(&registers + offset, &value, sizeof(uint32_t));
+  memcpy((uint8_t *)&registers + offset, &value, sizeof(uint32_t));
   return SYSREG_OK;
 }
 
@@ -322,11 +363,11 @@ sysreg_status_t sysreg_get_f32(size_t offset, float *data) {
   if (status != SYSREG_OK) {
     return status;
   }
-  status = _verify_read(&config, DTYPE_F32);
+  status = _sanitize_read(&config, DTYPE_F32);
   if (status != SYSREG_OK) {
     return status;
   }
-  memcpy(data, &registers + offset, sizeof(float));
+  memcpy(data, (uint8_t *)&registers + offset, sizeof(float));
   return SYSREG_OK;
 }
 
@@ -337,13 +378,13 @@ sysreg_status_t sysreg_set_f32(size_t offset, const float *data) {
   if (status != SYSREG_OK) {
     return status;
   }
-  status = _verify_write(&config, DTYPE_F32);
+  status = _sanitize_write(&config, DTYPE_F32);
   if (status != SYSREG_OK) {
     return status;
   }
   float value = *data;
   value = fminf(value, config.max.f32);
   value = fmaxf(value, config.min.f32);
-  memcpy(&registers + offset, &value, sizeof(float));
+  memcpy((uint8_t *)&registers + offset, &value, sizeof(float));
   return SYSREG_OK;
 }
