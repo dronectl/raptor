@@ -14,7 +14,7 @@ on:
       - master
 
 jobs:
-  clang-fmt:
+  lint:
     name: static analysis
     runs-on: ubuntu-latest
     steps:
@@ -31,7 +31,6 @@ jobs:
       run: find src include -iname *.c -o -iname *.h | xargs clang-format -n -Werror
   build:
     name: build firmware
-    needs: clang-fmt
     runs-on: ubuntu-latest
     steps:
       - name: checkout source
@@ -72,8 +71,7 @@ jobs:
           path: build/raptor.elf
           retention-days: 5
   test:
-    name: build tests
-    needs: clang-fmt
+    name: tests
     runs-on: ubuntu-latest
     steps:
       - name: checkout source
@@ -88,9 +86,16 @@ jobs:
         uses: jwlawson/actions-setup-cmake@v1.14
         with:
           cmake-version: '3.22.x'
-      - name: build
+      - name: build integration test binaries
         run: |
           mkdir $GITHUB_WORKSPACE/build
           cd build
           cmake .. -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTS=On
           make -j`nproc`
+      - name: build unittests
+        run: |
+          mkdir $GITHUB_WORKSPACE/tests/unit/build
+          cmake -B tests/unit/build -S tests/unit
+          cmake --build tests/unit/build
+      - name: run unittests
+        run: ctest --test-dir tests/unit/build
