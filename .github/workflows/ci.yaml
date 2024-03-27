@@ -97,7 +97,6 @@ jobs:
       - name: build unittests
         run: |
           mkdir $GITHUB_WORKSPACE/tests/unit/build
-          cmake tests/unit/build
           cmake --build tests/unit/build
       - name: run unittests
         run: ctest --test-dir tests/unit/build
