@@ -45,9 +45,8 @@ typedef struct reg_conf_t {
 
 // clang-format off
 static reg_conf_t register_config[] = {
-
   {
-    .offset = SYSREG_GPU8,
+    .offset = SYSREG_GPU8_UL,
     .dtype = DTYPE_U8,
     .access = SYSREG_ACCESS_R | SYSREG_ACCESS_W,
     .reset = {.u8 = 0},
@@ -55,7 +54,15 @@ static reg_conf_t register_config[] = {
     .max = {.u8 = 255}
   },
   {
-    .offset = SYSREG_GPU16,
+    .offset = SYSREG_GPU8,
+    .dtype = DTYPE_U8,
+    .access = SYSREG_ACCESS_L | SYSREG_ACCESS_R | SYSREG_ACCESS_W,
+    .reset = {.u8 = 0},
+    .min = {.u8 = 0},
+    .max = {.u8 = 255}
+  },
+  {
+    .offset = SYSREG_GPU16_UL,
     .dtype = DTYPE_U16,
     .access = SYSREG_ACCESS_R | SYSREG_ACCESS_W,
     .reset = {.u16 = 0},
@@ -63,7 +70,15 @@ static reg_conf_t register_config[] = {
     .max = {.u16 = 65535}
   },
   {
-    .offset = SYSREG_GPU32,
+    .offset = SYSREG_GPU16,
+    .dtype = DTYPE_U16,
+    .access = SYSREG_ACCESS_L | SYSREG_ACCESS_R | SYSREG_ACCESS_W,
+    .reset = {.u16 = 0},
+    .min = {.u16 = 0},
+    .max = {.u16 = 65535}
+  },
+  {
+    .offset = SYSREG_GPU32_UL,
     .dtype = DTYPE_U32,
     .access = SYSREG_ACCESS_R | SYSREG_ACCESS_W,
     .reset = {.u32 = 0},
@@ -71,7 +86,15 @@ static reg_conf_t register_config[] = {
     .max = {.u32 = 4294967295}
   },
   {
-    .offset = SYSREG_GPF32,
+    .offset = SYSREG_GPU32,
+    .dtype = DTYPE_U32,
+    .access = SYSREG_ACCESS_L | SYSREG_ACCESS_R | SYSREG_ACCESS_W,
+    .reset = {.u32 = 0},
+    .min = {.u32 = 0},
+    .max = {.u32 = 4294967295}
+  },
+  {
+    .offset = SYSREG_GPF32_UL,
     .dtype = DTYPE_F32,
     .access = SYSREG_ACCESS_R | SYSREG_ACCESS_W,
     .reset = {.f32 = 0},
@@ -79,25 +102,49 @@ static reg_conf_t register_config[] = {
     .max= {.f32 = FLT_MAX}
   },
   {
+    .offset = SYSREG_GPF32,
+    .dtype = DTYPE_F32,
+    .access = SYSREG_ACCESS_L | SYSREG_ACCESS_R | SYSREG_ACCESS_W,
+    .reset = {.f32 = 0},
+    .min= {.f32 = -FLT_MAX},
+    .max= {.f32 = FLT_MAX}
+  },
+  {
     .offset = SYSREG_HW_VERSION,
-    .dtype = DTYPE_U16,
-    .access = SYSREG_ACCESS_W,
-    .reset = {.u16 = 0},
-    .min = {.u16 = 0},
-    .max = {.u16 = 1000}
+    .dtype = DTYPE_U32,
+    .access = SYSREG_ACCESS_L | SYSREG_ACCESS_R,
+    .reset = {.u32 = SYSREG_HW_VERSION_RESET},
+    .min = {.u32 = 0},
+    .max = {.u32 = 4294967295}
   },
   {
     .offset = SYSREG_FW_VERSION,
-    .dtype = DTYPE_U16,
-    .access = SYSREG_ACCESS_W,
-    .reset = {.u16 = 0},
-    .min= {.u16 = 0},
-    .max= {.u16 = 1000}
+    .dtype = DTYPE_U32,
+    .access = SYSREG_ACCESS_L | SYSREG_ACCESS_R,
+    .reset = {.u32 = SYSREG_FW_VERSION_RESET},
+    .min= {.u32 = 0},
+    .max= {.u32 = 4294967295}
+  },
+  {
+    .offset = SYSREG_UUID,
+    .dtype = DTYPE_U32,
+    .access = SYSREG_ACCESS_L | SYSREG_ACCESS_R,
+    .reset = {.u32 = SYSREG_UUID_RESET},
+    .min = {.u32 = 0},
+    .max = {.u32 = 4294967295}
+  },
+  {
+    .offset = SYSREG_SYS_STAT,
+    .dtype = DTYPE_U8,
+    .access = SYSREG_ACCESS_L | SYSREG_ACCESS_R | SYSREG_ACCESS_W,
+    .reset = {.u8 = SYSREG_SYS_STAT_RESET},
+    .min = {.u8 = 0},
+    .max = {.u8 = 255}
   },
   {
     .offset = SYSREG_SETPOINT,
     .dtype = DTYPE_F32,
-    .access = SYSREG_ACCESS_L | SYSREG_ACCESS_R,
+    .access = SYSREG_ACCESS_R | SYSREG_ACCESS_W,
     .reset = {.f32 = 0.0f},
     .min = {.f32 = -FLT_MAX},
     .max = {.f32 = FLT_MAX}
@@ -183,11 +230,11 @@ sysreg_status_t sysreg_init(void) {
         assert(config.reset.f32 <= config.max.f32);
         break;
       default:
+        // CS TODO: log warning - no assertions for missing type
         break;
     }
   }
   sysreg_reset();
-  // CS TODO: write reset values to registers
   return SYSREG_OK;
 }
 
@@ -217,7 +264,7 @@ sysreg_status_t sysreg_reset(void) {
         break;
     }
     if (size > 0) {
-      memcpy(&registers + config.offset, value, size);
+      memcpy((uint8_t *)&registers + config.offset, value, size);
     }
   }
   return SYSREG_OK;
@@ -228,13 +275,13 @@ sysreg_status_t sysreg_set_access(size_t offset, uint8_t access) {
   if (config == NULL) {
     return SYSREG_NOT_FOUND_ERR;
   }
-  // check if register access config is locked
-  if (config->access & SYSREG_ACCESS_L) {
-    return SYSREG_ACCESS_ERR;
-  }
   // do not allow write of L bit
   if (access & SYSREG_ACCESS_L) {
     return SYSREG_OP_ERR;
+  }
+  // check if register access config is locked
+  if (config->access & SYSREG_ACCESS_L) {
+    return SYSREG_ACCESS_ERR;
   }
   config->access = access;
   return SYSREG_OK;
