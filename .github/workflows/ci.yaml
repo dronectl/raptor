@@ -14,7 +14,7 @@ on:
       - master
 
 jobs:
-  clang-fmt:
+  lint:
     name: static analysis
     runs-on: ubuntu-latest
     steps:
@@ -72,7 +72,7 @@ jobs:
           path: build/raptor.elf
           retention-days: 5
   test:
-    name: build tests
+    name: tests
     needs: clang-fmt
     runs-on: ubuntu-latest
     steps:
@@ -97,6 +97,7 @@ jobs:
       - name: build unittests
         run: |
           mkdir $GITHUB_WORKSPACE/tests/unit/build
+          cmake -B tests/unit/build -S tests/unit
           cmake --build tests/unit/build
       - name: run unittests
         run: ctest --test-dir tests/unit/build
