@@ -31,7 +31,6 @@ jobs:
       run: find src include -iname *.c -o -iname *.h | xargs clang-format -n -Werror
   build:
     name: build firmware
-    needs: clang-fmt
     runs-on: ubuntu-latest
     steps:
       - name: checkout source
@@ -73,7 +72,6 @@ jobs:
           retention-days: 5
   test:
     name: tests
-    needs: clang-fmt
     runs-on: ubuntu-latest
     steps:
       - name: checkout source
