@@ -36,11 +36,11 @@ static sysreg_t registers = {0};
 
 typedef struct reg_conf_t {
   const size_t offset; // register offset
-  uint8_t access; // bitfield
+  uint8_t access;      // bitfield
   const dtype_t dtype; // data type
   const value_t reset; // value on reset
-  const value_t min; // minimum value
-  const value_t max; // maximum value
+  const value_t min;   // minimum value
+  const value_t max;   // maximum value
 } reg_conf_t;
 
 // clang-format off
@@ -160,7 +160,7 @@ static reg_conf_t register_config[] = {
  * @param[in] offset register offset
  * @return pointer to register configuration
  */
-static reg_conf_t* _get_reg_config(const size_t offset);
+static reg_conf_t *_get_reg_config(const size_t offset);
 
 /**
  * @brief Sanitize register write at offset is permitted by type and access checks
@@ -180,7 +180,7 @@ static sysreg_status_t _sanitize_write(const reg_conf_t *config, const dtype_t d
  */
 static sysreg_status_t _sanitize_read(const reg_conf_t *config, const dtype_t dtype);
 
-static reg_conf_t* _get_reg_config(const size_t offset) {
+static reg_conf_t *_get_reg_config(const size_t offset) {
   for (size_t i = 0; i < SYSREG_NUM_REGISTERS; i++) {
     if (offset == register_config[i].offset) {
       return &register_config[i];
@@ -193,7 +193,7 @@ static sysreg_status_t _sanitize_write(const reg_conf_t *config, const dtype_t d
   if (!(config->access & SYSREG_ACCESS_W)) {
     return SYSREG_ACCESS_ERR;
   }
-  if (config->dtype != dtype){
+  if (config->dtype != dtype) {
     return SYSREG_DTYPE_ERR;
   }
   return SYSREG_OK;
@@ -203,7 +203,7 @@ static sysreg_status_t _sanitize_read(const reg_conf_t *config, const dtype_t dt
   if (!(config->access & SYSREG_ACCESS_R)) {
     return SYSREG_ACCESS_ERR;
   }
-  if (config->dtype != dtype){
+  if (config->dtype != dtype) {
     return SYSREG_DTYPE_ERR;
   }
   return SYSREG_OK;

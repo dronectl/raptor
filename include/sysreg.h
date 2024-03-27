@@ -39,8 +39,8 @@ typedef int sysreg_status_t;
 
 /**
  * @brief System register access API
- * 
- *   7   6   5   4   3   2   1   0 
+ *
+ *   7   6   5   4   3   2   1   0
  *   ^                       ^   ^
  *   L                       W   R
  */
@@ -52,14 +52,14 @@ typedef int sysreg_status_t;
 #define SYSREG_ACCESS_L (1 << SYSREG_ACCESS_L_OFFSET)
 
 typedef struct sysreg_t {
-  uint8_t gpu8; // general purpose u8 register
-  uint8_t gpu8_ul; // general purpose u8 register (unlocked)
-  uint16_t gpu16; // general purpose u16 register
+  uint8_t gpu8;      // general purpose u8 register
+  uint8_t gpu8_ul;   // general purpose u8 register (unlocked)
+  uint16_t gpu16;    // general purpose u16 register
   uint16_t gpu16_ul; // general purpose u16 register (unlocked)
-  uint32_t gpu32; // general purpose u32 register
+  uint32_t gpu32;    // general purpose u32 register
   uint32_t gpu32_ul; // general purpose u32 register (unlocked)
-  float gpf32; // general purpose f32 register
-  float gpf32_ul; // general purpose f32 register (unlocked)
+  float gpf32;       // general purpose f32 register
+  float gpf32_ul;    // general purpose f32 register (unlocked)
   uint32_t uuid;
   uint8_t sys_stat;
   uint32_t hw_version;
@@ -87,7 +87,7 @@ typedef struct sysreg_t {
 /**
  * @brief System register reset
  */
-#define SYSREG_UUID_RESET (uint32_t)0xDECAFBAD 
+#define SYSREG_UUID_RESET (uint32_t)0xDECAFBAD
 #define SYSREG_SYS_STAT_RESET (uint8_t)0x0
 #define SYSREG_HW_VERSION_RESET (uint32_t)0x10000 // v0.1.0
 #define SYSREG_FW_VERSION_RESET (uint32_t)0x10000 // v0.1.0
