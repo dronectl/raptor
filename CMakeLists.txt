@@ -57,6 +57,7 @@ add_executable(
   src/drivers/pwm.c
   src/health.c
   src/cbuffer.c
+  src/sysreg.c
   src/logger.c
   src/freertos.c
   src/stcore/sysmem.c
