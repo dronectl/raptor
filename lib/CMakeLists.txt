@@ -5,4 +5,4 @@ add_library(
   STATIC
   sysreg.c
 )
-target_include_directories(${RAPTOR_LIB} PUBLIC ${PROJECT_SOURCE_DIR}/lib)
+target_include_directories(${RAPTOR_LIB} PUBLIC .)

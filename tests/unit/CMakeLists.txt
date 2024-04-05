@@ -20,7 +20,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 project(
   raptor-test
-  LANGUAGES C ASM
+  LANGUAGES C CXX
   DESCRIPTION "Raptor unittest binary."
 )
 
@@ -33,6 +33,15 @@ add_executable(
 
 set(RAPTOR_LIB libraptor)
 add_subdirectory(${CMAKE_SOURCE_DIR}/../../lib build)
+target_compile_options(
+  ${RAPTOR_LIB}
+  PUBLIC --coverage -g -O0
+)
+
+target_link_options(
+  ${RAPTOR_LIB}
+  PUBLIC -lgcov
+)
 
 target_link_libraries(
   ${PROJECT_NAME}
