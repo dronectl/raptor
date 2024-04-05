@@ -1,5 +1,7 @@
 # Fetch the Google Test framework
 cmake_minimum_required(VERSION 3.22)
+
+# specify module path
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 include(FetchContent)
 message(STATUS "Fetching Google Test...")
@@ -19,7 +21,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 project(
   raptor-test
   LANGUAGES C ASM
-  VERSION 0.1.0
   DESCRIPTION "Raptor unittest binary."
 )
 
@@ -30,7 +31,8 @@ add_executable(
  test_sysreg.cc
 )
 
-include(../../lib)
+set(RAPTOR_LIB libraptor)
+add_subdirectory(${CMAKE_SOURCE_DIR}/../../lib build)
 
 target_link_libraries(
   ${PROJECT_NAME}
@@ -39,12 +41,6 @@ target_link_libraries(
 )
 
 include(GoogleTest)
-include(CodeCoverage)
-
-setup_target_for_coverage_gcovr_xml(
-  NAME coverage
-  EXECUTABLE 
-)
 
 gtest_discover_tests(${PROJECT_NAME})
 
