@@ -99,3 +99,8 @@ jobs:
           cmake --build tests/unit/build
       - name: run unittests
         run: ctest --test-dir tests/unit/build
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v4.0.1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          slug: dronectl/raptor
