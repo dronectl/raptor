@@ -60,48 +60,6 @@ if (NOT RAPTOR_TESTS)
   include(stm32cubeh7)
 endif()
 
-add_executable(
-  ${PROJECT_NAME}
-  src/main.c
-  src/lwip/app_ethernet.c
-  src/lwip/ethernetif.c
-  src/drivers/bme280.c
-  src/drivers/pwm.c
-  src/health.c
-  src/cbuffer.c
-  src/logger.c
-  src/sysreg.c
-  src/freertos.c
-  src/stcore/sysmem.c
-  src/stcore/syscalls.c
-  src/stcore/stm32h7xx_it.c
-  src/stcore/stm32h7xx_hal_msp.c
-  src/stcore/stm32h7xx_hal_timebase_tim.c
-  src/stcore/startup_stm32h723zgtx.s
-  src/stcore/system_stm32h7xx.c
-)
-target_include_directories(
-  ${PROJECT_NAME}
-  PRIVATE include
-  PRIVATE ${STM32CUBEH7_CMSIS_INCLUDE}
-)
-set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME ${PROJECT_NAME}.elf)
-
-target_compile_options(
-  ${PROJECT_NAME}
-  PRIVATE -Wno-unused-parameter -Wpedantic -fno-builtin -Wall -Wextra -ffunction-sections -fdata-sections -fomit-frame-pointer
-  PRIVATE $<$<BOOL:NOT ${RAPTOR_TESTS}>${STM32H723_COMPILE_FLAGS}>
-  PRIVATE $<$<CONFIG:Debug>:-DRAPTOR_DEBUG -O0 -g>
-  PRIVATE $<$<CONFIG:Release>:-O3>
-)
-
-target_link_options(
-  ${PROJECT_NAME}
-  PRIVATE $<$<BOOL:NOT ${RAPTOR_TESTS}>${STM32H723_LINKER_FLAGS}>
-)
-
-target_link_libraries(${PROJECT_NAME} ${STM32CUBEH7_LIB})
-
 if (RAPTOR_TESTS)
   message(STATUS "Including raptor tests")
   add_subdirectory(tests)
