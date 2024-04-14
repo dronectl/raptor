@@ -74,8 +74,58 @@ UART_HandleTypeDef huart7;
 UART_HandleTypeDef huart9;
 UART_HandleTypeDef huart3;
 
-static __NO_RETURN void genesis_task(void *argument);
-static void netconfig_init(void);
+/**
+ * @brief  Setup the network interface
+ * @param  None
+ * @retval None
+ */
+static void netconfig_init(void) {
+  ip_addr_t ipaddr;
+  ip_addr_t netmask;
+  ip_addr_t gw;
+#if LWIP_DHCP
+  ip_addr_set_zero_ip4(&ipaddr);
+  ip_addr_set_zero_ip4(&netmask);
+  ip_addr_set_zero_ip4(&gw);
+#else
+  /* IP address default setting */
+  IP4_ADDR(&ipaddr, IP_ADDR0, IP_ADDR1, IP_ADDR2, IP_ADDR3);
+  IP4_ADDR(&netmask, NETMASK_ADDR0, NETMASK_ADDR1, NETMASK_ADDR2, NETMASK_ADDR3);
+  IP4_ADDR(&gw, GW_ADDR0, GW_ADDR1, GW_ADDR2, GW_ADDR3);
+#endif
+  /* add the network interface */
+  netif_add(&gnetif, &ipaddr, &netmask, &gw, NULL, &ethernetif_init, &ethernet_input);
+  /*  Registers the default network interface */
+  netif_set_default(&gnetif);
+  ethernet_link_status_updated(&gnetif);
+#if LWIP_NETIF_LINK_CALLBACK
+  netif_set_link_callback(&gnetif, ethernet_link_status_updated);
+  link_handle = osThreadNew(ethernet_link_thread, &gnetif, &link_attr);
+  if (link_handle == NULL) {
+  }
+#endif
+
+#if LWIP_DHCP
+  dhcp_handle = osThreadNew(dhcp_task, &gnetif, &dhcp_attr);
+  if (dhcp_handle == NULL) {
+  }
+#endif
+}
+
+static __NO_RETURN void genesis_task(void __attribute__((unused)) * argument) {
+  tcpip_init(NULL, NULL);
+  netconfig_init();
+  logger_init(LOGGER_TRACE);
+  logger_handle = osThreadNew(logger_task, NULL, &logger_attr);
+  if (logger_handle == NULL) {
+  }
+  info("Created logging task");
+  health_handle = osThreadNew(health_main, NULL, &health_attr);
+  if (health_handle == NULL) {
+  }
+  info("Created health task");
+  osThreadExit();
+}
 
 /**
  * @brief  The application entry point.
@@ -114,57 +164,4 @@ int main(void) {
   osKernelStart();
   while (1) {
   }
-}
-
-static __NO_RETURN void genesis_task(void __attribute__((unused)) * argument) {
-  tcpip_init(NULL, NULL);
-  netconfig_init();
-  logger_init(LOGGER_TRACE);
-  logger_handle = osThreadNew(logger_task, NULL, &logger_attr);
-  if (logger_handle == NULL) {
-  }
-  info("Created logging task");
-  health_handle = osThreadNew(health_main, NULL, &health_attr);
-  if (health_handle == NULL) {
-  }
-  info("Created health task");
-  osThreadExit();
-}
-
-/**
- * @brief  Setup the network interface
- * @param  None
- * @retval None
- */
-static void netconfig_init(void) {
-  ip_addr_t ipaddr;
-  ip_addr_t netmask;
-  ip_addr_t gw;
-#if LWIP_DHCP
-  ip_addr_set_zero_ip4(&ipaddr);
-  ip_addr_set_zero_ip4(&netmask);
-  ip_addr_set_zero_ip4(&gw);
-#else
-  /* IP address default setting */
-  IP4_ADDR(&ipaddr, IP_ADDR0, IP_ADDR1, IP_ADDR2, IP_ADDR3);
-  IP4_ADDR(&netmask, NETMASK_ADDR0, NETMASK_ADDR1, NETMASK_ADDR2, NETMASK_ADDR3);
-  IP4_ADDR(&gw, GW_ADDR0, GW_ADDR1, GW_ADDR2, GW_ADDR3);
-#endif
-  /* add the network interface */
-  netif_add(&gnetif, &ipaddr, &netmask, &gw, NULL, &ethernetif_init, &ethernet_input);
-  /*  Registers the default network interface */
-  netif_set_default(&gnetif);
-  ethernet_link_status_updated(&gnetif);
-#if LWIP_NETIF_LINK_CALLBACK
-  netif_set_link_callback(&gnetif, ethernet_link_status_updated);
-  link_handle = osThreadNew(ethernet_link_thread, &gnetif, &link_attr);
-  if (link_handle == NULL) {
-  }
-#endif
-
-#if LWIP_DHCP
-  dhcp_handle = osThreadNew(dhcp_task, &gnetif, &dhcp_attr);
-  if (dhcp_handle == NULL) {
-  }
-#endif
 }
