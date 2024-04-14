@@ -8,7 +8,7 @@ set(CMAKE_TOOLCHAIN_FILE ${CMAKE_CURRENT_SOURCE_DIR}/cmake/toolchains/stm32h723.
 # specify module path
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules ${CMAKE_MODULE_PATH})
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-set(CMAKE_VERBOSE_MAKEFILE ON)
+set(CMAKE_VERBOSE_MAKEFILE OFF)
 
 set(CMAKE_C_EXTENSIONS OFF)
 set(CMAKE_C_STANDARD 99)
@@ -49,10 +49,3 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 add_subdirectory(bsp)
 add_subdirectory(core)
-
-message(STATUS "Adding custom targets")
-add_custom_target(size ALL ${ARM_SIZE} -B -d --target=binary ${PROJECT_NAME}.elf DEPENDS ${PROJECT_NAME})
-add_custom_target(hex ALL ${ARM_OBJCPY} -O ihex ${PROJECT_NAME}.elf ${PROJECT_NAME}.hex DEPENDS ${PROJECT_NAME})
-add_custom_target(bin ALL ${ARM_OBJCPY} -O binary -S ${PROJECT_NAME}.elf ${PROJECT_NAME}.bin DEPENDS ${PROJECT_NAME})
-add_custom_target(objdump ${ARM_OBJDUMP} -S ${PROJECT_NAME}.elf DEPENDS ${PROJECT_NAME})
-add_custom_target(flash DEPENDS size COMMAND ${OPENOCD_PROJECT_NAME} -f${PROJECT_SOURCE_DIR}/utils/stm32h723.cfg -c "program ${PROJECT_NAME}.elf verify reset exit")
