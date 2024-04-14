@@ -9,6 +9,7 @@ add_library(
   STATIC
   ${BSP_SRCS}
   ${HAL_SRCS}
+  raptor/startup_stm32h723xx.s
 )
 target_include_directories(
   ${LIB_BSP}
