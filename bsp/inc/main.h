@@ -55,12 +55,11 @@ void Error_Handler(void);
 /* USER CODE BEGIN EFP */
 void SystemClock_Config(void);
 void PeriphCommonClock_Config(void);
-void MPU_Config(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
-#define B1_Pin GPIO_PIN_13
-#define B1_GPIO_Port GPIOC
+#define BLUE_BUTTON_Pin GPIO_PIN_13
+#define BLUE_BUTTON_GPIO_Port GPIOC
 #define ESC_UART_RX_Pin GPIO_PIN_6
 #define ESC_UART_RX_GPIO_Port GPIOF
 #define ESC_UART_TX_Pin GPIO_PIN_7
