@@ -1,27 +1,22 @@
 cmake_minimum_required(VERSION 3.22)
 
-option(RAPTOR_TESTS "Build raptor test binary" Off)
-
-if (RAPTOR_TESTS)
-  message(STATUS "Building raptor for host architecture.")
-endif()
-
 # show fetch content progress
 set(FETCHCONTENT_QUIET FALSE)
 # Load toolchain files
-if (NOT RAPTOR_TESTS)
-  set(CMAKE_TOOLCHAIN_FILE ${CMAKE_CURRENT_SOURCE_DIR}/cmake/toolchains/stm32h723.cmake)
-endif()
+set(CMAKE_TOOLCHAIN_FILE ${CMAKE_CURRENT_SOURCE_DIR}/cmake/toolchains/stm32h723.cmake)
+
 # specify module path
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules ${CMAKE_MODULE_PATH})
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-# For debug, no change detected ...
 set(CMAKE_VERBOSE_MAKEFILE ON)
-# global project name
 
 set(CMAKE_C_EXTENSIONS OFF)
 set(CMAKE_C_STANDARD 99)
 set(CMAKE_C_STANDARD_REQUIRED ON)
+
+# global names for downstream libs
+set(LIB_BSP "lib-bsp")
+set(LIB_RAPTOR "lib-raptor")
 
 project(
   raptor
@@ -44,32 +39,20 @@ endif()
 
 set(CMAKE_STATIC_LIBRARY_PREFIX "")
 
-if (NOT RAPTOR_TEST)
-  include(openocd)
-  include(freertos)
-  find_openocd()
-endif()
+include(openocd)
+find_openocd()
 
 # project config
 message(STATUS "Configuring config.h header")
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/config.h.in config.h @ONLY)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
-if (NOT RAPTOR_TESTS)
-  # build stm32cubeh7 lib
-  include(stm32cubeh7)
-endif()
+add_subdirectory(bsp)
+add_subdirectory(core)
 
-if (RAPTOR_TESTS)
-  message(STATUS "Including raptor tests")
-  add_subdirectory(tests)
-endif()
-
-if (NOT RAPTOR_TESTS)
-  message(STATUS "Adding custom targets")
-  add_custom_target(size ALL ${ARM_SIZE} -B -d --target=binary ${PROJECT_NAME}.elf DEPENDS ${PROJECT_NAME})
-  add_custom_target(hex ALL ${ARM_OBJCPY} -O ihex ${PROJECT_NAME}.elf ${PROJECT_NAME}.hex DEPENDS ${PROJECT_NAME})
-  add_custom_target(bin ALL ${ARM_OBJCPY} -O binary -S ${PROJECT_NAME}.elf ${PROJECT_NAME}.bin DEPENDS ${PROJECT_NAME})
-  add_custom_target(objdump ${ARM_OBJDUMP} -S ${PROJECT_NAME}.elf DEPENDS ${PROJECT_NAME})
-  add_custom_target(flash DEPENDS size COMMAND ${OPENOCD_PROJECT_NAME} -f${PROJECT_SOURCE_DIR}/utils/stm32h723.cfg -c "program ${PROJECT_NAME}.elf verify reset exit")
-endif()
+message(STATUS "Adding custom targets")
+add_custom_target(size ALL ${ARM_SIZE} -B -d --target=binary ${PROJECT_NAME}.elf DEPENDS ${PROJECT_NAME})
+add_custom_target(hex ALL ${ARM_OBJCPY} -O ihex ${PROJECT_NAME}.elf ${PROJECT_NAME}.hex DEPENDS ${PROJECT_NAME})
+add_custom_target(bin ALL ${ARM_OBJCPY} -O binary -S ${PROJECT_NAME}.elf ${PROJECT_NAME}.bin DEPENDS ${PROJECT_NAME})
+add_custom_target(objdump ${ARM_OBJDUMP} -S ${PROJECT_NAME}.elf DEPENDS ${PROJECT_NAME})
+add_custom_target(flash DEPENDS size COMMAND ${OPENOCD_PROJECT_NAME} -f${PROJECT_SOURCE_DIR}/utils/stm32h723.cfg -c "program ${PROJECT_NAME}.elf verify reset exit")
