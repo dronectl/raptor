@@ -11,6 +11,7 @@
 #include "usart.h"
 #include "usb_otg.h"
 #include "fdcan.h"
+#include "wwdg.h"
 #include "app_ethernet.h"
 #include "cmsis_os2.h"
 #include "ethernetif.h"
@@ -81,7 +82,6 @@ static void netconfig_init(void);
  * @retval int
  */
 int main(void) {
-  MPU_Config();
   SCB_EnableICache();
   SCB_EnableDCache();
   HAL_Init();
