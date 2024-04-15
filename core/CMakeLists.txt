@@ -1,29 +1,11 @@
 cmake_minimum_required(VERSION 3.22)
 
 # create third party libraries
-add_library(
-  lib-freertos 
-  STATIC
-  ${FREERTOS_SRCS}
-)
-target_include_directories(
-  lib-freertos
-  PUBLIC
-  ${FREERTOS_INC}
-  freertos
-)
+add_library(lib-freertos STATIC ${FREERTOS_SRCS})
+target_include_directories(lib-freertos PUBLIC ${FREERTOS_INC} freertos)
 target_link_libraries(lib-freertos ${LIB_BSP})
-add_library(
-  lib-lwip
-  STATIC
-  ${LWIP_SRCS}
-)
-target_include_directories(
-  lib-lwip
-  PUBLIC
-  ${LWIP_INC}
-  lwip
-)
+add_library(lib-lwip STATIC ${LWIP_SRCS})
+target_include_directories(lib-lwip PUBLIC ${LWIP_INC} lwip)
 target_link_libraries(lib-lwip lib-freertos)
 
 message(STATUS "Consolidating files for ${LIB_RAPTOR}")
@@ -74,19 +56,12 @@ target_include_directories(
   PRIVATE ${LWIP_INC}
 )
 
-target_compile_options(
-  ${PROJECT_NAME}
-  PRIVATE -Wno-unused-parameter -Wpedantic -fno-builtin -Wall -Wextra -ffunction-sections -fdata-sections -fomit-frame-pointer
-)
-
-target_link_libraries(${PROJECT_NAME} ${LIB_BSP} lib-freertos lib-lwip)
-
-target_link_libraries(${PROJECT_NAME} ${LIB_RAPTOR})
+target_link_libraries(${PROJECT_NAME} ${LIB_BSP} ${LIB_RAPTOR} lib-freertos lib-lwip)
 
 message(STATUS "Adding custom targets")
 add_custom_target(size ALL ${ARM_SIZE} -B -d --target=binary ${PROJECT_NAME}.elf DEPENDS ${PROJECT_NAME})
 add_custom_target(hex ALL ${ARM_OBJCPY} -O ihex ${PROJECT_NAME}.elf ${PROJECT_NAME}.hex DEPENDS ${PROJECT_NAME})
 add_custom_target(bin ALL ${ARM_OBJCPY} -O binary -S ${PROJECT_NAME}.elf ${PROJECT_NAME}.bin DEPENDS ${PROJECT_NAME})
 add_custom_target(objdump ${ARM_OBJDUMP} -S ${PROJECT_NAME}.elf DEPENDS ${PROJECT_NAME})
-add_custom_target(flash DEPENDS size COMMAND ${OPENOCD_PROJECT_NAME} -f${PROJECT_SOURCE_DIR}/utils/stm32h723.cfg -c "program ${PROJECT_NAME}.elf verify reset exit")
+add_custom_target(flash DEPENDS size COMMAND ${OPENOCD_EXECUTABLE} -f${PROJECT_SOURCE_DIR}/utils/stm32h723.cfg -c "program ${PROJECT_NAME}.elf verify reset exit")
 
