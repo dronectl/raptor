@@ -68,7 +68,38 @@ The tests will now be compiled alongside the raptor source code:
 make -j
 ```
 
-## Debugging Test Binaries
+## Debugging
+
+Ensure the board is flashed with a binary (compiled with `-g`) and is connected via USB to your host machine.
+
+### GDB and OpenOCD
+Open a `gdbserver` session with `openocd`:
+```bash
+openocd -futils/stm32h723.cfg
+```
+
+In another terminal start `gdb` from the project root and pass the binary path as an argument. This will source the `~/.gdbinit` on startup:
+```bash
+christiansargusingh  22:07:08 Projects/dronectl/raptor % arm-none-eabi-gdb build/core/raptor.elf
+```
+
+You may get an auto-load warning:
+```bash
+warning: File "/Users/christiansargusingh/Projects/dronectl/raptor/.gdbinit" auto-loading has been declined by your `auto-load safe-path' set to "$debugdir:$datadir/auto-load".
+To enable execution of this file add
+        add-auto-load-safe-path /Users/christiansargusingh/Projects/dronectl/raptor/.gdbinit
+line to your configuration file "/Users/christiansargusingh/Library/Preferences/gdb/gdbinit".
+To completely disable this security protection add
+        set auto-load safe-path /
+line to your configuration file "/Users/christiansargusingh/Library/Preferences/gdb/gdbinit".
+For more information about this security protection see the
+"Auto-loading safe path" section in the GDB manual.  E.g., run from the shell:
+        info "(gdb)Auto-loading safe path"
+```
+
+If so follow the instructions to add the path to the repository root as an auto-load safe path.
+
+### Debug Adapter Protocol (VSCode)
 To debug test binaries you will need to select the `Test Debug (OpenOCD)` launch configuration and change the `executable` field to point to the correct test binary. For example if testing the bme280 binary:
 ```json
 {
