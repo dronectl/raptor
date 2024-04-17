@@ -53,7 +53,7 @@ extern uint32_t SystemCoreClock;
 #endif /* CMSIS_device_header */
 
 #define configUSE_PREEMPTION 1
-#define configUSE_IDLE_HOOK 1
+#define configUSE_IDLE_HOOK 0
 #define configUSE_TICK_HOOK 0
 #define configCPU_CLOCK_HZ (SystemCoreClock)
 #define configTICK_RATE_HZ ((TickType_t)1000)
@@ -70,7 +70,11 @@ extern uint32_t SystemCoreClock;
 #define configUSE_PORT_OPTIMISED_TASK_SELECTION 0
 
 #define configMINIMAL_STACK_SIZE ((uint16_t)512)
-#define configTOTAL_HEAP_SIZE ((size_t)(20 * 1024))
+#if defined(__GNUC__)
+#define configTOTAL_HEAP_SIZE ((size_t)(50 * 1024))
+#else
+#define configTOTAL_HEAP_SIZE ((size_t)(30 * 1024))
+#endif
 #define configMAX_TASK_NAME_LEN (16)
 #define configUSE_TRACE_FACILITY 1
 #define configUSE_16_BIT_TICKS 0
@@ -90,7 +94,7 @@ extern uint32_t SystemCoreClock;
 /* Software timer definitions. */
 #define configUSE_TIMERS 1
 #define configTIMER_TASK_PRIORITY (2)
-#define configTIMER_QUEUE_LENGTH 5
+#define configTIMER_QUEUE_LENGTH 10
 #define configTIMER_TASK_STACK_DEPTH (configMINIMAL_STACK_SIZE * 2)
 
 /* Set the following definitions to 1 to include the API function, or zero
@@ -142,7 +146,8 @@ header file. */
 #define configASSERT(x)       \
   if ((x) == 0) {             \
     taskDISABLE_INTERRUPTS(); \
-    for (;;);                 \
+    for (;;)                  \
+      ;                       \
   }
 
 /* Definitions that map the FreeRTOS port interrupt handlers to their CMSIS
