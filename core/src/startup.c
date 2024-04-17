@@ -43,23 +43,23 @@ ETH_DMADescTypeDef DMATxDscrTab[ETH_TX_DESC_CNT] __attribute__((section(".TxDecr
 
 // task attributes
 const osThreadAttr_t genesis_attr = {
-    .name = "genesis_attr",
+    .name = "genesis_task",
     .priority = osPriorityNormal,
 };
 const osThreadAttr_t health_attr = {
-    .name = "health_attr",
+    .name = "health_task",
     .priority = osPriorityNormal1,
 };
 const osThreadAttr_t logger_attr = {
-    .name = "logger_attr",
+    .name = "logger_task",
     .priority = osPriorityLow,
 };
 const osThreadAttr_t link_attr = {
-    .name = "link_attr",
+    .name = "link_task",
     .priority = osPriorityNormal,
 };
 const osThreadAttr_t dhcp_attr = {
-    .name = "dhcp_attr",
+    .name = "dhcp_task",
     .priority = osPriorityNormal,
 };
 
