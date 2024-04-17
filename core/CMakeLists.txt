@@ -28,6 +28,7 @@ target_include_directories(
 target_compile_options(
   ${LIB_RAPTOR}
   PUBLIC -Wno-unused-parameter -Wpedantic -fno-builtin -Wall -Wextra -ffunction-sections -fdata-sections -fomit-frame-pointer
+  PUBLIC $<$<CONFIG:Debug>:-DRAPTOR_DEBUG>
 )
 target_link_libraries(
   ${LIB_RAPTOR}
@@ -56,6 +57,7 @@ target_include_directories(
   PRIVATE ${LWIP_INC}
 )
 
+# inherit compile flags from libraries
 target_link_libraries(${PROJECT_NAME} ${LIB_BSP} ${LIB_RAPTOR} lib-freertos lib-lwip)
 
 message(STATUS "Adding custom targets")
