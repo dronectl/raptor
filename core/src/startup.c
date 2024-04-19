@@ -38,8 +38,6 @@ TIM_HandleTypeDef htim13;
 UART_HandleTypeDef huart7;
 UART_HandleTypeDef huart9;
 UART_HandleTypeDef huart3;
-ETH_DMADescTypeDef DMARxDscrTab[ETH_RX_DESC_CNT] __attribute__((section(".RxDecripSection")));
-ETH_DMADescTypeDef DMATxDscrTab[ETH_TX_DESC_CNT] __attribute__((section(".TxDecripSection")));
 
 // task attributes
 const osThreadAttr_t genesis_attr = {
