@@ -43,7 +43,7 @@
 
 #define ETH_RX_BUFFER_SIZE 1000U
 #define ETH_RX_BUFFER_CNT 12U
-#define ETH_TX_BUFFER_MAX ((ETH_TX_DESC_CNT) * 2U)
+#define ETH_TX_BUFFER_MAX ((ETH_TX_DESC_CNT)*2U)
 
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
@@ -481,6 +481,13 @@ void HAL_ETH_ErrorCallback(ETH_HandleTypeDef *heth) {
   if ((HAL_ETH_GetDMAError(heth) & ETH_DMACSR_TBU) == ETH_DMACSR_TBU) {
     osSemaphoreRelease(TxPktSemaphore);
   }
+}
+
+/**
+ * @brief This function handles Ethernet global interrupt.
+ */
+void ETH_IRQHandler(void) {
+  HAL_ETH_IRQHandler(&EthHandle);
 }
 
 /*******************************************************************************
