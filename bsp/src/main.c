@@ -20,7 +20,6 @@
 #include "main.h"
 #include "adc.h"
 #include "dma.h"
-#include "eth.h"
 #include "fdcan.h"
 #include "i2c.h"
 #include "rtc.h"
