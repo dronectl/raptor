@@ -12,12 +12,9 @@
 #include "wwdg.h"
 #include "app_ethernet.h"
 #include "cmsis_os2.h"
-#include "ethernetif.h"
 #include "health.h"
 #include "logger.h"
-#include "lwip/tcpip.h"
 #include "main.h"
-#include "netif/ethernet.h"
 #include "stm32h723xx.h"
 #include "stm32h7xx_hal.h"
 
@@ -52,64 +49,13 @@ const osThreadAttr_t logger_attr = {
     .name = "logger_task",
     .priority = osPriorityLow,
 };
-const osThreadAttr_t link_attr = {
-    .name = "link_task",
-    .priority = osPriorityNormal,
-};
-const osThreadAttr_t dhcp_attr = {
-    .name = "dhcp_task",
-    .priority = osPriorityNormal,
-};
-
 // task handles
 static osThreadId_t genesis_handle;
 static osThreadId_t health_handle;
 static osThreadId_t logger_handle;
-static osThreadId_t link_handle;
-static osThreadId_t dhcp_handle;
-struct netif gnetif;
-
-/**
- * @brief  Setup the network interface
- * @param  None
- * @retval None
- */
-static void netconfig_init(void) {
-  ip_addr_t ipaddr;
-  ip_addr_t netmask;
-  ip_addr_t gw;
-#if LWIP_DHCP
-  ip_addr_set_zero_ip4(&ipaddr);
-  ip_addr_set_zero_ip4(&netmask);
-  ip_addr_set_zero_ip4(&gw);
-#else
-  /* IP address default setting */
-  IP4_ADDR(&ipaddr, IP_ADDR0, IP_ADDR1, IP_ADDR2, IP_ADDR3);
-  IP4_ADDR(&netmask, NETMASK_ADDR0, NETMASK_ADDR1, NETMASK_ADDR2, NETMASK_ADDR3);
-  IP4_ADDR(&gw, GW_ADDR0, GW_ADDR1, GW_ADDR2, GW_ADDR3);
-#endif
-  /* add the network interface */
-  netif_add(&gnetif, &ipaddr, &netmask, &gw, NULL, &ethernetif_init, &ethernet_input);
-  /*  Registers the default network interface */
-  netif_set_default(&gnetif);
-  ethernet_link_status_updated(&gnetif);
-#if LWIP_NETIF_LINK_CALLBACK
-  netif_set_link_callback(&gnetif, ethernet_link_status_updated);
-  link_handle = osThreadNew(ethernet_link_thread, &gnetif, &link_attr);
-  if (link_handle == NULL) {
-  }
-#endif
-
-#if LWIP_DHCP
-  dhcp_handle = osThreadNew(dhcp_task, &gnetif, &dhcp_attr);
-  if (dhcp_handle == NULL) {
-  }
-#endif
-}
 
 static __NO_RETURN void genesis_task(void __attribute__((unused)) * argument) {
-  tcpip_init(NULL, NULL);
-  netconfig_init();
+  app_ethernet_init();
   logger_init(LOGGER_TRACE);
   logger_handle = osThreadNew(logger_task, NULL, &logger_attr);
   if (logger_handle == NULL) {
