@@ -18,6 +18,7 @@ add_library(
   lib/cbuffer.c
   lib/logger.c
   lib/sysreg.c
+  lib/system.c
 )
 target_include_directories(
   ${LIB_RAPTOR}

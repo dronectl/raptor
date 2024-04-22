@@ -2,29 +2,19 @@
  * @file logger.h
  * @brief
  * @version 0.1
- * @date 2023-01
+ * @date 2024-04
  *
- * @copyright Copyright © 2023 dronectl
+ * @copyright Copyright © 2024 dronectl
  *
  */
 
 #ifndef __LOGGER_H__
 #define __LOGGER_H__
 
-#ifndef MAX_LOGGING_LINE_LEN
-#define MAX_LOGGING_LINE_LEN 500
-#endif
-#ifndef MAX_LOGGING_CBUFFER_SIZE
-#define MAX_LOGGING_CBUFFER_SIZE 15
-#endif
+#include "system.h"
 
-#ifndef LOGGING_PORT
-#define LOGGING_PORT 3000
-#endif
-
-#ifndef LOGGING_LEVEL
-#define LOGGING_LEVEL 1
-#endif
+#define LOGGER_DEFAULT_PORT 3000
+#define LOGGER_DEFAULT_LEVEL (enum logger_level)1
 
 // logging levels
 enum logger_level {
@@ -37,10 +27,9 @@ enum logger_level {
 };
 
 enum logger_level logger_get_level(void);
-void logger_set_level(enum logger_level level);
-void logger_init(const enum logger_level level);
-void logger_out(enum logger_level level, const char *func, int line, const char *fmt, ...);
-void logger_task(void *pv_params);
+void logger_set_level(const enum logger_level level);
+void logger_out(const enum logger_level level, const char *func, const int line, const char *fmt, ...);
+system_status_t logger_init(const enum logger_level level);
 
 #ifndef critical
 #define critical(...) __CRITICAL(__VA_ARGS__, "")

@@ -1,3 +1,13 @@
+/**
+ * @file app_ethernet.c
+ * @brief TCPIP stack powered by LWIP
+ * @version 0.1
+ * @date 2024-04
+ *
+ * @copyright Copyright © 2024 dronectl
+ *
+ */
+
 #include "lwip/opt.h"
 #include "lwip/tcpip.h"
 #include "stm32h7xx_nucleo.h"
@@ -188,7 +198,8 @@ static void netconfig_init(void __attribute__((unused)) * args) {
 #endif
 }
 
-void app_ethernet_init(void) {
+system_status_t app_ethernet_init(void) {
   // invoke netconfig_init once tcpip init is complete
   tcpip_init(netconfig_init, NULL);
+  return SYSTEM_OK;
 }

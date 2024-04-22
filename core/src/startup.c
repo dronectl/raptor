@@ -17,6 +17,7 @@
 #include "main.h"
 #include "stm32h723xx.h"
 #include "stm32h7xx_hal.h"
+#include "system.h"
 
 ADC_HandleTypeDef hadc1;
 ADC_HandleTypeDef hadc2;
@@ -41,28 +42,24 @@ const osThreadAttr_t genesis_attr = {
     .name = "genesis_task",
     .priority = osPriorityNormal,
 };
-const osThreadAttr_t health_attr = {
-    .name = "health_task",
-    .priority = osPriorityNormal1,
-};
-const osThreadAttr_t logger_attr = {
-    .name = "logger_task",
-    .priority = osPriorityLow,
-};
 // task handles
 static osThreadId_t genesis_handle;
-static osThreadId_t health_handle;
-static osThreadId_t logger_handle;
 
 static __NO_RETURN void genesis_task(void __attribute__((unused)) * argument) {
-  app_ethernet_init();
+  system_status_t status;
+  status = app_ethernet_init();
+  if (status != SYSTEM_OK) {
+    system_spinlock();
+  }
+  // logging depends on TCPIP initialization
   logger_init(LOGGER_TRACE);
-  logger_handle = osThreadNew(logger_task, NULL, &logger_attr);
-  if (logger_handle == NULL) {
+  if (status != SYSTEM_OK) {
+    system_spinlock();
   }
   info("Created logging task");
-  health_handle = osThreadNew(health_main, NULL, &health_attr);
-  if (health_handle == NULL) {
+  status = health_init(hi2c2);
+  if (status != SYSTEM_OK) {
+    system_spinlock();
   }
   info("Created health task");
   osThreadExit();
