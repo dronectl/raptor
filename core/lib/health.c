@@ -59,12 +59,12 @@ static enum state fsm_tick(const enum state current_state) {
   enum state next_state;
   switch (current_state) {
     case STATE_INIT:
-      bme280_init(&bme280);
+      // bme280_init(&bme280);
       next_state = STATE_SERVICE;
       break;
     case STATE_RESET:
       // teardown for soft reboot
-      bme280_reset(&bme280);
+      // bme280_reset(&bme280);
       next_state = STATE_INIT;
       break;
     case STATE_SERVICE:
@@ -72,7 +72,7 @@ static enum state fsm_tick(const enum state current_state) {
       break;
     case STATE_READ:
       // read from alive sensors
-      bme280_trigger_read(&bme280, &bme280_meas);
+      // bme280_trigger_read(&bme280, &bme280_meas);
       report.humidity = bme280_meas.humidity;
       report.pressure = bme280_meas.pressure;
       report.temperature = bme280_meas.temperature;
@@ -102,7 +102,7 @@ static __NO_RETURN void health_main(void *argument) {
   info("Starting health task FSM");
   while (1) {
     current_state = fsm_tick(current_state);
-    osDelay(100);
+    osDelay(1000);
   }
 }
 

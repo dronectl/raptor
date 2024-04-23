@@ -12,6 +12,7 @@
 #include "logger.h"
 #include "lwip/inet.h"
 #include "lwip/sockets.h"
+#include "lwip/errno.h"
 #include <stdarg.h>
 #include <string.h>
 
@@ -42,8 +43,6 @@ static osMessageQueueAttr_t attrs = {
 static osMessageQueueId_t queue_id;
 static osThreadId_t logger_handle;
 static enum logger_level _level = LOGGER_DISABLE;
-static int sock, size;
-static struct sockaddr_in address, remotehost;
 
 /**
  * @brief Get the string representation of log level enum
@@ -97,24 +96,25 @@ static const char *_get_level_str(const enum logger_level level) {
 }
 
 static __NO_RETURN void logger_task(void __attribute__((unused)) * argument) {
+  int sock, size, client_fd;
+  struct sockaddr_in address, remotehost;
   struct log_msg log;
-  int client_fd;
   if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-    osThreadExit();
+    goto error;
   }
   address.sin_family = AF_INET;
   address.sin_port = htons(LOGGER_DEFAULT_PORT);
   address.sin_addr.s_addr = INADDR_ANY;
   if (bind(sock, (struct sockaddr *)&address, sizeof(address)) < 0) {
-    osThreadExit();
+    goto error;
   }
   while (1) {
     client_fd = accept(sock, (struct sockaddr *)&remotehost, (socklen_t *)&size);
+    if (client_fd < 0) {
+      goto error;
+    }
     while (1) {
       osMessageQueueGet(queue_id, &log, NULL, osWaitForever);
-      if (client_fd < 0) {
-        continue;
-      }
       char log_buffer[MAX_LOGGING_LINE_LEN] = {0};
       build_log_string(&log, log_buffer, MAX_LOGGING_LINE_LEN);
       ssize_t bytes_sent = send(client_fd, log_buffer, strlen(log_buffer), 0);
@@ -126,6 +126,9 @@ static __NO_RETURN void logger_task(void __attribute__((unused)) * argument) {
       }
     }
   }
+error:
+  critical("Socket init failed with %i", errno);
+  osThreadExit();
 }
 
 /**

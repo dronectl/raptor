@@ -57,11 +57,11 @@ static __NO_RETURN void genesis_task(void __attribute__((unused)) * argument) {
     system_spinlock();
   }
   info("Created logging task");
-  status = health_init(hi2c2);
+  // status = health_init(hi2c2);
   if (status != SYSTEM_OK) {
     system_spinlock();
   }
-  info("Created health task");
+  // info("Created health task");
   osThreadExit();
 }
 
