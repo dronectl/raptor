@@ -40,7 +40,7 @@ UART_HandleTypeDef huart3;
 // task attributes
 const osThreadAttr_t genesis_attr = {
     .name = "genesis_task",
-    .priority = osPriorityNormal,
+    .priority = osPriorityHigh7,
 };
 // task handles
 static osThreadId_t genesis_handle;
@@ -52,7 +52,7 @@ static __NO_RETURN void genesis_task(void __attribute__((unused)) * argument) {
     system_spinlock();
   }
   // logging depends on TCPIP initialization
-  logger_init(LOGGER_TRACE);
+  // logger_init(LOGGER_TRACE);
   if (status != SYSTEM_OK) {
     system_spinlock();
   }
