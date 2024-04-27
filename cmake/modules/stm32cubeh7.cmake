@@ -14,7 +14,7 @@ set(
   CMSIS_INCLUDE
   ${stm32h7_SOURCE_DIR}/Drivers/CMSIS/Device/ST/STM32H7xx/Include
   ${stm32h7_SOURCE_DIR}/Drivers/CMSIS/Include
-  ${stm32h7_SOURCE_DIR}/Drivers/CMSIS/RTOS2/Include
+  ${stm32h7_SOURCE_DIR}/Drivers/CMSIS/Core/Include
   CACHE INTERNAL "CMSIS_INCLUDE"
 )
 
