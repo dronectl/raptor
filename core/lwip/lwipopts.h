@@ -190,7 +190,7 @@ by hardware:
 /**
  * LWIP_NETCONN==1: Enable Netconn API (require to use api_lib.c)
  */
-#define LWIP_NETCONN 1
+#define LWIP_NETCONN 0
 
 /*
    ------------------------------------
@@ -208,7 +208,7 @@ by hardware:
    ---------------------------------
 */
 
-#define TCPIP_THREAD_NAME "tcpip_task"
+#define TCPIP_THREAD_NAME "tcpip"
 #define TCPIP_THREAD_STACKSIZE 2048
 #define TCPIP_MBOX_SIZE 6
 #define DEFAULT_UDP_RECVMBOX_SIZE 6
