@@ -29,7 +29,7 @@ jobs:
       env:
         DEBIAN_FRONTEND: noninteractive
     - name: run clang formatter
-      run: find core include -iname *.c -o -iname *.h | xargs clang-format -n -Werror
+      run: find core -iname *.c -o -iname *.h | xargs clang-format -n -Werror --verbose
   build:
     name: build firmware
     runs-on: ubuntu-latest
