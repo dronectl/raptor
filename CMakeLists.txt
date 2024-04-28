@@ -1,9 +1,14 @@
 cmake_minimum_required(VERSION 3.22)
 
+option(RAPTOR_TESTS "Build core library unittests using host compilers" Off)
+option(RAPTOR_COVERAGE "Add coverage symbols" Off)
+
 # show fetch content progress
 set(FETCHCONTENT_QUIET FALSE)
 # Load toolchain files
-set(CMAKE_TOOLCHAIN_FILE ${CMAKE_CURRENT_SOURCE_DIR}/cmake/toolchains/stm32h723.cmake)
+if (NOT RAPTOR_TESTS)
+  set(CMAKE_TOOLCHAIN_FILE ${CMAKE_CURRENT_SOURCE_DIR}/cmake/toolchains/stm32h723.cmake)
+endif()
 
 # specify module path
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules ${CMAKE_MODULE_PATH})
@@ -39,8 +44,12 @@ endif()
 
 set(CMAKE_STATIC_LIBRARY_PREFIX "")
 
-include(openocd)
-find_openocd()
+if (NOT RAPTOR_TESTS)
+  include(stm32cubeh7)
+  fetch_cubeh7()
+  include(openocd)
+  find_openocd()
+endif()
 
 # project config
 message(STATUS "Configuring config.h header")
@@ -49,3 +58,7 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 add_subdirectory(bsp)
 add_subdirectory(core)
+if (RAPTOR_TESTS)
+  add_subdirectory(tests/unittests)
+endif()
+
