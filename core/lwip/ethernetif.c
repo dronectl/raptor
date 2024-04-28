@@ -43,7 +43,7 @@
 
 #define ETH_RX_BUFFER_SIZE 1000U
 #define ETH_RX_BUFFER_CNT 12U
-#define ETH_TX_BUFFER_MAX ((ETH_TX_DESC_CNT)*2U)
+#define ETH_TX_BUFFER_MAX ((ETH_TX_DESC_CNT) * 2U)
 
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
@@ -608,7 +608,6 @@ void ethernet_link_thread(void *argument) {
         netif_set_link_up(netif);
       }
     }
-
     osDelay(100);
   }
 }

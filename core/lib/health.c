@@ -102,6 +102,7 @@ static __NO_RETURN void health_main(void *argument) {
   info("Starting health task FSM");
   while (1) {
     current_state = fsm_tick(current_state);
+    info("Current state: %d", current_state);
     osDelay(1000);
   }
 }
