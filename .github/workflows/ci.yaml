@@ -50,7 +50,7 @@ jobs:
         run: |
           mkdir $GITHUB_WORKSPACE/build
           cd build
-          cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=Off
+          cmake .. -DCMAKE_BUILD_TYPE=Release
           make -j`nproc`
       - name: binary size details
         working-directory: build 
@@ -69,7 +69,7 @@ jobs:
         with:
           name: raptor
           # relative to $GITHUB_WORKSPACE 
-          path: build/raptor.elf
+          path: build/core/raptor.elf
           retention-days: 5
   # test:
   #   name: tests
