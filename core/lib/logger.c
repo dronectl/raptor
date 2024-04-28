@@ -12,14 +12,14 @@
 #include "logger.h"
 #include "lwip/inet.h"
 #include "lwip/sockets.h"
-#include "lwip/errno.h"
+#include "stm32h7xx_nucleo.h"
 #include <stdarg.h>
 #include <string.h>
 
 #define FUNC_NAME_MAX_LEN 20
 #define MAX_LOGGING_LINE_LEN 500
 #define MAX_LOGGING_CBUFFER_SIZE 15
-
+#define LOG_HEADER_FMT "[ %9ld ] %s:%i [ %5s ] "
 /**
  * @brief Log message struct.
  *
@@ -62,7 +62,7 @@ static const char *_get_level_str(enum logger_level level);
  */
 static void build_log_string(const struct log_msg *log, char *buffer, const size_t size) {
   const char *level_str = _get_level_str(log->level);
-  int offset = snprintf(buffer, size, "[ %9ld ] %s:%i [ %5s ] \t", (long)log->epoch, log->func, log->line, level_str);
+  int offset = snprintf(buffer, size, LOG_HEADER_FMT, (long)log->epoch, log->func, log->line, level_str);
   int len = strlen(log->message);
   // overflow check and clamp len
   if (len + offset > (int)size) {
@@ -108,10 +108,14 @@ static __NO_RETURN void logger_task(void __attribute__((unused)) * argument) {
   if (bind(sock, (struct sockaddr *)&address, sizeof(address)) < 0) {
     goto error;
   }
+  listen(sock, 5);
+  BSP_LED_On(LED1);
   while (1) {
+    // task blocking
     client_fd = accept(sock, (struct sockaddr *)&remotehost, (socklen_t *)&size);
     if (client_fd < 0) {
-      goto error;
+      osDelay(100);
+      continue;
     }
     while (1) {
       osMessageQueueGet(queue_id, &log, NULL, osWaitForever);
