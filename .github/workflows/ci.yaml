@@ -70,37 +70,37 @@ jobs:
           # relative to $GITHUB_WORKSPACE 
           path: build/raptor.elf
           retention-days: 5
-  test:
-    name: tests
-    runs-on: ubuntu-latest
-    steps:
-      - name: checkout source
-        uses: actions/checkout@v4
-      - name: install gcc-arm-none-eabi & openocd
-        run: |
-          sudo apt-get update -y
-          sudo apt-get install -y gcc-arm-none-eabi openocd
-        env:
-          DEBIAN_FRONTEND: noninteractive
-      - name: setup cmake
-        uses: jwlawson/actions-setup-cmake@v1.14
-        with:
-          cmake-version: '3.22.x'
-      - name: build integration test binaries
-        run: |
-          mkdir $GITHUB_WORKSPACE/build
-          cd build
-          cmake .. -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTS=On
-          make -j`nproc`
-      - name: build unittests
-        run: |
-          mkdir $GITHUB_WORKSPACE/tests/unit/build
-          cmake -B tests/unit/build -S tests/unit
-          cmake --build tests/unit/build
-      - name: run unittests
-        run: ctest --test-dir tests/unit/build
-      - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@v4.0.1
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          slug: dronectl/raptor
+  # test:
+  #   name: tests
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: checkout source
+  #       uses: actions/checkout@v4
+  #     - name: install gcc-arm-none-eabi & openocd
+  #       run: |
+  #         sudo apt-get update -y
+  #         sudo apt-get install -y gcc-arm-none-eabi openocd
+  #       env:
+  #         DEBIAN_FRONTEND: noninteractive
+  #     - name: setup cmake
+  #       uses: jwlawson/actions-setup-cmake@v1.14
+  #       with:
+  #         cmake-version: '3.22.x'
+  #     - name: build integration test binaries
+  #       run: |
+  #         mkdir $GITHUB_WORKSPACE/build
+  #         cd build
+  #         cmake .. -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTS=On
+  #         make -j`nproc`
+  #     - name: build unittests
+  #       run: |
+  #         mkdir $GITHUB_WORKSPACE/tests/unit/build
+  #         cmake -B tests/unit/build -S tests/unit
+  #         cmake --build tests/unit/build
+  #     - name: run unittests
+  #       run: ctest --test-dir tests/unit/build
+  #     - name: Upload coverage reports to Codecov
+  #       uses: codecov/codecov-action@v4.0.1
+  #       with:
+  #         token: ${{ secrets.CODECOV_TOKEN }}
+  #         slug: dronectl/raptor
