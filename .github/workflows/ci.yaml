@@ -20,15 +20,16 @@ jobs:
     steps:
     - name: checkout source
       uses: actions/checkout@v4
-    - name: update and install apt dependancies
+    - name: install clang formatter
       run: |
-        sudo apt update -y
-        sudo apt install -y clang-format
+        sudo apt-get update -y
+        sudo apt-get install -y python3 python3-pip
+        python3 -m pip install -r requirements.txt
         echo `clang-format --version`
       env:
         DEBIAN_FRONTEND: noninteractive
     - name: run clang formatter
-      run: find src include -iname *.c -o -iname *.h | xargs clang-format -n -Werror
+      run: find core include -iname *.c -o -iname *.h | xargs clang-format -n -Werror
   build:
     name: build firmware
     runs-on: ubuntu-latest
