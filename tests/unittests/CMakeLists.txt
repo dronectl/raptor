@@ -2,7 +2,7 @@
 cmake_minimum_required(VERSION 3.22)
 
 include(FetchContent)
-message(STATUS "Fetching Google Test...")
+message(STATUS "Fetching googletest ...")
 FetchContent_Declare(
   googletest
   GIT_REPOSITORY https://github.com/google/googletest
@@ -12,31 +12,17 @@ FetchContent_Declare(
 # For Windows: Prevent overriding the parent project's compiler/linker settings
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
-FetchContent_Declare(
-  fff
-  GIT_REPOSITORY https://github.com/meekrosoft/fff
-  GIT_TAG v1.1 
-)
-FetchContent_MakeAvailable(fff)
 
-# GoogleTest requires at least C++14
-set(CMAKE_CXX_STANDARD 14)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
-project(
-  raptor-test
-  LANGUAGES C CXX
-  DESCRIPTION "Lib raptor unittest binary."
-)
+message(STATUS "Fetching fake function framework ...")
+# HACK: find a way to use root cmake to build
 enable_testing()
-
-add_executable(${PROJECT_NAME} test_sysreg.cc)
-target_compile_options(${LIB_RAPTOR} PUBLIC -g -O0 --coverage -fprofile-arcs -ftest-coverage)
-target_link_options(${LIB_RAPTOR} PUBLIC --coverage)
-target_compile_definitions(${LIB_RAPTOR} PRIVATE RAPTOR_TEST)
-target_link_libraries(${PROJECT_NAME} ${LIB_RAPTOR} GTest::gtest_main fff)
+add_executable(test_raptor ../../core/lib/sysreg.c test_sysreg.cc)
+target_include_directories(test_raptor PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/tests/unittests ../../core/lib)
+target_link_libraries(test_raptor PRIVATE GTest::gtest_main)
+target_compile_options(test_raptor PUBLIC -stdlib=libc++)
 
 include(GoogleTest)
+
 # include(CodeCoverage.cmake)
 # 
 # setup_target_for_coverage_gcovr_html(
@@ -45,5 +31,5 @@ include(GoogleTest)
 #   --object-directory ${CMAKE_BINARY_DIR}/lib/CMakeFiles/libraptor.dir/src
 # )
 
-gtest_discover_tests(${PROJECT_NAME})
+gtest_discover_tests(test_raptor)
 

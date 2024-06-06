@@ -18,14 +18,17 @@ set(CMAKE_VERBOSE_MAKEFILE OFF)
 set(CMAKE_C_EXTENSIONS OFF)
 set(CMAKE_C_STANDARD 99)
 set(CMAKE_C_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # global names for downstream libs
 set(LIB_BSP "lib-bsp")
 set(LIB_RAPTOR "lib-raptor")
 
+
 project(
   raptor
-  LANGUAGES C ASM
+  LANGUAGES C ASM CXX
   VERSION 0.1.0
   DESCRIPTION "UAV propulsion test executor."
 )
@@ -44,11 +47,13 @@ endif()
 
 set(CMAKE_STATIC_LIBRARY_PREFIX "")
 
+include(stm32cubeh7)
+fetch_cubeh7()
+
 if (NOT RAPTOR_TESTS)
-  include(stm32cubeh7)
-  fetch_cubeh7()
   include(openocd)
   find_openocd()
+
 endif()
 
 # project config
@@ -56,9 +61,11 @@ message(STATUS "Configuring config.h header")
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/config.h.in config.h @ONLY)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
-add_subdirectory(bsp)
-add_subdirectory(core)
+
 if (RAPTOR_TESTS)
-  add_subdirectory(tests/unittests)
+  add_subdirectory(tests)
+else()
+  add_subdirectory(bsp)
+  add_subdirectory(core)
 endif()
 
