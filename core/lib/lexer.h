@@ -1,18 +1,16 @@
+/**
+ * @file lexer.h
+ * @brief SCPI command lexer
+ * @version 0.1
+ * @date 2024-06
+ *
+ * @copyright Copyright © 2024 dronectl
+ *
+ */
 
 #include "stddef.h"
 #include "stdint.h"
 #include "scpi_constants.h"
-
-/**
- * @brief Single character tokens
- */
-#define LEXER_CHAR_HDR_SEP ':' // header seperator
-#define LEXER_CHAR_CMD_SEP ';' // command seperator
-#define LEXER_CHAR_ARG_SEP ',' // argument seperator
-#define LEXER_CHAR_SPACE ' '   // space
-#define LEXER_CHAR_EOS '\n'    // end of sequence
-#define LEXER_CHAR_QUERY '?'   // query command
-#define LEXER_CHAR_COMMON '*'  // common command
 
 /**
  * @brief Lexer status bits
@@ -27,38 +25,37 @@
 #define LEXER_ERR_LOF (uint8_t)(1 << 0)  // Lexeme overflow
 #define LEXER_ERR_USCT (uint8_t)(1 << 1) // unsupported single char token
 
-enum TokenType {
-  TNULL, // null type
+enum LexerTokenType {
+  LEXER_TT_NULL, // null type
   // single char tokens
-  EOS,     // end of sequence
-  SPACE,   // end of header
-  ARG_SEP, // argument seperator
-  HDR_SEP, // header seperator
-  CMD_SEP, // command seperator
-  COMMON,  // common
-  QUERY,   // query
-
+  LEXER_TT_EOS,     // end of sequence
+  LEXER_TT_SPACE,   // end of header
+  LEXER_TT_ARG_SEP, // argument seperator
+  LEXER_TT_HDR_SEP, // header seperator
+  LEXER_TT_CMD_SEP, // command seperator
+  LEXER_TT_COMMON,  // common
+  LEXER_TT_QUERY,   // query
   // multichar tokens
-  TOKEN,
+  LEXER_TT_TOKEN,
+  NUM_LEXER_TT
 };
 
-struct token {
-  enum TokenType type;
+struct lexer_token {
+  enum LexerTokenType type;
   uint8_t len;
   char lexeme[SCPI_MAX_TOKEN_LEN];
 };
 
 struct lexer_handle {
-  uint8_t cidx;                         // char index
-  uint8_t tidx;                         // token index
-  uint8_t status;                       // status register
-  uint8_t err;                          // error register
-  struct token tokens[SCPI_MAX_TOKENS]; // token structures
+  uint8_t cidx;                               // char index
+  uint8_t tidx;                               // token index
+  uint8_t status;                             // status register
+  uint8_t err;                                // error register
+  struct lexer_token tokens[SCPI_MAX_TOKENS]; // token structures
 };
 
 /**
  * @brief Lex and tag tokens in buffer. A lexing error is reported by the status error bit and the error code in the error member
- *
  * @param[in,out] lhandle lexer context
  * @param[in] buffer SCPI command input buffer
  * @param[in] len length of input buffer

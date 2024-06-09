@@ -13,6 +13,17 @@
 #include <unistd.h>
 
 /**
+ * @brief Single character tokens
+ */
+#define LEXER_CHAR_HDR_SEP ':' // header seperator
+#define LEXER_CHAR_CMD_SEP ';' // command seperator
+#define LEXER_CHAR_ARG_SEP ',' // argument seperator
+#define LEXER_CHAR_SPACE ' '   // space
+#define LEXER_CHAR_EOS '\n'    // end of sequence
+#define LEXER_CHAR_QUERY '?'   // query command
+#define LEXER_CHAR_COMMON '*'  // common command
+
+/**
  * @brief Append a character to the correct token structure. Handle incrementing of token and chracter indices
  *
  * @param[in,out] lhandle lexer context
@@ -21,7 +32,7 @@
  * @param[in] type token tag to write to token position
  */
 static void append_char(struct lexer_handle *lhandle, const char c,
-                        bool is_token, const enum TokenType type) {
+                        bool is_token, const enum LexerTokenType type) {
   if (is_token && lhandle->cidx != 0) {
     lhandle->cidx = 0;
     lhandle->tidx++;
@@ -49,29 +60,29 @@ static void append_char(struct lexer_handle *lhandle, const char c,
  * @param[in] c next input buffer character
  */
 static void handle_sc_token(struct lexer_handle *lhandle, const char c) {
-  enum TokenType type = EOS;
+  enum LexerTokenType type = LEXER_TT_EOS;
   switch (c) {
     case LEXER_CHAR_HDR_SEP:
-      type = HDR_SEP;
+      type = LEXER_TT_HDR_SEP;
       break;
     case LEXER_CHAR_ARG_SEP:
-      type = ARG_SEP;
+      type = LEXER_TT_ARG_SEP;
       break;
     case LEXER_CHAR_CMD_SEP:
-      type = CMD_SEP;
+      type = LEXER_TT_CMD_SEP;
       break;
     case LEXER_CHAR_QUERY:
-      type = QUERY;
+      type = LEXER_TT_QUERY;
       break;
     case LEXER_CHAR_COMMON:
-      type = COMMON;
+      type = LEXER_TT_COMMON;
       break;
     case LEXER_CHAR_SPACE:
-      type = SPACE;
+      type = LEXER_TT_SPACE;
       break;
     case LEXER_CHAR_EOS:
       lhandle->status |= LEXER_STAT_EOS;
-      type = EOS;
+      type = LEXER_TT_EOS;
       break;
     default:
       // unsupported single char token; return
@@ -96,7 +107,7 @@ void lexer(struct lexer_handle *lhandle, const char *buffer, const size_t len) {
         handle_sc_token(lhandle, c);
         break;
       default:
-        append_char(lhandle, c, false, TOKEN);
+        append_char(lhandle, c, false, LEXER_TT_TOKEN);
         break;
     }
     // OPT: return on error or end of sequence
