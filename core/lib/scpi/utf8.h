@@ -8,11 +8,11 @@
  *
  */
 
-#include <stdint.h>
-#include <stdbool.h>
-
 #ifndef __UTF8_H__
 #define __UTF8_H__
+
+#include <stdint.h>
+#include <stdbool.h>
 
 #define UTF8_OFFSET (uint8_t)'0'
 
@@ -20,6 +20,7 @@
 #define UTF8_ALPHA (1 << 1)
 #define UTF8_UPPERCASE (1 << 2)
 #define UTF8_LOWERCASE (1 << 3)
+#define UTF8_MAX sizeof(utf8_lut) / sizeof(uint8_t)
 
 // clang-format off
 const uint8_t utf8_lut[] = {
@@ -88,30 +89,28 @@ const uint8_t utf8_lut[] = {
 };
 // clang-format on
 
-#define UTF8_MAX sizeof(utf8_lut) / sizeof(uint8_t)
-
-inline bool is_numeric(const char c) {
+inline bool utf8_is_numeric(const char c) {
   if (c < UTF8_OFFSET || c > UTF8_MAX) {
     return false;
   }
   return utf8_lut[(uint8_t)c - UTF8_OFFSET] & UTF8_NUMERIC;
 }
 
-inline bool is_alpha(const char c) {
+inline bool utf8_is_alpha(const char c) {
   if (c < UTF8_OFFSET || c > UTF8_MAX) {
     return false;
   }
   return utf8_lut[(uint8_t)c - UTF8_OFFSET] & UTF8_ALPHA;
 }
 
-inline bool is_uppercase(const char c) {
+inline bool utf8_is_uppercase(const char c) {
   if (c < UTF8_OFFSET || c > UTF8_MAX) {
     return false;
   }
   return utf8_lut[(uint8_t)c - UTF8_OFFSET] & UTF8_LOWERCASE;
 }
 
-inline bool is_lowercase(const char c) {
+inline bool utf8_is_lowercase(const char c) {
   if (c < UTF8_OFFSET || c > UTF8_MAX) {
     return false;
   }

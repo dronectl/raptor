@@ -1,3 +1,13 @@
+/**
+ * @file parser.c
+ * @brief SCPI command parser
+ * @version 0.1
+ * @date 2024-06
+ *
+ * @copyright Copyright © 2024 dronectl
+ *
+ */
+
 #include "parser.h"
 #include "string.h"
 #include <stdbool.h>
@@ -23,13 +33,13 @@ static bool is_valid_hdr(struct parser_handle *phandle,
   uint8_t ccnt = 0;
   for (uint8_t i = 0; i < len; i++) {
     char c = hdr[i];
-    if ((!is_alpha(c) && !is_numeric(c)) || (is_alpha(c) && num_suffix)) {
+    if ((!utf8_is_alpha(c) && !utf8_is_numeric(c)) || (utf8_is_alpha(c) && num_suffix)) {
       phandle->error.cidx = i;
       phandle->error.code |= PARSER_ERR_INVALID_HDR;
       status = false;
       break;
     }
-    if (is_numeric(c)) {
+    if (utf8_is_numeric(c)) {
       num_suffix = true;
     }
     ccnt++;
