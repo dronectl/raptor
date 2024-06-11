@@ -1,12 +1,15 @@
 /**
  * @file lexer.h
- * @brief SCPI command lexer
+ * @brief SCPI command lexer bifurcates string stream into distinct scpi tokens to be fed into the SCPI parser
  * @version 0.1
  * @date 2024-06
  *
  * @copyright Copyright © 2024 dronectl
  *
  */
+
+#ifndef __LEXER_H__
+#define __LEXER_H__
 
 #include "stddef.h"
 #include "stdint.h"
@@ -61,3 +64,5 @@ struct lexer_handle {
  * @param[in] len length of input buffer
  */
 void lexer(struct lexer_handle *lhandle, const char *buffer, const size_t len);
+
+#endif // __LEXER_H__

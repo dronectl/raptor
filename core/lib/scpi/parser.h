@@ -1,3 +1,16 @@
+/**
+ * @file parser.h
+ * @brief SCPI command parser ingests lexed tokens, evaluates syntax compliance and interprets token stream into a SCPI command
+ * @version 0.1
+ * @date 2024-06
+ *
+ * @copyright Copyright © 2024 dronectl
+ *
+ */
+
+#ifndef __PARSER_H__
+#define __PARSER_H__
+
 #include <stdint.h>
 #include "lexer.h"
 #include "scpi_constants.h"
@@ -26,10 +39,9 @@ struct parser_cmd {
 };
 
 struct parser_err {
-  uint8_t code;   // error register
-  uint8_t tidx;   // token idx
-  uint8_t cidx;   // char idx
-  uint8_t cmdidx; // command index
+  uint8_t code; // error register
+  uint8_t tidx; // token idx
+  uint8_t cidx; // char idx
 };
 
 struct parser_handle {
@@ -38,4 +50,12 @@ struct parser_handle {
   struct parser_cmd commands[SCPI_MAX_COMMANDS]; // command registry
 };
 
+/**
+ * @brief Interpret SCPI command by parsing lexer token buffer.
+ *
+ * @param[in,out] phandle parser context handle
+ * @param[in] lhandle lexer context handle
+ */
 void parser(struct parser_handle *phandle, const struct lexer_handle *lhandle);
+
+#endif // __PARSER_H__
