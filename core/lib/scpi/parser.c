@@ -1,19 +1,12 @@
 #include "parser.h"
 #include "string.h"
 #include <stdbool.h>
+#include "utf8.h"
 #include "scpi_constants.h"
 
 #define PARSER_STAT_HDR_DELIM (uint8_t)(1 << 0)
 #define PARSER_STAT_ARG_DELIM (uint8_t)(1 << 1)
 #define PARSER_STAT_EOH (uint8_t)(1 << 2) // end of header
-
-static bool is_numeric(const char token) {
-  return (token >= 0x30 && token <= 0x39);
-}
-
-static bool is_alpha(const char token) {
-  return ((token >= 0x41 && token <= 0x5a) || (token >= 0x61 && token <= 0x7a));
-}
 
 static bool is_valid_arg(struct parser_handle *phandle,
                          const char arg[SCPI_MAX_TOKEN_LEN],
