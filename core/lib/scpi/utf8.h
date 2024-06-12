@@ -16,6 +16,8 @@
 
 #define UTF8_OFFSET (uint8_t)'0'
 
+#define UTF8_CAPS_OFFSET 0x20
+
 #define UTF8_NUMERIC (1 << 0)
 #define UTF8_ALPHA (1 << 1)
 #define UTF8_UPPERCASE (1 << 2)
@@ -115,6 +117,20 @@ inline bool utf8_is_lowercase(const char c) {
     return false;
   }
   return utf8_lut[(uint8_t)c - UTF8_OFFSET] & UTF8_LOWERCASE;
+}
+
+inline char utf8_uppercase_to_lowercase(char c) {
+  if (!utf8_is_uppercase(c)) {
+    return c;
+  }
+  return c - UTF8_CAPS_OFFSET;
+}
+
+inline char utf8_lowercase_to_uppercase(char c) {
+  if (!utf8_is_lowercase(c)) {
+    return c;
+  }
+  return c + UTF8_CAPS_OFFSET;
 }
 
 #endif // __UTF8_H__
