@@ -20,6 +20,7 @@
 #define MAX_LOGGING_LINE_LEN 500
 #define MAX_LOGGING_CBUFFER_SIZE 15
 #define LOG_HEADER_FMT "[ %9ld ] %s:%i [ %5s ] "
+
 /**
  * @brief Log message struct.
  *
@@ -36,6 +37,7 @@ const osThreadAttr_t logger_attr = {
     .name = "logger_task",
     .priority = osPriorityLow,
 };
+
 static osMessageQueueAttr_t attrs = {
     .name = "log_queue",
 };
@@ -70,7 +72,6 @@ static void build_log_string(const struct log_msg *log, char *buffer, const size
   }
   // intentional overwrite of previous null character
   memcpy(buffer + offset, log->message, len);
-  buffer[len + offset] = '\n';
   buffer[len + offset + 1] = '\0';
 }
 
