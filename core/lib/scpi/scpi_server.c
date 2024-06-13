@@ -11,9 +11,8 @@
 #include "logger.h"
 #include "lexer.h"
 #include "parser.h"
-#include "scpi_server.h"
+#include "scpi.h"
 #include "scpi_endpoints.h"
-#include "scpi_constants.h"
 
 #include <lwip/inet.h>
 #include <lwip/sockets.h>
@@ -36,30 +35,23 @@ static void handle_scpi_request(const struct scpi_handle *shandle) {
   }
   info("[");
   for (int i = 0; i < lhandle.tidx + 1; i++) {
-    info(" '%s' ", lhandle.tokens[i].lexeme);
+    info(" '%s' ", lhandle.tokens[i].token);
   }
   info("]\n");
   info("Number of tokens: %u\n", lhandle.tidx + 1);
   parser(&phandle, &lhandle);
   for (int i = 0; i < phandle.cmdidx + 1; i++) {
     info("S:0x%X|Eti:%d|Eci:%d|Es:0x%X|H:%d|A:%d\n", phandle.commands[i].spec, phandle.error.tidx, phandle.error.cidx, phandle.error, phandle.commands[i].hidx + 1, phandle.commands[i].aidx + 1);
-    int index = scpi_endpoint_search(&phandle.commands[i]);
+    int index = scpi_endpoint_search_index(phandle.commands[i].headers, phandle.commands[i].hidx + 1);
     if (index < 0) {
       error("command index %d endpoint not found\n", i);
       continue;
     }
     if (phandle.commands[i].spec & PARSER_CMD_SPEC_QUERY) {
-      size_t slen = 0;
-      scpi_endpoint_process_query(index, &phandle.commands[i], buffer, &slen);
-      if (slen < SCPI_MAX_RESPONSE_LEN) {
-        buffer[slen] = '\n';
-      } else {
-        error("Output overflow protection");
-      }
+      scpi_endpoint_process_query(index, phandle.commands[i].aidx + 1, phandle.commands[i].args, buffer, sizeof(buffer));
     } else if (phandle.commands[i].spec & PARSER_CMD_SPEC_SET) {
-      scpi_endpoint_process_write(index, &phandle.commands[i]);
+      scpi_endpoint_process_write(index, phandle.commands[i].aidx + 1, phandle.commands[i].args);
     }
-    // append \n delimiter
     write(shandle->clfd, buffer, sizeof(buffer));
   }
 }
@@ -74,10 +66,10 @@ static void handle_client_session(int client_fd) {
       continue;
     }
     if (shandle.buflen == 0) {
-      warning("read 0 bytes from client handler");
+      warning("read 0 bytes from client handler\n");
       break;
     }
-    info("handling inbound request: %s", shandle.buffer);
+    info("handling inbound request: %s\n", shandle.buffer);
     handle_scpi_request(&shandle);
   }
 }
@@ -104,6 +96,6 @@ static __NO_RETURN void scpi_main(__attribute__((unused)) void *argument) {
     handle_client_session(client_fd);
   }
 error:
-  critical("scpi socket init failed with %i", errno);
+  critical("scpi socket init failed with %i\n", errno);
   osThreadExit();
 }

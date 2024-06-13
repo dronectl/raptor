@@ -11,12 +11,11 @@
 #ifndef __SCPI_ENDPOINTS_H__
 #define __SCPI_ENDPOINTS_H__
 
-#include "parser.h"
-#include "scpi_server.h"
-#include "scpi/scpi_constants.h"
+#include "scpi.h"
+#include <stddef.h>
 
-void scpi_endpoint_process_query(const int index, struct parser_cmd *cmd, char *buffer, int *len);
-void scpi_endpoint_process_write(const int index, const struct parser_cmd *cmd);
-void scpi_endpoint_search(const struct parser_cmd *pcmd);
+void scpi_endpoint_process_query(const int index, const uint8_t argc, const struct scpi_token argv[], char *buffer, const size_t size);
+void scpi_endpoint_process_write(const int index, const uint8_t argc, const struct scpi_token argv[]);
+int scpi_endpoint_search_index(const struct scpi_token sts[], const uint8_t len);
 
 #endif // __SCPI_ENDPOINTS_H__
