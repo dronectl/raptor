@@ -51,7 +51,7 @@ struct scpi_header {
 
 struct scpi_endpoint {
   const struct scpi_header *headers[SCPI_MAX_CMD_HDRS];
-  scpi_err_t (*query)(const uint8_t, const struct scpi_token argv[SCPI_MAX_CMD_ARGS], const int, char *);
+  scpi_err_t (*query)(const uint8_t, const struct scpi_token argv[SCPI_MAX_CMD_ARGS], char *, const size_t);
   scpi_err_t (*write)(const uint8_t, const struct scpi_token argv[SCPI_MAX_CMD_ARGS]);
 };
 

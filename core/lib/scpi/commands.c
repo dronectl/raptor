@@ -1,7 +1,7 @@
 
 #include "logger.h"
 #include "sysreg.h"
-#include "utf8.h"
+#include "scpi/utf8.h"
 #include "scpi/common.h"
 #include "scpi/commands.h"
 
@@ -18,24 +18,31 @@ const struct scpi_header STATus = {.abbr = "stat", .full = "status"};
 
 static scpi_err_t error = SCPI_ERR_OK;
 
+const char idn[100] = "dronectl, raptor, v0.1.0";
+
 static scpi_err_t _system_reset(__attribute__((unused)) const uint8_t argc, __attribute__((unused)) const struct scpi_token argv[SCPI_MAX_CMD_ARGS]);
+static scpi_err_t _get_idn(__attribute__((unused)) const uint8_t argc, __attribute__((unused)) const struct scpi_token argv[SCPI_MAX_CMD_ARGS], char *buffer, const size_t size);
 
 static struct scpi_endpoint endpoints[] = {
-    {.headers = {&IDN}, .query = NULL, .write = NULL},
+    {.headers = {&IDN}, .query = _get_idn, .write = NULL},
     {.headers = {&RST}, .query = NULL, .write = &_system_reset},
     {.headers = {&CONTrol, &SETpoint}, .query = NULL, .write = NULL},
     {.headers = {&CONTrol, &STATus}, .query = NULL, .write = NULL},
 };
 
 /************************************ SCPI ENDPOINTS **********************************************/
+static scpi_err_t _get_idn(__attribute__((unused)) const uint8_t argc, __attribute__((unused)) const struct scpi_token argv[SCPI_MAX_CMD_ARGS], char *buffer, const size_t size) {
+  memcpy(buffer, idn, sizeof(idn));
+  return SCPI_ERR_OK;
+}
 
 static scpi_err_t _system_reset(__attribute__((unused)) const uint8_t argc, __attribute__((unused)) const struct scpi_token argv[SCPI_MAX_CMD_ARGS]) {
-  info("Resetting system registers");
+  info("Resetting system registers\n");
   sysreg_reset();
   return SCPI_ERR_OK;
 }
 
-const size_t num_endpoints = sizeof(endpoints) / sizeof(endpoints[0]);
+// const size_t num_endpoints = sizeof(endpoints) / sizeof(endpoints[0]);
 
 static bool header_comparator(const struct scpi_header *sh, const struct scpi_token *st) {
   bool abbr = false;
@@ -57,8 +64,8 @@ static bool header_comparator(const struct scpi_header *sh, const struct scpi_to
   return strncmp(sh->full, token, st->len) == 0;
 }
 
-void scpi_endpoint_process_write(const int index, const uint8_t argc, const struct scpi_token argv[]) {
-  if (index < 0 || index >= (int)num_endpoints) {
+void commands_process_write(const int index, const uint8_t argc, const struct scpi_token argv[]) {
+  if (index < 0 || index >= 4) {
     error("Endpoint index out of range\n");
     return;
   }
@@ -71,8 +78,8 @@ void scpi_endpoint_process_write(const int index, const uint8_t argc, const stru
   error = status;
 }
 
-void scpi_endpoint_process_query(const int index, const uint8_t argc, const struct scpi_token argv[], char *buffer, const size_t size) {
-  if (index < 0 || index >= (int)num_endpoints) {
+void commands_process_query(const int index, const uint8_t argc, const struct scpi_token argv[], char *buffer, const size_t size) {
+  if (index < 0 || index >= 4) {
     error("Endpoint index out of range\n");
     return;
   }
@@ -80,13 +87,13 @@ void scpi_endpoint_process_query(const int index, const uint8_t argc, const stru
     error("Query not found\n");
     return;
   }
-  scpi_err_t status = endpoints[index].query(argc, argv, size, buffer);
+  scpi_err_t status = endpoints[index].query(argc, argv, buffer, size);
   // CS TODO: set error registers
   error = status;
 }
 
-int scpi_endpoint_search(const struct scpi_token sts[], const uint8_t len) {
-  for (int i = 0; i < (int)num_endpoints; i++) {
+int commands_search_index(const struct scpi_token sts[], const uint8_t len) {
+  for (int i = 0; i < 4; i++) {
     for (int j = 0; j < len + 1; j++) {
       if (!header_comparator(endpoints[i].headers[j], &sts[j])) {
         break;
