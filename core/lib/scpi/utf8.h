@@ -91,46 +91,11 @@ const uint8_t utf8_lut[] = {
 };
 // clang-format on
 
-inline bool utf8_is_numeric(const char c) {
-  if (c < UTF8_OFFSET || c > UTF8_MAX) {
-    return false;
-  }
-  return utf8_lut[(uint8_t)c - UTF8_OFFSET] & UTF8_NUMERIC;
-}
-
-inline bool utf8_is_alpha(const char c) {
-  if (c < UTF8_OFFSET || c > UTF8_MAX) {
-    return false;
-  }
-  return utf8_lut[(uint8_t)c - UTF8_OFFSET] & UTF8_ALPHA;
-}
-
-inline bool utf8_is_uppercase(const char c) {
-  if (c < UTF8_OFFSET || c > UTF8_MAX) {
-    return false;
-  }
-  return utf8_lut[(uint8_t)c - UTF8_OFFSET] & UTF8_LOWERCASE;
-}
-
-inline bool utf8_is_lowercase(const char c) {
-  if (c < UTF8_OFFSET || c > UTF8_MAX) {
-    return false;
-  }
-  return utf8_lut[(uint8_t)c - UTF8_OFFSET] & UTF8_LOWERCASE;
-}
-
-inline char utf8_uppercase_to_lowercase(char c) {
-  if (!utf8_is_uppercase(c)) {
-    return c;
-  }
-  return c - UTF8_CAPS_OFFSET;
-}
-
-inline char utf8_lowercase_to_uppercase(char c) {
-  if (!utf8_is_lowercase(c)) {
-    return c;
-  }
-  return c + UTF8_CAPS_OFFSET;
-}
+bool utf8_is_numeric(const char c);
+bool utf8_is_alpha(const char c);
+bool utf8_is_uppercase(const char c);
+bool utf8_is_lowercase(const char c);
+char utf8_uppercase_to_lowercase(char c);
+char utf8_lowercase_to_uppercase(char c);
 
 #endif // __UTF8_H__
