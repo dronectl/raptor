@@ -11,9 +11,9 @@
 #ifndef __LEXER_H__
 #define __LEXER_H__
 
-#include "stddef.h"
-#include "stdint.h"
-#include "scpi_constants.h"
+#include <stddef.h>
+#include <stdint.h>
+#include "scpi.h"
 
 /**
  * @brief Lexer status bits
@@ -45,8 +45,7 @@ enum LexerTokenType {
 
 struct lexer_token {
   enum LexerTokenType type;
-  uint8_t len;
-  char lexeme[SCPI_MAX_TOKEN_LEN];
+  struct scpi_token token;
 };
 
 struct lexer_handle {

@@ -12,7 +12,7 @@
 #include "string.h"
 #include <stdbool.h>
 #include "utf8.h"
-#include "scpi_constants.h"
+#include "scpi.h"
 
 #define PARSER_STAT_HDR_DELIM (uint8_t)(1 << 0)
 #define PARSER_STAT_ARG_DELIM (uint8_t)(1 << 1)
@@ -57,8 +57,8 @@ void parser(struct parser_handle *phandle, const struct lexer_handle *lhandle) {
   for (int i = 0; i < lhandle->tidx; i++) {
     // syntax simplification
     struct parser_cmd *cmd = &phandle->commands[phandle->cmdidx];
-    struct lexer_token token = lhandle->tokens[i];
-    switch (token.type) {
+    struct lexer_token lexer_token = lhandle->tokens[i];
+    switch (lexer_token.type) {
       case LEXER_TT_COMMON:
         cmd->spec |= PARSER_CMD_SPEC_COMMON;
         break;
@@ -104,21 +104,21 @@ void parser(struct parser_handle *phandle, const struct lexer_handle *lhandle) {
           return;
         }
         if (pflags & PARSER_STAT_EOH) {
-          if (!is_valid_arg(phandle, token.lexeme, token.len)) {
+          if (!is_valid_arg(phandle, lexer_token.token.token, lexer_token.token.len)) {
             phandle->error.code |= PARSER_ERR_INVALID_ARG;
             return;
           }
-          memcpy(cmd->args[cmd->aidx].token, token.lexeme, token.len);
-          cmd->args[cmd->aidx].len = token.len;
+          memcpy(cmd->args[cmd->aidx].token, lexer_token.token.token, lexer_token.token.len);
+          cmd->args[cmd->aidx].len = lexer_token.token.len;
           cmd->aidx++;
           pflags &= ~PARSER_STAT_ARG_DELIM;
         } else {
-          if (!is_valid_hdr(phandle, token.lexeme, token.len)) {
+          if (!is_valid_hdr(phandle, lexer_token.token.token, lexer_token.token.len)) {
             phandle->error.code |= PARSER_ERR_INVALID_HDR;
             return;
           }
-          memcpy(cmd->headers[cmd->hidx].token, token.lexeme, token.len);
-          cmd->headers[cmd->hidx].len = token.len;
+          memcpy(cmd->headers[cmd->hidx].token, lexer_token.token.token, lexer_token.token.len);
+          cmd->headers[cmd->hidx].len = lexer_token.token.len;
           cmd->hidx++;
           pflags &= ~PARSER_STAT_HDR_DELIM;
         }

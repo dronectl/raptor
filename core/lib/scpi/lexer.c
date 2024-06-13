@@ -44,8 +44,8 @@ static void append_char(struct lexer_handle *lhandle, const char c,
     return;
   }
   lhandle->tokens[lhandle->tidx].type = type;
-  lhandle->tokens[lhandle->tidx].len += 1;
-  lhandle->tokens[lhandle->tidx].lexeme[lhandle->cidx] = c;
+  lhandle->tokens[lhandle->tidx].token.len += 1;
+  lhandle->tokens[lhandle->tidx].token.token[lhandle->cidx] = c;
   if (!is_token) {
     lhandle->cidx++;
   } else {
