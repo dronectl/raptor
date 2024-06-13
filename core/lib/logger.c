@@ -16,10 +16,9 @@
 #include <stdarg.h>
 #include <string.h>
 
-#define FUNC_NAME_MAX_LEN 20
 #define MAX_LOGGING_LINE_LEN 500
 #define MAX_LOGGING_CBUFFER_SIZE 15
-#define LOG_HEADER_FMT "[ %9ld ] %s:%i [ %5s ] "
+#define LOG_HEADER_FMT "%ld::%i::%s - "
 
 /**
  * @brief Log message struct.
@@ -29,7 +28,6 @@ struct log_msg {
   uint32_t epoch;                     // current CPU epoch
   enum logger_level level;            // log level
   int line;                           // line number
-  char func[FUNC_NAME_MAX_LEN];       // function name
   char message[MAX_LOGGING_LINE_LEN]; // post variable args injection
 };
 
@@ -64,7 +62,7 @@ static const char *_get_level_str(enum logger_level level);
  */
 static void build_log_string(const struct log_msg *log, char *buffer, const size_t size) {
   const char *level_str = _get_level_str(log->level);
-  int offset = snprintf(buffer, size, LOG_HEADER_FMT, (long)log->epoch, log->func, log->line, level_str);
+  int offset = snprintf(buffer, size, LOG_HEADER_FMT, (long)log->epoch, log->line, level_str);
   int len = strlen(log->message);
   // overflow check and clamp len
   if (len + offset > (int)size) {
@@ -163,7 +161,7 @@ enum logger_level logger_get_level(void) {
  * @param fmt log string formatter
  * @param ... variable arguments for string formatter
  */
-void logger_out(const enum logger_level level, const char *func, const int line, const char *fmt, ...) {
+void logger_out(const enum logger_level level, const int line, const char *fmt, ...) {
   struct log_msg log = {0};
   va_list args;
   // filter output by log level
@@ -173,7 +171,6 @@ void logger_out(const enum logger_level level, const char *func, const int line,
   log.epoch = osKernelGetTickCount();
   log.level = level;
   log.line = line;
-  memcpy(log.func, func, FUNC_NAME_MAX_LEN);
   // variable arguments must be processed here otherwise they will go out of scope
   va_start(args, fmt);
   vsnprintf(log.message, MAX_LOGGING_LINE_LEN, fmt, args);
