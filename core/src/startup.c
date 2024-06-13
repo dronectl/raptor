@@ -14,6 +14,7 @@
 #include "cmsis_os2.h"
 #include "health.h"
 #include "logger.h"
+#include "scpi/server.h"
 #include "main.h"
 #include "stm32h723xx.h"
 #include "stm32h7xx_hal.h"
@@ -58,6 +59,11 @@ static __NO_RETURN void genesis_task(void __attribute__((unused)) * argument) {
   }
   info("Created logging task");
   status = health_init(hi2c2);
+  if (status != SYSTEM_OK) {
+    system_spinlock();
+  }
+  info("Created health task");
+  status = scpi_init();
   if (status != SYSTEM_OK) {
     system_spinlock();
   }

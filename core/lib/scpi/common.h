@@ -1,6 +1,6 @@
 /**
- * @file scpi.h
- * @brief SCPI const and struct definitions
+ * @file common.h
+ * @brief SCPI common const and struct definitions
  * @version 0.1
  * @date 2024-06
  *
@@ -8,8 +8,8 @@
  *
  */
 
-#ifndef __SCPI_H__
-#define __SCPI_H__
+#ifndef __COMMON_H__
+#define __COMMON_H__
 
 #include <stdint.h>
 #include <stddef.h>
@@ -55,4 +55,4 @@ struct scpi_endpoint {
   scpi_err_t (*write)(const uint8_t, const struct scpi_token argv[SCPI_MAX_CMD_ARGS]);
 };
 
-#endif // __SCPI_H__
+#endif // __COMMON_H__

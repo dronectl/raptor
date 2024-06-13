@@ -11,9 +11,10 @@
 #ifndef __PARSER_H__
 #define __PARSER_H__
 
+#include "scpi/lexer.h"
+#include "scpi/common.h"
+
 #include <stdint.h>
-#include "lexer.h"
-#include "scpi.h"
 
 #define PARSER_CMD_SPEC_COMMON (uint8_t)(1 << 0)
 #define PARSER_CMD_SPEC_QUERY (uint8_t)(1 << 1)

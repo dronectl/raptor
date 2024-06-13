@@ -8,7 +8,8 @@
  *
  */
 
-#include "lexer.h"
+#include "scpi/lexer.h"
+
 #include <stdbool.h>
 #include <unistd.h>
 

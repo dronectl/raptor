@@ -9,16 +9,16 @@
  */
 
 #include "logger.h"
-#include "lexer.h"
-#include "parser.h"
-#include "scpi.h"
-#include "scpi_endpoints.h"
+#include "scpi/lexer.h"
+#include "scpi/parser.h"
+#include "scpi/common.h"
+#include "scpi/commands.h"
 
 #include <lwip/inet.h>
 #include <lwip/sockets.h>
 #include <cmsis_os2.h>
 
-const osThreadAttr_t health_attr = {
+const osThreadAttr_t scpi_attr = {
     .name = "scpi_task",
     .priority = osPriorityNormal1,
 };
@@ -42,15 +42,15 @@ static void handle_scpi_request(const struct scpi_handle *shandle) {
   parser(&phandle, &lhandle);
   for (int i = 0; i < phandle.cmdidx + 1; i++) {
     info("S:0x%X|Eti:%d|Eci:%d|Es:0x%X|H:%d|A:%d\n", phandle.commands[i].spec, phandle.error.tidx, phandle.error.cidx, phandle.error, phandle.commands[i].hidx + 1, phandle.commands[i].aidx + 1);
-    int index = scpi_endpoint_search_index(phandle.commands[i].headers, phandle.commands[i].hidx + 1);
+    int index = commands_search_index(phandle.commands[i].headers, phandle.commands[i].hidx + 1);
     if (index < 0) {
       error("command index %d endpoint not found\n", i);
       continue;
     }
     if (phandle.commands[i].spec & PARSER_CMD_SPEC_QUERY) {
-      scpi_endpoint_process_query(index, phandle.commands[i].aidx + 1, phandle.commands[i].args, buffer, sizeof(buffer));
+      commands_process_query(index, phandle.commands[i].aidx + 1, phandle.commands[i].args, buffer, sizeof(buffer));
     } else if (phandle.commands[i].spec & PARSER_CMD_SPEC_SET) {
-      scpi_endpoint_process_write(index, phandle.commands[i].aidx + 1, phandle.commands[i].args);
+      commands_process_write(index, phandle.commands[i].aidx + 1, phandle.commands[i].args);
     }
     write(shandle->clfd, buffer, sizeof(buffer));
   }
@@ -98,4 +98,12 @@ static __NO_RETURN void scpi_main(__attribute__((unused)) void *argument) {
 error:
   critical("scpi socket init failed with %i\n", errno);
   osThreadExit();
+}
+
+system_status_t scpi_init(void) {
+  scpi_handle = osThreadNew(scpi_main, NULL, &scpi_attr);
+  if (scpi_handle == NULL) {
+    return SYSTEM_MOD_FAIL;
+  }
+  return SYSTEM_OK;
 }

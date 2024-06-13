@@ -8,26 +8,23 @@
  *
  */
 
-#include "parser.h"
-#include "string.h"
+#include "scpi/utf8.h"
+#include "scpi/common.h"
+#include "scpi/parser.h"
+
+#include <string.h>
 #include <stdbool.h>
-#include "utf8.h"
-#include "scpi.h"
 
 #define PARSER_STAT_HDR_DELIM (uint8_t)(1 << 0)
 #define PARSER_STAT_ARG_DELIM (uint8_t)(1 << 1)
 #define PARSER_STAT_EOH (uint8_t)(1 << 2) // end of header
 
-static bool is_valid_arg(struct parser_handle *phandle,
-                         const char arg[SCPI_MAX_TOKEN_LEN],
-                         const uint8_t len) {
+static bool is_valid_arg(struct parser_handle *phandle, const char arg[SCPI_MAX_TOKEN_LEN], const uint8_t len) {
   // CS TODO: read up on 488.2 arg compliance
   return true;
 }
 
-static bool is_valid_hdr(struct parser_handle *phandle,
-                         const char hdr[SCPI_MAX_TOKEN_LEN],
-                         const uint8_t len) {
+static bool is_valid_hdr(struct parser_handle *phandle, const char hdr[SCPI_MAX_TOKEN_LEN], const uint8_t len) {
   bool num_suffix = false;
   bool status = true;
   uint8_t ccnt = 0;

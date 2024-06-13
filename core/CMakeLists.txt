@@ -19,6 +19,10 @@ add_library(
   lib/logger.c
   lib/sysreg.c
   lib/system.c
+  lib/scpi/lexer.c
+  lib/scpi/parser.c
+  lib/scpi/commands.c
+  lib/scpi/server.c
 )
 target_include_directories(
   ${LIB_RAPTOR}

@@ -2,8 +2,9 @@
 #include "logger.h"
 #include "sysreg.h"
 #include "utf8.h"
-#include "scpi_endpoints.h"
-#include "scpi/scpi.h"
+#include "scpi/common.h"
+#include "scpi/commands.h"
+
 #include <stdbool.h>
 #include <string.h>
 

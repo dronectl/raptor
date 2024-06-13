@@ -11,9 +11,9 @@
 #ifndef __LEXER_H__
 #define __LEXER_H__
 
+#include "common.h"
 #include <stddef.h>
 #include <stdint.h>
-#include "scpi.h"
 
 /**
  * @brief Lexer status bits
