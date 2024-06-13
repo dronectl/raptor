@@ -19,6 +19,7 @@ add_library(
   lib/logger.c
   lib/sysreg.c
   lib/system.c
+  lib/scpi/utf8.c
   lib/scpi/lexer.c
   lib/scpi/parser.c
   lib/scpi/commands.c

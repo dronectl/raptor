@@ -99,10 +99,10 @@ static __NO_RETURN void health_main(void *argument) {
   // get i2c2 handle and set bme280
   I2C_HandleTypeDef hi2c2 = *(I2C_HandleTypeDef *)argument;
   bme280.i2c = hi2c2;
-  info("Starting health task FSM");
+  info("Starting health task FSM\n");
   while (1) {
     current_state = fsm_tick(current_state);
-    info("Current state: %d", current_state);
+    info("Current state: %d\n", current_state);
     osDelay(1000);
   }
 }
