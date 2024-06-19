@@ -49,7 +49,7 @@ static bool is_valid_hdr(struct parser_handle *phandle, const char hdr[SCPI_MAX_
   return status;
 }
 
-void parser(struct parser_handle *phandle, const struct lexer_handle *lhandle) {
+void parser_run(struct parser_handle *phandle, const struct lexer_handle *lhandle) {
   uint8_t pflags = PARSER_STAT_HDR_DELIM;
   for (int i = 0; i < lhandle->tidx; i++) {
     // syntax simplification

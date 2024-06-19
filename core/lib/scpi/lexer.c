@@ -10,6 +10,7 @@
 
 #include "scpi/lexer.h"
 
+#include <string.h>
 #include <stdbool.h>
 #include <unistd.h>
 
@@ -29,14 +30,27 @@
  *
  * @param[in,out] lhandle lexer context
  * @param[in] c next input buffer char
- * @param[in] is_token true if the character is a token
  * @param[in] type token tag to write to token position
  */
-static void append_char(struct lexer_handle *lhandle, const char c,
-                        bool is_token, const enum LexerTokenType type) {
-  if (is_token && lhandle->cidx != 0) {
-    lhandle->cidx = 0;
-    lhandle->tidx++;
+static void append_char(struct lexer_handle *lhandle, const char c, const enum LexerTokenType type) {
+  // token and character index handling
+  switch (type) {
+    case LEXER_TT_TOKEN:
+      if (lhandle->prev_tt == LEXER_TT_TOKEN) {
+        lhandle->cidx++;
+      } else {
+        if (lhandle->prev_tt != LEXER_TT_NULL) {
+          lhandle->tidx++;
+        }
+        lhandle->cidx = 0;
+      }
+      break;
+    default:
+      if (lhandle->prev_tt != LEXER_TT_NULL) {
+        lhandle->tidx++;
+      }
+      lhandle->cidx = 0;
+      break;
   }
   // overflow protection
   if (lhandle->cidx >= SCPI_MAX_TOKEN_LEN) {
@@ -44,14 +58,11 @@ static void append_char(struct lexer_handle *lhandle, const char c,
     lhandle->err |= LEXER_ERR_LOF;
     return;
   }
+  // append char
   lhandle->tokens[lhandle->tidx].type = type;
   lhandle->tokens[lhandle->tidx].token.len += 1;
   lhandle->tokens[lhandle->tidx].token.token[lhandle->cidx] = c;
-  if (!is_token) {
-    lhandle->cidx++;
-  } else {
-    lhandle->tidx++;
-  }
+  lhandle->prev_tt = type;
 }
 
 /**
@@ -91,10 +102,10 @@ static void handle_sc_token(struct lexer_handle *lhandle, const char c) {
       lhandle->err |= LEXER_ERR_USCT;
       return;
   }
-  append_char(lhandle, c, true, type);
+  append_char(lhandle, c, type);
 }
 
-void lexer(struct lexer_handle *lhandle, const char *buffer, const size_t len) {
+void lexer_run(struct lexer_handle *lhandle, const char *buffer, const size_t len) {
   for (size_t i = 0; i < len; i++) {
     char c = buffer[i];
     switch (c) {
@@ -108,12 +119,19 @@ void lexer(struct lexer_handle *lhandle, const char *buffer, const size_t len) {
         handle_sc_token(lhandle, c);
         break;
       default:
-        append_char(lhandle, c, false, LEXER_TT_TOKEN);
+        append_char(lhandle, c, LEXER_TT_TOKEN);
         break;
     }
     // OPT: return on error or end of sequence
-    if ((lhandle->status & LEXER_STAT_EOS) ||
-        (lhandle->status & LEXER_STAT_ERR))
+    if ((lhandle->status & LEXER_STAT_EOS) || (lhandle->status & LEXER_STAT_ERR))
       break;
   }
+}
+void lexer_init(struct lexer_handle *lhandle) {
+  lhandle->tidx = 0;
+  lhandle->cidx = 0;
+  lhandle->err = 0;
+  lhandle->status = 0;
+  lhandle->prev_tt = LEXER_TT_NULL;
+  memset(lhandle->tokens, 0, sizeof(lhandle->tokens));
 }

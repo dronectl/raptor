@@ -18,7 +18,7 @@ const struct scpi_header STATus = {.abbr = "stat", .full = "status"};
 
 static scpi_err_t error = SCPI_ERR_OK;
 
-const char idn[100] = "dronectl, raptor, v0.1.0";
+const char idn[100] = "dronectl, raptor, v0.1.0\n";
 
 static scpi_err_t _system_reset(__attribute__((unused)) const uint8_t argc, __attribute__((unused)) const struct scpi_token argv[SCPI_MAX_CMD_ARGS]);
 static scpi_err_t _get_idn(__attribute__((unused)) const uint8_t argc, __attribute__((unused)) const struct scpi_token argv[SCPI_MAX_CMD_ARGS], char *buffer, const size_t size);
@@ -30,6 +30,7 @@ static struct scpi_endpoint endpoints[] = {
     {.headers = {&CONTrol, &STATus}, .query = NULL, .write = NULL},
 };
 
+#define NUM_ENDPOINTS (sizeof(endpoints) / sizeof(struct scpi_endpoint))
 /************************************ SCPI ENDPOINTS **********************************************/
 static scpi_err_t _get_idn(__attribute__((unused)) const uint8_t argc, __attribute__((unused)) const struct scpi_token argv[SCPI_MAX_CMD_ARGS], char *buffer, const size_t size) {
   memcpy(buffer, idn, sizeof(idn));
@@ -93,12 +94,12 @@ void commands_process_query(const int index, const uint8_t argc, const struct sc
 }
 
 int commands_search_index(const struct scpi_token sts[], const uint8_t len) {
-  for (int i = 0; i < 4; i++) {
-    for (int j = 0; j < len + 1; j++) {
+  for (size_t i = 0; i < NUM_ENDPOINTS; i++) {
+    for (int j = 0; j < len; j++) {
       if (!header_comparator(endpoints[i].headers[j], &sts[j])) {
         break;
       }
-      if (j >= len) {
+      if (j + 1 == len) {
         return i;
       }
     }

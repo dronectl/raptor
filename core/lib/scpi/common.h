@@ -20,9 +20,9 @@
 #define SCPI_MAX_CMD_ARGS 10
 #define SCPI_MAX_CMD_HDRS 5
 #define SCPI_MAX_COMMANDS 5
-#define SCPI_MAX_TOKENS 30
+#define SCPI_MAX_TOKENS 10
 #define SCPI_MAX_RET_LEN 10
-#define SCPI_MAX_TOKEN_LEN 15
+#define SCPI_MAX_TOKEN_LEN 10
 #define SCPI_MAX_ABBR_TOKEN_LEN 5
 
 typedef int scpi_err_t;

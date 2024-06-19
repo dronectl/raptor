@@ -18,17 +18,25 @@
 #include <lwip/sockets.h>
 #include <cmsis_os2.h>
 
+uint64_t scpi_thread_stk[1];
+__attribute__((section(".bss.os.thread.cb"))) osThreadId_t scpi_handle;
 const osThreadAttr_t scpi_attr = {
     .name = "scpi_task",
+    .attr_bits = osThreadJoinable,
+    .cb_mem = &scpi_handle,
+    .cb_size = sizeof(scpi_handle),
+    .stack_mem = &scpi_thread_stk[0],
+    .stack_size = sizeof(scpi_thread_stk),
     .priority = osPriorityNormal1,
+    .tz_module = 0,
 };
-static osThreadId_t scpi_handle;
 
 static void handle_scpi_request(const struct scpi_handle *shandle) {
   char buffer[SCPI_MAX_RESPONSE_LEN] = {0};
   struct lexer_handle lhandle = {0};
   struct parser_handle phandle = {0};
-  lexer(&lhandle, shandle->buffer, shandle->buflen);
+  lexer_init(&lhandle);
+  lexer_run(&lhandle, shandle->buffer, shandle->buflen);
   if (lhandle.status & LEXER_STAT_ERR) {
     error("Lexer failed with: 0x%X\n", lhandle.err);
     return;
@@ -39,10 +47,10 @@ static void handle_scpi_request(const struct scpi_handle *shandle) {
   }
   info("]\n");
   info("Number of tokens: %u\n", lhandle.tidx + 1);
-  parser(&phandle, &lhandle);
+  parser_run(&phandle, &lhandle);
   for (int i = 0; i < phandle.cmdidx + 1; i++) {
     info("S:0x%X|Eti:%d|Eci:%d|Es:0x%X|H:%d|A:%d\n", phandle.commands[i].spec, phandle.error.tidx, phandle.error.cidx, phandle.error, phandle.commands[i].hidx + 1, phandle.commands[i].aidx + 1);
-    int index = commands_search_index(phandle.commands[i].headers, phandle.commands[i].hidx + 1);
+    int index = commands_search_index(phandle.commands[i].headers, phandle.commands[i].hidx);
     if (index < 0) {
       error("command index %d endpoint not found\n", i);
       continue;
@@ -62,10 +70,11 @@ static void handle_client_session(int client_fd) {
   for (;;) {
     memset(shandle.buffer, '\0', SCPI_MAX_INPUT_BUFFER_LEN);
     shandle.buflen = read(client_fd, shandle.buffer, sizeof(shandle.buffer));
-    if (strncmp(shandle.buffer, "\n", SCPI_MAX_INPUT_BUFFER_LEN) == 0) {
+    info("buflen: %d\n", shandle.buflen);
+    if (strncmp(shandle.buffer, "\n", 1) == 0) {
       continue;
     }
-    if (shandle.buflen == 0) {
+    if (shandle.buflen <= 0) {
       warning("read 0 bytes from client handler\n");
       break;
     }

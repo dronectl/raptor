@@ -53,6 +53,7 @@ struct lexer_handle {
   uint8_t tidx;                               // token index
   uint8_t status;                             // status register
   uint8_t err;                                // error register
+  enum LexerTokenType prev_tt;                // previous token type
   struct lexer_token tokens[SCPI_MAX_TOKENS]; // token structures
 };
 
@@ -62,6 +63,7 @@ struct lexer_handle {
  * @param[in] buffer SCPI command input buffer
  * @param[in] len length of input buffer
  */
-void lexer(struct lexer_handle *lhandle, const char *buffer, const size_t len);
+void lexer_run(struct lexer_handle *lhandle, const char *buffer, const size_t len);
+void lexer_init(struct lexer_handle *lhandle);
 
 #endif // __LEXER_H__
