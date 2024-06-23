@@ -1,7 +1,8 @@
-#include <stdint.h>
+#include <stdint.h> // IWYU pragma: export
 #include "cmsis_gcc.h"
 #include "FreeRTOS.h"
 #include "task.h"
+#include "stm32h7xx_nucleo.h"
 
 #ifdef __GNUC__
 #define USED __attribute__((used))
@@ -49,7 +50,10 @@ void vApplicationStackOverflowHook(xTaskHandle xTask, signed char *pcTaskName) {
   /* Run time stack overflow checking is performed if
   configCHECK_FOR_STACK_OVERFLOW is defined to 1 or 2. This hook function is
   called if a stack overflow is detected. */
-  __BKPT(0);
+  while (1) {
+    BSP_LED_Toggle(LED2);
+    HAL_Delay(200);
+  }
 }
 /* USER CODE END 4 */
 
