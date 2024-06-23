@@ -47,7 +47,7 @@ const osThreadAttr_t genesis_attr = {
 static osThreadId_t genesis_handle;
 
 static __NO_RETURN void genesis_task(void __attribute__((unused)) * argument) {
-  system_status_t status;
+  system_status_t status = SYSTEM_OK;
   status = app_ethernet_init();
   if (status != SYSTEM_OK) {
     system_spinlock();
