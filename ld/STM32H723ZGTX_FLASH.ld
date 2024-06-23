@@ -3,9 +3,6 @@
  * @file      STM32H723ZGTX_FLASH.ld
  * @author    dronectl
  *  Abstract    : Linker script for NUCLEO-H723ZG Board embedding STM32H723ZGTx Device from stm32h7 series
- *                      1024Kbytes ROM
- *                      64Kbytes ITCMRAM
- *                      128Kbytes RAM
  *
  *            Set heap size, stack size and stack location according
  *            to application requirements.
@@ -18,18 +15,24 @@
 ENTRY(Reset_Handler)
 
 /* Highest address of the user mode stack */
-_estack = ORIGIN(RAM) + LENGTH(RAM);	/* end of "RAM" Ram type memory */
+_estack = ORIGIN(RAM_DTCM) + LENGTH(RAM_DTCM);	/* end of "RAM" Ram type memory */
 
 _Min_Heap_Size = 0x1000;	/* required amount of heap  */
 _Min_Stack_Size = 0x1000;	/* required amount of stack */
 
-/* Memories definition */
+/* Memories definition : 2.3.2 Memory map and register boundary addresses */
 MEMORY
 {
-  ITCMRAM    (xrw)    : ORIGIN = 0x00000000,   LENGTH = 64K
-  FLASH1     (rx)     : ORIGIN = 0x08000000,   LENGTH = 1024K
-  RAM        (xrw)    : ORIGIN = 0x20000000,   LENGTH = 128K
-  RAM_D2     (xrw)    : ORIGIN = 0x30000000,   LENGTH = 288K
+  RAM_ITCM            (xrw)    : ORIGIN = 0x00000000,   LENGTH = 64K            /* 0x00000000 - 0x0000FFFF */
+  RAM_ITCM_AXI1       (xrw)    : ORIGIN = 0x00010000,   LENGTH = 192K           /* 0x00010000 - 0x0003FFFF */
+  FLASH1              (rx)     : ORIGIN = 0x08000000,   LENGTH = 1024K          /* 0x08000000 - 0x080FFFFF */
+  RAM_DTCM            (xrw)    : ORIGIN = 0x20000000,   LENGTH = 128K           /* 0x20000000 - 0x2001FFFF */
+  RAM_AXI             (xrw)    : ORIGIN = 0x24000000,   LENGTH = 128K           /* 0x24000000 - 0x2401FFFF */
+  RAM_ITCM_AXI2       (xrw)    : ORIGIN = 0x24020000,   LENGTH = 192K           /* 0x24020000 - 0x2404FFFF */
+  RAM_D1              (xrw)    : ORIGIN = 0x30000000,   LENGTH = 16K            /* 0x30000000 - 0x30003FFF */
+  RAM_D2              (xrw)    : ORIGIN = 0x30003FFF,   LENGTH = 16K            /* 0x30004000 - 0x30007FFF */
+  RAM_D3              (xrw)    : ORIGIN = 0x38000000,   LENGTH = 16K            /* 0x38000000 - 0x38003FFF */
+  RAM_D4              (xrw)    : ORIGIN = 0x38800000,   LENGTH = 4K             /* 0x38800000 - 0x38800FFF */
 }
 
 PHDRS 
@@ -80,14 +83,14 @@ SECTIONS
   } >FLASH1 : rodata
 
   /* ARM exception table */
-  .ARM.extab :
+  .ARM.extab (READONLY):
   { 
     . = ALIGN(4);
     *(.ARM.extab* .gnu.linkonce.armextab.*)
     . = ALIGN(4);
   } >FLASH1
   
-  .ARM :
+  .ARM (READONLY):
   {
     . = ALIGN(4);
     __exidx_start = .;
@@ -96,7 +99,7 @@ SECTIONS
     . = ALIGN(4);
   } >FLASH1
 
-  .preinit_array :
+  .preinit_array  (READONLY):
   {
     . = ALIGN(4);
     PROVIDE_HIDDEN (__preinit_array_start = .);
@@ -105,7 +108,7 @@ SECTIONS
     . = ALIGN(4);
   } >FLASH1
   
-  .init_array :
+  .init_array  (READONLY):
   {
     . = ALIGN(4);
     PROVIDE_HIDDEN (__init_array_start = .);
@@ -115,7 +118,7 @@ SECTIONS
     . = ALIGN(4);
   } >FLASH1
   
-  .fini_array :
+  .fini_array  (READONLY):
   {
     . = ALIGN(4);
     PROVIDE_HIDDEN (__fini_array_start = .);
@@ -139,7 +142,7 @@ SECTIONS
     . = ALIGN(4);
     _edata = .;        /* define a global symbol at data end */
     
-  } >RAM AT> FLASH1 : data
+  } >RAM_DTCM AT> FLASH1 : data
 
   /* Uninitialized data section into "RAM" Ram type memory */
   . = ALIGN(4);
@@ -155,7 +158,7 @@ SECTIONS
     . = ALIGN(4);
     _ebss = .;         /* define a global symbol at bss end */
     __bss_end__ = _ebss;
-  } >RAM : bss
+  } >RAM_DTCM : bss
 
   /* User_heap_stack section, used to check that there is enough "RAM" Ram  type memory left */
   ._user_heap_stack :
@@ -166,7 +169,7 @@ SECTIONS
     . = . + _Min_Heap_Size;
     . = . + _Min_Stack_Size;
     . = ALIGN(8);
-  } >RAM : user
+  } > RAM_DTCM : user
   
   .lwip_sec (NOLOAD) : {
     . = ABSOLUTE(0x30000000);
@@ -177,7 +180,7 @@ SECTIONS
     
     . = ABSOLUTE(0x30000400);
     *(.Rx_PoolSection) 
-  } >RAM_D2 AT> FLASH1
+  } >RAM_D1 AT> FLASH1
 
   /* Remove information from the compiler libraries */
   /DISCARD/ :
