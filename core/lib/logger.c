@@ -8,16 +8,15 @@
  *
  */
 
-#include "cmsis_os2.h"
 #include "logger.h"
 #include "lwip/inet.h"
 #include "lwip/sockets.h"
-#include "stm32h7xx_nucleo.h"
+#include <cmsis_os2.h>
 #include <stdarg.h>
 #include <string.h>
 
-#define MAX_LOGGING_LINE_LEN 500
-#define MAX_LOGGING_CBUFFER_SIZE 15
+#define MAX_LOGGING_LINE_LEN 300
+#define MAX_LOGGING_CBUFFER_SIZE 10
 #define LOG_HEADER_FMT "%ld::%i::%s - "
 
 /**
@@ -108,19 +107,19 @@ static __NO_RETURN void logger_task(void __attribute__((unused)) * argument) {
     goto error;
   }
   listen(sock, 5);
-  BSP_LED_On(LED1);
   while (1) {
     // task blocking
     client_fd = accept(sock, (struct sockaddr *)&remotehost, (socklen_t *)&size);
+    info("Accepted connection with fd: %d\n", client_fd);
     if (client_fd < 0) {
-      osDelay(100);
+      osThreadYield();
       continue;
     }
     while (1) {
       osMessageQueueGet(queue_id, &log, NULL, osWaitForever);
       char log_buffer[MAX_LOGGING_LINE_LEN] = {0};
       build_log_string(&log, log_buffer, MAX_LOGGING_LINE_LEN);
-      ssize_t bytes_sent = send(client_fd, log_buffer, strlen(log_buffer), 0);
+      ssize_t bytes_sent = write(client_fd, log_buffer, strlen(log_buffer));
       /* Check for errors or client disconnect */
       if (bytes_sent <= 0) {
         /* Connection closed by client */
