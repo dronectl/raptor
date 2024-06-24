@@ -10,7 +10,7 @@
 #define UTF8_LOWERCASE (1 << 3)
 
 // clang-format off
-const uint8_t utf8_lut[] = {
+static const uint8_t utf8_lut[] = {
     ['0' - UTF8_OFFSET] = UTF8_NUMERIC,
     ['1' - UTF8_OFFSET] = UTF8_NUMERIC,
     ['2' - UTF8_OFFSET] = UTF8_NUMERIC,
