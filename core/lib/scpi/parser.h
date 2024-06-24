@@ -53,5 +53,6 @@ struct parser_handle {
  * @param[in] lhandle lexer context handle
  */
 void parser_run(struct parser_handle *phandle, const struct lexer_handle *lhandle);
+void parser_init(struct parser_handle *phandle);
 
 #endif // __PARSER_H__

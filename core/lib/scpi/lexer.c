@@ -133,5 +133,5 @@ void lexer_init(struct lexer_handle *lhandle) {
   lhandle->err = 0;
   lhandle->status = 0;
   lhandle->prev_tt = LEXER_TT_NULL;
-  memset(lhandle->tokens, 0, sizeof(lhandle->tokens));
+  memset(&lhandle->tokens, 0, sizeof(lhandle->tokens));
 }

@@ -23,7 +23,7 @@ const char idn[100] = "dronectl, raptor, v0.1.0\n";
 static scpi_err_t _system_reset(__attribute__((unused)) const uint8_t argc, __attribute__((unused)) const struct scpi_token argv[SCPI_MAX_CMD_ARGS]);
 static scpi_err_t _get_idn(__attribute__((unused)) const uint8_t argc, __attribute__((unused)) const struct scpi_token argv[SCPI_MAX_CMD_ARGS], char *buffer, const size_t size);
 
-static struct scpi_endpoint endpoints[] = {
+static const struct scpi_endpoint endpoints[] = {
     {.headers = {&IDN}, .query = _get_idn, .write = NULL},
     {.headers = {&RST}, .query = NULL, .write = &_system_reset},
     {.headers = {&CONTrol, &SETpoint}, .query = NULL, .write = NULL},

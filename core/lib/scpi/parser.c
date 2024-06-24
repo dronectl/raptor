@@ -131,3 +131,9 @@ void parser_run(struct parser_handle *phandle, const struct lexer_handle *lhandl
     }
   }
 }
+
+void parser_init(struct parser_handle *phandle) {
+  phandle->cmdidx = 0;
+  memset(&phandle->error, 0, sizeof(phandle->error));
+  memset(&phandle->commands, 0, sizeof(phandle->commands));
+}
