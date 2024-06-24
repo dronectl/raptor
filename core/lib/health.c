@@ -13,10 +13,11 @@
 #include "health.h"
 #include "logger.h"
 #include "stm32h7xx_hal.h" // IWYU pragma: export
+#include "stm32h7xx_nucleo.h"
 
 const osThreadAttr_t health_attr = {
     .name = "health_task",
-    .priority = osPriorityNormal1,
+    .priority = osPriorityAboveNormal,
 };
 static osThreadId_t health_handle;
 
@@ -103,7 +104,8 @@ static __NO_RETURN void health_main(void *argument) {
   while (1) {
     current_state = fsm_tick(current_state);
     info("Current state: %d\n", current_state);
-    osDelay(1000);
+    osDelay(100);
+    BSP_LED_Toggle(LED3);
   }
 }
 
