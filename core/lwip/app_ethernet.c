@@ -8,17 +8,16 @@
  *
  */
 
-#include "lwip/opt.h"
-#include "lwip/tcpip.h"
-#include "stm32h7xx_nucleo.h"
-#if LWIP_DHCP
-#include "lwip/dhcp.h"
-#endif
-#include "lwip/netif.h"
 #include "app_ethernet.h"
-#include "cmsis_os2.h"
 #include "ethernetif.h"
 #include "netif/ethernet.h"
+#include "stm32h7xx_nucleo.h"
+#if LWIP_DHCP
+#include <lwip/dhcp.h>
+#endif
+#include <lwip/tcpip.h>
+#include <lwip/netif.h>
+#include <cmsis_os2.h>
 
 /*Static IP ADDRESS: IP_ADDR0.IP_ADDR1.IP_ADDR2.IP_ADDR3 */
 #define IP_ADDR0 ((uint8_t)192U)
