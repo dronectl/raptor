@@ -17,8 +17,8 @@ ENTRY(Reset_Handler)
 /* Highest address of the user mode stack */
 _estack = ORIGIN(RAM_DTCM) + LENGTH(RAM_DTCM);	/* end of "RAM" Ram type memory */
 
-_Min_Heap_Size = 0x1000;	/* required amount of heap  */
-_Min_Stack_Size = 0x1000;	/* required amount of stack */
+_Min_Heap_Size = 0x2000;	/* required amount of heap  */
+_Min_Stack_Size = 0x2000;	/* required amount of stack */
 
 /* Memories definition : 2.3.2 Memory map and register boundary addresses */
 MEMORY
@@ -142,7 +142,7 @@ SECTIONS
     . = ALIGN(4);
     _edata = .;        /* define a global symbol at data end */
     
-  } >RAM_DTCM AT> FLASH1 : data
+  } >RAM_AXI AT> FLASH1 : data
 
   /* Uninitialized data section into "RAM" Ram type memory */
   . = ALIGN(4);
@@ -158,7 +158,7 @@ SECTIONS
     . = ALIGN(4);
     _ebss = .;         /* define a global symbol at bss end */
     __bss_end__ = _ebss;
-  } >RAM_DTCM : bss
+  } >RAM_AXI : bss
 
   /* User_heap_stack section, used to check that there is enough "RAM" Ram  type memory left */
   ._user_heap_stack :
