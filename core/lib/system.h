@@ -13,5 +13,6 @@ typedef int system_status_t;
  *
  */
 void system_spinlock(void);
+void system_tick_indicator(void);
 
 #endif // __SYSTEM_H__
