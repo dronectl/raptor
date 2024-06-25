@@ -17,8 +17,8 @@ ENTRY(Reset_Handler)
 /* Highest address of the user mode stack */
 _estack = ORIGIN(RAM_DTCM) + LENGTH(RAM_DTCM);	/* end of "RAM" Ram type memory */
 
-_Min_Heap_Size = 0x2000;	/* required amount of heap  */
-_Min_Stack_Size = 0x2000;	/* required amount of stack */
+_Min_Heap_Size = 0x10000;	/* required amount of heap  */
+_Min_Stack_Size = 0x10000;	/* required amount of stack */
 
 /* Memories definition : 2.3.2 Memory map and register boundary addresses */
 MEMORY
@@ -30,7 +30,7 @@ MEMORY
   RAM_AXI             (xrw)    : ORIGIN = 0x24000000,   LENGTH = 128K           /* 0x24000000 - 0x2401FFFF */
   RAM_ITCM_AXI2       (xrw)    : ORIGIN = 0x24020000,   LENGTH = 192K           /* 0x24020000 - 0x2404FFFF */
   RAM_D1              (xrw)    : ORIGIN = 0x30000000,   LENGTH = 16K            /* 0x30000000 - 0x30003FFF */
-  RAM_D2              (xrw)    : ORIGIN = 0x30003FFF,   LENGTH = 16K            /* 0x30004000 - 0x30007FFF */
+  RAM_D2              (xrw)    : ORIGIN = 0x30004000,   LENGTH = 16K            /* 0x30004000 - 0x30007FFF */
   RAM_D3              (xrw)    : ORIGIN = 0x38000000,   LENGTH = 16K            /* 0x38000000 - 0x38003FFF */
   RAM_D4              (xrw)    : ORIGIN = 0x38800000,   LENGTH = 4K             /* 0x38800000 - 0x38800FFF */
 }
@@ -42,7 +42,7 @@ PHDRS
   text PT_LOAD FLAGS(5);
   data PT_LOAD FLAGS(6);
   bss PT_LOAD FLAGS(6);
-  user PT_LOAD FLAGS(2);
+  user PT_LOAD FLAGS(6);
 }
 
 /* Sections */
@@ -142,7 +142,7 @@ SECTIONS
     . = ALIGN(4);
     _edata = .;        /* define a global symbol at data end */
     
-  } >RAM_AXI AT> FLASH1 : data
+  } >RAM_ITCM_AXI2 AT> FLASH1 : data
 
   /* Uninitialized data section into "RAM" Ram type memory */
   . = ALIGN(4);
@@ -181,6 +181,16 @@ SECTIONS
     . = ABSOLUTE(0x30000400);
     *(.Rx_PoolSection) 
   } >RAM_D1 AT> FLASH1
+
+  .data_d2 : 
+  {
+    . = ALIGN(8);
+    KEEP (*(.data_d2))
+    KEEP (*(.data_d2*))
+
+    . = ALIGN(8);
+    
+  } >RAM_D2 AT> FLASH1 : data
 
   /* Remove information from the compiler libraries */
   /DISCARD/ :
