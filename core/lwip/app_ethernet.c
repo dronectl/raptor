@@ -188,11 +188,13 @@ static void netconfig_init(void __attribute__((unused)) * args) {
   netif_set_link_callback(&gnetif, ethernet_link_status_updated);
   link_handle = osThreadNew(ethernet_link_thread, &gnetif, &link_attr);
   if (link_handle == NULL) {
+    system_spinlock();
   }
 #endif
 #if LWIP_DHCP
   dhcp_handle = osThreadNew(dhcp_task, &gnetif, &dhcp_attr);
   if (dhcp_handle == NULL) {
+    system_spinlock();
   }
 #endif
 }

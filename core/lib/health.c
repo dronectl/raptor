@@ -8,7 +8,7 @@
  *
  */
 
-#include "cmsis_os2.h"
+#include <cmsis_os2.h>
 #include "bme280.h"
 #include "health.h"
 #include "logger.h"
