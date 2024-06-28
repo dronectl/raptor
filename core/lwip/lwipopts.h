@@ -3,8 +3,8 @@
  * Copyright (c) 2001-2004 Swedish Institute of Computer Science.
  * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without
- *modification, are permitted provided that the following conditions are met:
+ * Redistribution and use in source and binary forms, with or without modification,
+ * are permitted provided that the following conditions are met:
  *
  * 1. Redistributions of source code must retain the above copyright notice,
  *    this list of conditions and the following disclaimer.
@@ -16,14 +16,14 @@
  *
  * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR IMPLIED
  * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
- *EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- *SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
- *PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
- *BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER
- *IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- *ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- *POSSIBILITY OF SUCH DAMAGE.
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT
+ * SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT
+ * OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
+ * IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY
+ * OF SUCH DAMAGE.
  *
  * This file is part of the lwIP TCP/IP stack.
  *
@@ -34,12 +34,10 @@
 #ifndef __LWIPOPTS_H__
 #define __LWIPOPTS_H__
 
-#define SYS_LIGHTWEIGHT_PROT 0
 /**
  * NO_SYS==1: Provides VERY minimal functionality. Otherwise,
  * use lwIP facilities.
  */
-
 #define NO_SYS 0
 
 /* ---------- Memory options ---------- */
@@ -55,7 +53,7 @@ a lot of data that needs to be copied, this should be set high. */
 /* Relocate the LwIP RAM heap pointer */
 #define LWIP_RAM_HEAP_POINTER (0x30004000)
 
-/* MEMP_NUM_TCP_PCB: the number of simulatenously active TCP
+/* MEMP_NUM_TCP_PCB: the number of simultaneously active TCP
    connections. */
 #define MEMP_NUM_TCP_PCB 10
 
@@ -74,9 +72,6 @@ a lot of data that needs to be copied, this should be set high. */
    no copy is needed */
 #define LWIP_SUPPORT_CUSTOM_PBUF 1
 
-/* --------- Set hostname of device on network ---------- */
-#define LWIP_NETIF_HOSTNAME 0
-
 /* ---------- IPv4 options ---------- */
 #define LWIP_IPV4 1
 
@@ -88,9 +83,7 @@ a lot of data that needs to be copied, this should be set high. */
    order. Define to 0 if your device is low on memory. */
 
 /* TCP Maximum segment size. */
-#define TCP_MSS                                                              \
-  (1500 - 40) /* TCP_MSS = (Ethernet MTU - IP header size - TCP header size) \
-               */
+#define TCP_MSS (1500 - 40) /* TCP_MSS = (Ethernet MTU - IP header size - TCP header size) */
 
 /* TCP sender buffer space (bytes). */
 #define TCP_SND_BUF (4 * TCP_MSS)
@@ -109,7 +102,7 @@ a lot of data that needs to be copied, this should be set high. */
 #define UDP_TTL 255
 
 /* ---------- Statistics options ---------- */
-#define LWIP_STATS 1
+#define LWIP_STATS 0
 
 /* ---------- link callback options ---------- */
 /* LWIP_NETIF_LINK_CALLBACK==1: Support a callback function from an interface
@@ -124,8 +117,7 @@ a lot of data that needs to be copied, this should be set high. */
 */
 
 /*
-The STM32H7xx allows computing and verifying the IP, UDP, TCP and ICMP checksums
-by hardware:
+The STM32H7xx allows computing and verifying the IP, UDP, TCP and ICMP checksums by hardware:
  - To use this feature let the following define uncommented.
  - To disable it and process by CPU comment the  the checksum.
 */
@@ -134,51 +126,38 @@ by hardware:
 #ifdef CHECKSUM_BY_HARDWARE
 /* CHECKSUM_GEN_IP==0: Generate checksums by hardware for outgoing IP packets.*/
 #define CHECKSUM_GEN_IP 0
-/* CHECKSUM_GEN_UDP==0: Generate checksums by hardware for outgoing UDP
- * packets.*/
+/* CHECKSUM_GEN_UDP==0: Generate checksums by hardware for outgoing UDP packets.*/
 #define CHECKSUM_GEN_UDP 0
-/* CHECKSUM_GEN_TCP==0: Generate checksums by hardware for outgoing TCP
- * packets.*/
+/* CHECKSUM_GEN_TCP==0: Generate checksums by hardware for outgoing TCP packets.*/
 #define CHECKSUM_GEN_TCP 0
 /* CHECKSUM_CHECK_IP==0: Check checksums by hardware for incoming IP packets.*/
 #define CHECKSUM_CHECK_IP 0
-/* CHECKSUM_CHECK_UDP==0: Check checksums by hardware for incoming UDP
- * packets.*/
+/* CHECKSUM_CHECK_UDP==0: Check checksums by hardware for incoming UDP packets.*/
 #define CHECKSUM_CHECK_UDP 0
-/* CHECKSUM_CHECK_TCP==0: Check checksums by hardware for incoming TCP
- * packets.*/
+/* CHECKSUM_CHECK_TCP==0: Check checksums by hardware for incoming TCP packets.*/
 #define CHECKSUM_CHECK_TCP 0
-/* CHECKSUM_GEN_ICMP==1: Check checksums by hardware for outgoing ICMP
- * packets.*/
-/* Hardware TCP/UDP checksum insertion not supported when packet is an IPv4
- * fragment */
+/* CHECKSUM_GEN_ICMP==1: Check checksums by hardware for outgoing ICMP packets.*/
+/* Hardware TCP/UDP checksum insertion not supported when packet is an IPv4 fragment */
 #define CHECKSUM_GEN_ICMP 1
-/* CHECKSUM_CHECK_ICMP==0: Check checksums by hardware for incoming ICMP
- * packets.*/
+/* CHECKSUM_CHECK_ICMP==0: Check checksums by hardware for incoming ICMP packets.*/
 #define CHECKSUM_CHECK_ICMP 0
 
 #else
 /* CHECKSUM_GEN_IP==1: Generate checksums in software for outgoing IP packets.*/
 #define CHECKSUM_GEN_IP 1
-/* CHECKSUM_GEN_UDP==1: Generate checksums in software for outgoing UDP
- * packets.*/
+/* CHECKSUM_GEN_UDP==1: Generate checksums in software for outgoing UDP packets.*/
 #define CHECKSUM_GEN_UDP 1
-/* CHECKSUM_GEN_TCP==1: Generate checksums in software for outgoing TCP
- * packets.*/
+/* CHECKSUM_GEN_TCP==1: Generate checksums in software for outgoing TCP packets.*/
 #define CHECKSUM_GEN_TCP 1
 /* CHECKSUM_CHECK_IP==1: Check checksums in software for incoming IP packets.*/
 #define CHECKSUM_CHECK_IP 1
-/* CHECKSUM_CHECK_UDP==1: Check checksums in software for incoming UDP
- * packets.*/
+/* CHECKSUM_CHECK_UDP==1: Check checksums in software for incoming UDP packets.*/
 #define CHECKSUM_CHECK_UDP 1
-/* CHECKSUM_CHECK_TCP==1: Check checksums in software for incoming TCP
- * packets.*/
+/* CHECKSUM_CHECK_TCP==1: Check checksums in software for incoming TCP packets.*/
 #define CHECKSUM_CHECK_TCP 1
-/* CHECKSUM_GEN_ICMP==1: Check checksums by hardware for outgoing ICMP
- * packets.*/
+/* CHECKSUM_GEN_ICMP==1: Check checksums by hardware for outgoing ICMP packets.*/
 #define CHECKSUM_GEN_ICMP 1
-/* CHECKSUM_CHECK_ICMP==1: Check checksums by hardware for incoming ICMP
- * packets.*/
+/* CHECKSUM_CHECK_ICMP==1: Check checksums by hardware for incoming ICMP packets.*/
 #define CHECKSUM_CHECK_ICMP 1
 #endif
 
@@ -201,6 +180,27 @@ by hardware:
  * LWIP_SOCKET==1: Enable Socket API (require to use sockets.c)
  */
 #define LWIP_SOCKET 1
+
+/*
+   ------------------------------------
+   ---------- LWIP_NETIF_API options ----------
+   ------------------------------------
+*/
+/**
+ * LWIP_NETIF_API==1: Enable NETIF API
+ */
+#define LWIP_NETIF_API 1
+
+/*
+   ------------------------------------
+   ---------- httpd options ----------
+   ------------------------------------
+*/
+/** Set this to 1 to include "fsdata_custom.c" instead of "fsdata.c" for the
+ * file system (to prevent changing the file included in CVS) */
+#define HTTPD_USE_CUSTOM_FSDATA 0
+#define MEMP_DEBUG LWIP_DBG_ON
+#define MEM_DEBUG LWIP_DBG_ON
 
 /*
    ---------------------------------

@@ -16,19 +16,16 @@
 
 #include <lwip/inet.h>
 #include <lwip/sockets.h>
-#include <cmsis_os2.h>
+#include <FreeRTOS.h>
+#include <task.h>
 
-__attribute__((section(".bss"))) static struct lexer_handle lhandle;
-__attribute__((section(".bss"))) static struct parser_handle phandle;
-__attribute__((section(".bss"))) static char buffer[SCPI_MAX_INPUT_BUFFER_LEN];
-
-const osThreadAttr_t scpi_attr = {
-    .name = "scpi_task",
-    .priority = osPriorityNormal5,
-};
-static osThreadId_t scpi_handle;
+//__attribute__((section(".ram_d3"))) static StackType_t scpi_stk[STACK_SIZE];
+//__attribute__((section(".ram_d3"))) static StaticTask_t scpi_task_buffer;
 
 static void handle_scpi_request(const struct scpi_handle *shandle) {
+  char buffer[SCPI_MAX_INPUT_BUFFER_LEN] = {0};
+  struct lexer_handle lhandle = {0};
+  struct parser_handle phandle = {0};
   lexer_init(&lhandle);
   parser_init(&phandle);
   lexer_run(&lhandle, shandle->buffer, shandle->buflen);
@@ -71,7 +68,7 @@ static void handle_client_session(int client_fd) {
   }
 }
 
-static __NO_RETURN void scpi_main(__attribute__((unused)) void *argument) {
+static void scpi_main(__attribute__((unused)) void *argument) {
   int sock, size, client_fd;
   struct sockaddr_in address, remotehost;
   if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
@@ -91,7 +88,7 @@ static __NO_RETURN void scpi_main(__attribute__((unused)) void *argument) {
     client_fd = accept(sock, (struct sockaddr *)&remotehost, (socklen_t *)&size);
     info("Accepted connection with fd: %d\n", client_fd);
     if (client_fd < 0) {
-      osThreadYield();
+      taskYIELD();
       continue;
     }
     handle_client_session(client_fd);
@@ -100,12 +97,13 @@ static __NO_RETURN void scpi_main(__attribute__((unused)) void *argument) {
   }
 error:
   critical("scpi socket init failed with %i\n", errno);
-  osThreadExit();
+  vTaskDelete(NULL);
 }
 
 system_status_t scpi_init(void) {
-  scpi_handle = osThreadNew(scpi_main, NULL, &scpi_attr);
-  if (scpi_handle == NULL) {
+  TaskHandle_t scpi_handle = NULL;
+  BaseType_t ret = xTaskCreate(scpi_main, "scpi_task", configMINIMAL_STACK_SIZE, NULL, 11, &scpi_handle);
+  if (ret != pdPASS) {
     return SYSTEM_MOD_FAIL;
   }
   return SYSTEM_OK;

@@ -8,18 +8,15 @@
  *
  */
 
-#include <cmsis_os2.h>
+#include <FreeRTOS.h>
+#include <task.h>
 #include "bme280.h"
 #include "health.h"
 #include "logger.h"
 #include "stm32h7xx_hal.h" // IWYU pragma: export
-#include "stm32h7xx_nucleo.h"
 
-const osThreadAttr_t health_attr = {
-    .name = "health_task",
-    .priority = osPriorityAboveNormal,
-};
-static osThreadId_t health_handle;
+//__attribute__((section(".ram_d2"))) static StackType_t health_stk[STACK_SIZE];
+//__attribute__((section(".ram_d2"))) static StaticTask_t health_task_buffer;
 
 /**
  * @brief Health FSM States
@@ -95,7 +92,7 @@ static enum state fsm_tick(const enum state current_state) {
  *
  * @param[in] I2C_HandleTypeDef for bme280 sensor
  */
-static __NO_RETURN void health_main(void *argument) {
+static void health_main(void *argument) {
   enum state current_state = STATE_INIT;
   // get i2c2 handle and set bme280
   I2C_HandleTypeDef hi2c2 = *(I2C_HandleTypeDef *)argument;
@@ -104,8 +101,7 @@ static __NO_RETURN void health_main(void *argument) {
   while (1) {
     current_state = fsm_tick(current_state);
     info("Current state: %d\n", current_state);
-    osDelay(100);
-    BSP_LED_Toggle(LED3);
+    vTaskDelay(500);
   }
 }
 
@@ -116,8 +112,9 @@ static __NO_RETURN void health_main(void *argument) {
  * @return system status code
  */
 system_status_t health_init(I2C_HandleTypeDef hi2c) {
-  health_handle = osThreadNew(health_main, &hi2c, &health_attr);
-  if (health_handle == NULL) {
+  TaskHandle_t health_handle = NULL;
+  BaseType_t ret = xTaskCreate(health_main, "health_task", configMINIMAL_STACK_SIZE, &hi2c, 10, &health_handle);
+  if (ret != pdPASS) {
     return SYSTEM_MOD_FAIL;
   }
   return SYSTEM_OK;

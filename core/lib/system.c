@@ -15,8 +15,7 @@ void system_tick_indicator(void) {
 }
 
 void system_spinlock(void) {
+  BSP_LED_On(LED3);
   while (1) {
-    BSP_LED_Toggle(LED3);
-    HAL_Delay(200);
   }
 }
