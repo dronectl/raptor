@@ -1,5 +1,5 @@
 #include <stdint.h> // IWYU pragma: export
-#include "cmsis_gcc.h"
+#include "logger.h"
 #include "system.h"
 #include "FreeRTOS.h"
 #include "task.h"
@@ -35,11 +35,11 @@ void vApplicationIdleHook(void) {
 }
 
 void vApplicationTickHook(void) {
-  system_tick_indicator();
+  system_health_indicator();
 }
 
 void vApplicationStackOverflowHook(xTaskHandle xTask, signed char *pcTaskName) {
-  system_spinlock();
+  critical("Stack overflow signal in task %s\n", pcTaskName);
 }
 
 void vApplicationMallocFailedHook(void) {
