@@ -65,6 +65,8 @@ void system_health_indicator(void) {
 void system_spinlock(void) {
   BSP_LED_On(LED3);
   while (1) {
+    HAL_Delay(100);
+    BSP_LED_Toggle(LED3);
   }
 }
 

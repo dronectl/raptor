@@ -13,6 +13,17 @@ typedef int system_status_t;
  *
  */
 void system_spinlock(void);
-void system_tick_indicator(void);
+
+/**
+ * @brief System operating system health indicator (HID)
+ *
+ */
+void system_health_indicator(void);
+
+/**
+ * @brief Operating system startup entry
+ *
+ */
+void system_boot(void);
 
 #endif // __SYSTEM_H__
