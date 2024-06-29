@@ -9,15 +9,18 @@
  */
 
 #include "logger.h"
+#include "FreeRTOSConfig.h"
 #include "lwip/inet.h"
 #include "lwip/sockets.h"
-#include <cmsis_os2.h>
+#include <FreeRTOS.h>
+#include <task.h>
+#include <queue.h>
 #include <stdarg.h>
 #include <string.h>
 
 #define MAX_LOGGING_LINE_LEN 300
-#define MAX_LOGGING_CBUFFER_SIZE 10
-#define LOG_HEADER_FMT "%ld::%i::%s - "
+#define MAX_LOG_BUFFER_SIZE 10
+#define LOG_HEADER_FMT "[ %9ld %5s ]\t"
 
 /**
  * @brief Log message struct.
@@ -26,51 +29,16 @@
 struct log_msg {
   uint32_t epoch;                     // current CPU epoch
   enum logger_level level;            // log level
-  int line;                           // line number
   char message[MAX_LOGGING_LINE_LEN]; // post variable args injection
 };
 
-const osThreadAttr_t logger_attr = {
-    .name = "logger_task",
-    .priority = osPriorityLow,
-};
+// auxiliary ram for buffered logs
+__attribute__((section(".ram_d4"))) static uint8_t log_queue_stack[MAX_LOG_BUFFER_SIZE * sizeof(struct log_msg)];
 
-static osMessageQueueAttr_t attrs = {
-    .name = "log_queue",
-};
-
-static osMessageQueueId_t queue_id;
-static osThreadId_t logger_handle;
 static enum logger_level _level = LOGGER_DISABLE;
-
-/**
- * @brief Get the string representation of log level enum
- *
- * @param level log level enum
- * @return char*
- */
-static const char *_get_level_str(enum logger_level level);
-
-/**
- * @brief Construct log string message from log struct. This method builds the log header and
- * combines the formatted log message with the header.
- *
- * @param[in] log log entry
- * @param[in,out] buffer input write buffer
- * @param[in] size size of buffer
- */
-static void build_log_string(const struct log_msg *log, char *buffer, const size_t size) {
-  const char *level_str = _get_level_str(log->level);
-  int offset = snprintf(buffer, size, LOG_HEADER_FMT, (long)log->epoch, log->line, level_str);
-  int len = strlen(log->message);
-  // overflow check and clamp len
-  if (len + offset > (int)size) {
-    len = size - offset - 1; // leave room for null terminator
-  }
-  // intentional overwrite of previous null character
-  memcpy(buffer + offset, log->message, len);
-  buffer[len + offset + 1] = '\0';
-}
+static StaticQueue_t log_static_queue;
+static QueueHandle_t log_queue;
+static TaskHandle_t log_task_handle;
 
 /**
  * @brief Get logger level string from enum
@@ -85,15 +53,39 @@ static const char *_get_level_str(const enum logger_level level) {
     case LOGGER_INFO:
       return "INFO";
     case LOGGER_WARNING:
-      return "WARNING";
+      return "WARN";
     case LOGGER_ERROR:
-      return "ERROR";
+      return "ERR";
     default:
-      return "CRITICAL";
+      return "CRIT";
   }
 }
 
-static __NO_RETURN void logger_task(void __attribute__((unused)) * argument) {
+/**
+ * @brief Construct log string message from log struct. This method builds the log header and
+ * combines the formatted log message with the header.
+ *
+ * @param[in] log log entry
+ * @param[in,out] buffer input write buffer
+ * @param[in] size size of buffer
+ */
+static void build_log_string(const struct log_msg *log, char *buffer, const size_t size) {
+  const char *level_str = _get_level_str(log->level);
+  int offset = snprintf(buffer, size, LOG_HEADER_FMT, (long)log->epoch, level_str);
+  int len = strlen(log->message);
+  // overflow check and clamp len
+  if (len + offset > (int)size) {
+    len = size - offset - 1; // leave room for null terminator
+  }
+  // intentional overwrite of previous null character
+  memcpy(buffer + offset, log->message, len);
+}
+
+/**
+ * @brief Logging server task. Listen on port 3000 for connections and stream logs out to client.
+ *
+ */
+static void log_server_task(void __attribute__((unused)) * argument) {
   int sock, size, client_fd;
   struct sockaddr_in address, remotehost;
   struct log_msg log;
@@ -108,21 +100,19 @@ static __NO_RETURN void logger_task(void __attribute__((unused)) * argument) {
   }
   listen(sock, 5);
   while (1) {
-    // task blocking
     client_fd = accept(sock, (struct sockaddr *)&remotehost, (socklen_t *)&size);
-    info("Accepted connection with fd: %d\n", client_fd);
     if (client_fd < 0) {
-      osThreadYield();
+      taskYIELD();
       continue;
     }
+    char log_buffer[MAX_LOGGING_LINE_LEN];
     while (1) {
-      osMessageQueueGet(queue_id, &log, NULL, osWaitForever);
-      char log_buffer[MAX_LOGGING_LINE_LEN] = {0};
+      memset(log_buffer, '\0', sizeof(log_buffer));
+      memset(&log, 0, sizeof(log));
+      xQueueReceive(log_queue, &log, portMAX_DELAY);
       build_log_string(&log, log_buffer, MAX_LOGGING_LINE_LEN);
       ssize_t bytes_sent = write(client_fd, log_buffer, strlen(log_buffer));
-      /* Check for errors or client disconnect */
       if (bytes_sent <= 0) {
-        /* Connection closed by client */
         close(client_fd);
         break;
       }
@@ -130,7 +120,7 @@ static __NO_RETURN void logger_task(void __attribute__((unused)) * argument) {
   }
 error:
   critical("Socket init failed with %i", errno);
-  osThreadExit();
+  vTaskDelete(log_task_handle);
 }
 
 /**
@@ -160,21 +150,20 @@ enum logger_level logger_get_level(void) {
  * @param fmt log string formatter
  * @param ... variable arguments for string formatter
  */
-void logger_out(const enum logger_level level, const int line, const char *fmt, ...) {
+void logger_out(const enum logger_level level, const char *fmt, ...) {
   struct log_msg log = {0};
   va_list args;
   // filter output by log level
   if (logger_get_level() > level) {
     return;
   }
-  log.epoch = osKernelGetTickCount();
+  log.epoch = xTaskGetTickCount();
   log.level = level;
-  log.line = line;
   // variable arguments must be processed here otherwise they will go out of scope
   va_start(args, fmt);
   vsnprintf(log.message, MAX_LOGGING_LINE_LEN, fmt, args);
   va_end(args);
-  osMessageQueuePut(queue_id, (void *)&log, 0, 0);
+  xQueueSendToBack(log_queue, (void *)&log, 20);
 }
 
 /**
@@ -184,13 +173,13 @@ void logger_out(const enum logger_level level, const int line, const char *fmt, 
  */
 system_status_t logger_init(const enum logger_level level) {
   /* Create the queue, storing the returned handle in the xQueue variable. */
-  queue_id = osMessageQueueNew(MAX_LOGGING_CBUFFER_SIZE, sizeof(struct log_msg), &attrs);
-  if (queue_id == NULL) {
+  log_queue = xQueueCreateStatic(MAX_LOG_BUFFER_SIZE, sizeof(struct log_msg), log_queue_stack, &log_static_queue);
+  if (log_queue == NULL) {
     return SYSTEM_MOD_FAIL;
   }
   logger_set_level(level);
-  logger_handle = osThreadNew(logger_task, NULL, &logger_attr);
-  if (logger_handle == NULL) {
+  BaseType_t ret = xTaskCreate(log_server_task, "log_task", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, &log_task_handle);
+  if (ret != pdPASS) {
     return SYSTEM_MOD_FAIL;
   }
   return SYSTEM_OK;
