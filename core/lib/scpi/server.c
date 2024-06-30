@@ -9,6 +9,7 @@
  */
 
 #include "logger.h"
+#include "scpi/ieee.h"
 #include "scpi/lexer.h"
 #include "scpi/parser.h"
 #include "scpi/common.h"
@@ -38,15 +39,15 @@ static void handle_scpi_request(const struct scpi_handle *shandle) {
   }
   parser_run(&phandle, &lhandle);
   for (int i = 0; i < phandle.cmdidx + 1; i++) {
-    info("S:0x%X|Eti:%d|Eci:%d|Es:0x%X|H:%d|A:%d\n", phandle.commands[i].spec, phandle.error.tidx, phandle.error.cidx, phandle.error.code, phandle.commands[i].hidx + 1, phandle.commands[i].aidx + 1);
+    info("S:0x%X|Eti:%d|Eci:%d|Es:0x%X|H:%d|A:%d\n", phandle.commands[i].spec, phandle.error.tidx, phandle.error.cidx, phandle.error.code, phandle.commands[i].hidx, phandle.commands[i].aidx);
     int index = commands_search_index(phandle.commands[i].headers, phandle.commands[i].hidx);
     if (index < 0) {
       warning("command endpoint not found\n");
     }
     if (phandle.commands[i].spec & PARSER_CMD_SPEC_QUERY) {
-      commands_process_query(index, phandle.commands[i].aidx + 1, phandle.commands[i].args, &buffer[i], sizeof(buffer));
+      commands_process_query(index, phandle.commands[i].aidx, phandle.commands[i].args, &buffer[i], sizeof(buffer));
     } else if (phandle.commands[i].spec & PARSER_CMD_SPEC_SET) {
-      commands_process_write(index, phandle.commands[i].aidx + 1, phandle.commands[i].args);
+      commands_process_write(index, phandle.commands[i].aidx, phandle.commands[i].args);
     }
   }
   write(shandle->clfd, buffer, strlen(buffer));
@@ -69,14 +70,14 @@ static void handle_client_session(int client_fd) {
   }
 }
 
-static void scpi_main(__attribute__((unused)) void *argument) {
+static void scpi_task(__attribute__((unused)) void *argument) {
   int sock, size, client_fd;
   struct sockaddr_in address, remotehost;
   if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
     goto error;
   }
   address.sin_family = AF_INET;
-  address.sin_port = htons(SCPI_PORT);
+  address.sin_port = htons(IEEE_SCPI_PORT);
   address.sin_addr.s_addr = INADDR_ANY;
   if (bind(sock, (struct sockaddr *)&address, sizeof(address)) < 0) {
     goto error;
@@ -85,15 +86,14 @@ static void scpi_main(__attribute__((unused)) void *argument) {
     goto error;
   }
   while (1) {
-    info("blocking on accept...\n");
     client_fd = accept(sock, (struct sockaddr *)&remotehost, (socklen_t *)&size);
     if (client_fd < 0) {
       taskYIELD();
       continue;
     }
-    info("Accepted connection with fd: %d\n", client_fd);
+    info("fd (%d) accepting connection\n", client_fd);
     handle_client_session(client_fd);
-    info("closing session\n");
+    info("fd (%d) closing session\n");
     close(client_fd);
   }
 error:
@@ -102,7 +102,8 @@ error:
 }
 
 system_status_t scpi_init(void) {
-  scpi_task_handle = xTaskCreateStatic(scpi_main, "scpi_task", STACK_SIZE, NULL, tskIDLE_PRIORITY + 10, scpi_task_stk, &scpi_task_buffer);
+  scpi_error_init();
+  scpi_task_handle = xTaskCreateStatic(scpi_task, "scpi_task", STACK_SIZE, NULL, tskIDLE_PRIORITY + 10, scpi_task_stk, &scpi_task_buffer);
   if (scpi_task_handle == NULL) {
     return SYSTEM_MOD_FAIL;
   }
