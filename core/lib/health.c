@@ -100,7 +100,6 @@ static void health_main(void *argument) {
   info("Starting health task FSM\n");
   while (1) {
     current_state = fsm_tick(current_state);
-    info("Current state: %d\n", current_state);
     vTaskDelay(500);
   }
 }

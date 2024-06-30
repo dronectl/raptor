@@ -11,10 +11,10 @@
 #ifndef __COMMON_H__
 #define __COMMON_H__
 
+#include "scpi/err.h"
 #include <stdint.h>
 #include <stddef.h>
 
-#define SCPI_PORT 5025
 #define SCPI_MAX_INPUT_BUFFER_LEN 1024
 #define SCPI_MAX_RESPONSE_LEN 128
 #define SCPI_MAX_CMD_ARGS 10
@@ -24,13 +24,6 @@
 #define SCPI_MAX_RET_LEN 10
 #define SCPI_MAX_TOKEN_LEN 10
 #define SCPI_MAX_ABBR_TOKEN_LEN 5
-
-typedef int scpi_err_t;
-
-#define SCPI_ERR_OK (scpi_err_t)0
-#define SCPI_ERR_GEN (scpi_err_t)1
-#define SCPI_ERR_BAD_ARG (scpi_err_t)2
-#define SCPI_ERR_OUT_OF_RANGE (scpi_err_t)3
 
 struct scpi_token {
   uint8_t len;
