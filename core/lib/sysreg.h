@@ -50,6 +50,8 @@ typedef int sysreg_status_t;
 #define SYSREG_ACCESS_R (1 << SYSREG_ACCESS_R_OFFSET)
 #define SYSREG_ACCESS_W (1 << SYSREG_ACCESS_W_OFFSET)
 #define SYSREG_ACCESS_L (1 << SYSREG_ACCESS_L_OFFSET)
+// one or more errors exist in error FIFO queue
+#define SYSREG_STB_ERR_QUEUE (1 << 2)
 
 typedef struct sysreg_t {
   uint8_t gpu8;      // general purpose u8 register
@@ -62,6 +64,7 @@ typedef struct sysreg_t {
   float gpf32_ul;    // general purpose f32 register (unlocked)
   uint32_t uuid;
   uint8_t sys_stat;
+  uint8_t stb; // status byte register (IEEE 488.2)
   uint32_t hw_version;
   uint32_t fw_version;
   float setpoint;
@@ -78,8 +81,9 @@ typedef struct sysreg_t {
 #define SYSREG_GPU32_UL offsetof(sysreg_t, gpu32_ul)
 #define SYSREG_GPF32 offsetof(sysreg_t, gpf32)
 #define SYSREG_GPF32_UL offsetof(sysreg_t, gpf32_ul)
-#define SYSREG_SYS_STAT offsetof(sysreg_t, sys_stat)
 #define SYSREG_UUID offsetof(sysreg_t, uuid)
+#define SYSREG_SYS_STAT offsetof(sysreg_t, sys_stat)
+#define SYSREG_STB offsetof(sysreg_t, stb)
 #define SYSREG_HW_VERSION offsetof(sysreg_t, hw_version)
 #define SYSREG_FW_VERSION offsetof(sysreg_t, fw_version)
 #define SYSREG_SETPOINT offsetof(sysreg_t, setpoint)
@@ -88,6 +92,7 @@ typedef struct sysreg_t {
  * @brief System register reset
  */
 #define SYSREG_UUID_RESET (uint32_t)0xDECAFBAD
+#define SYSREG_STB_RESET (uint8_t)0x0
 #define SYSREG_SYS_STAT_RESET (uint8_t)0x0
 #define SYSREG_HW_VERSION_RESET (uint32_t)0x10000 // v0.1.0
 #define SYSREG_FW_VERSION_RESET (uint32_t)0x10000 // v0.1.0
