@@ -5,12 +5,13 @@
 #include "scpi/common.h"
 #include "scpi/commands.h"
 #include "scpi/err.h"
-
+#include <stdio.h>
 #include <stdbool.h>
 #include <string.h>
 
 const struct scpi_header IDN = {.abbr = "idn", .full = "idn"};
 const struct scpi_header RST = {.abbr = "rst", .full = "rst"};
+const struct scpi_header STB = {.abbr = "stb", .full = "stb"};
 const struct scpi_header CONTrol = {.abbr = "cont", .full = "control"};
 const struct scpi_header SETpoint = {.abbr = "set", .full = "setpoint"};
 const struct scpi_header STATus = {.abbr = "stat", .full = "status"};
@@ -23,12 +24,14 @@ const char idn[100] = "dronectl, raptor, v0.1.0\n";
 
 static scpi_err_t _system_reset(__attribute__((unused)) const uint8_t argc, __attribute__((unused)) const struct scpi_token argv[SCPI_MAX_CMD_ARGS]);
 static scpi_err_t _get_idn(__attribute__((unused)) const uint8_t argc, __attribute__((unused)) const struct scpi_token argv[SCPI_MAX_CMD_ARGS], char *buffer, const size_t size);
+static scpi_err_t _get_stb(__attribute__((unused)) const uint8_t argc, __attribute__((unused)) const struct scpi_token argv[SCPI_MAX_CMD_ARGS], char *buffer, const size_t size);
 static scpi_err_t _system_error_pop(__attribute__((unused)) const uint8_t argc, __attribute__((unused)) const struct scpi_token argv[SCPI_MAX_CMD_ARGS], char *buffer, const size_t size);
 
 static const struct scpi_endpoint endpoints[] = {
     {.headers = {&IDN}, .query = _get_idn, .write = NULL},
-    {.headers = {&SYSTem, &ERRor}, .query = _system_error_pop, .write = NULL},
     {.headers = {&RST}, .query = NULL, .write = _system_reset},
+    {.headers = {&STB}, .query = _get_stb, .write = NULL},
+    {.headers = {&SYSTem, &ERRor}, .query = _system_error_pop, .write = NULL},
     {.headers = {&CONTrol, &SETpoint}, .query = NULL, .write = NULL},
     {.headers = {&CONTrol, &STATus}, .query = NULL, .write = NULL},
 };
@@ -41,9 +44,16 @@ static scpi_err_t _get_idn(__attribute__((unused)) const uint8_t argc, __attribu
   return SCPI_ERR_NULL;
 }
 
+static scpi_err_t _get_stb(__attribute__((unused)) const uint8_t argc, __attribute__((unused)) const struct scpi_token argv[SCPI_MAX_CMD_ARGS], char *buffer, const size_t size) {
+  uint8_t stb;
+  sysreg_get_u8(SYSREG_STB, &stb);
+  snprintf(buffer, sizeof(buffer), "+%d\n", stb);
+  return SCPI_ERR_NULL;
+}
+
 static scpi_err_t _system_error_pop(__attribute__((unused)) const uint8_t argc, __attribute__((unused)) const struct scpi_token argv[SCPI_MAX_CMD_ARGS], char *buffer, const size_t size) {
   scpi_err_t syserror = scpi_error_pop();
-  scpi_error_strfmt(syserror, buffer, size);
+  scpi_error_strfmt(syserror, buffer);
   return SCPI_ERR_NULL;
 }
 

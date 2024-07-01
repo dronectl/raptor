@@ -142,6 +142,14 @@ static reg_conf_t register_config[] = {
     .max = {.u8 = 255}
   },
   {
+    .offset = SYSREG_STB,
+    .dtype = DTYPE_U8,
+    .access = SYSREG_ACCESS_R | SYSREG_ACCESS_W,
+    .reset = {.u8 = SYSREG_STB_RESET},
+    .min = {.u8 = 0},
+    .max = {.u8 = 255}
+  },
+  {
     .offset = SYSREG_SETPOINT,
     .dtype = DTYPE_F32,
     .access = SYSREG_ACCESS_R | SYSREG_ACCESS_W,
