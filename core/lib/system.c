@@ -35,22 +35,18 @@ static void system_bootstrap_task(void __attribute__((unused)) * argument) {
   if (status != SYSTEM_OK) {
     system_spinlock();
   }
-  info("Initialized ethernet interfaces.\n");
   logger_init(LOGGER_TRACE);
   if (status != SYSTEM_OK) {
     system_spinlock();
   }
-  info("Created logging task\n");
   status = health_init(hi2c2);
   if (status != SYSTEM_OK) {
     system_spinlock();
   }
-  info("Created health task\n");
   status = scpi_init();
   if (status != SYSTEM_OK) {
     system_spinlock();
   }
-  info("Created scpi task\n");
   vTaskDelete(system_boostrap);
 }
 

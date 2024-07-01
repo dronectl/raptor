@@ -18,26 +18,30 @@
 #include <stdarg.h>
 #include <string.h>
 
-#define MAX_LOGGING_LINE_LEN 300
+#define MAX_LOG_HEADER_LEN 21
+#define MAX_LOG_OUT_LEN 200
+#define MAX_LOG_MESSAGE_LEN (MAX_LOG_OUT_LEN - MAX_LOG_HEADER_LEN)
 #define MAX_LOG_BUFFER_SIZE 10
 #define LOG_HEADER_FMT "[ %9ld %5s ]\t"
+
+#define min(a, b) a > b ? b : a
 
 /**
  * @brief Log message struct.
  *
  */
 struct log_msg {
-  uint32_t epoch;                     // current CPU epoch
-  enum logger_level level;            // log level
-  char message[MAX_LOGGING_LINE_LEN]; // post variable args injection
+  uint32_t epoch;
+  enum logger_level level;
+  char message[MAX_LOG_MESSAGE_LEN]; // post variable args injection
 };
 
 // auxiliary ram for buffered logs
 __attribute__((section(".ram_d4"))) static uint8_t log_queue_stack[MAX_LOG_BUFFER_SIZE * sizeof(struct log_msg)];
 
-static enum logger_level _level = LOGGER_DISABLE;
+static enum logger_level _level = LOGGER_INFO;
 static StaticQueue_t log_static_queue;
-static QueueHandle_t log_queue;
+static QueueHandle_t log_queue = NULL;
 static TaskHandle_t log_task_handle;
 
 /**
@@ -69,16 +73,11 @@ static const char *_get_level_str(const enum logger_level level) {
  * @param[in,out] buffer input write buffer
  * @param[in] size size of buffer
  */
-static void build_log_string(const struct log_msg *log, char *buffer, const size_t size) {
-  const char *level_str = _get_level_str(log->level);
-  int offset = snprintf(buffer, size, LOG_HEADER_FMT, (long)log->epoch, level_str);
-  int len = strlen(log->message);
-  // overflow check and clamp len
-  if (len + offset > (int)size) {
-    len = size - offset - 1; // leave room for null terminator
-  }
-  // intentional overwrite of previous null character
-  memcpy(buffer + offset, log->message, len);
+static int write_log(const int client_fd, const struct log_msg *log) {
+  char buffer[MAX_LOG_OUT_LEN] = {0};
+  int offset = snprintf(buffer, MAX_LOG_HEADER_LEN, LOG_HEADER_FMT, (long)log->epoch, _get_level_str(log->level));
+  memcpy(&buffer[offset], log->message, min(strlen(log->message), (size_t)(MAX_LOG_MESSAGE_LEN - offset - 1)));
+  return write(client_fd, buffer, strlen(buffer));
 }
 
 /**
@@ -88,7 +87,6 @@ static void build_log_string(const struct log_msg *log, char *buffer, const size
 static void log_server_task(void __attribute__((unused)) * argument) {
   int sock, size, client_fd;
   struct sockaddr_in address, remotehost;
-  struct log_msg log;
   if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
     goto error;
   }
@@ -105,17 +103,15 @@ static void log_server_task(void __attribute__((unused)) * argument) {
       taskYIELD();
       continue;
     }
-    char log_buffer[MAX_LOGGING_LINE_LEN];
+    xQueueReset(log_queue);
     while (1) {
-      memset(log_buffer, '\0', sizeof(log_buffer));
-      memset(&log, 0, sizeof(log));
-      xQueueReceive(log_queue, &log, portMAX_DELAY);
-      build_log_string(&log, log_buffer, MAX_LOGGING_LINE_LEN);
-      ssize_t bytes_sent = write(client_fd, log_buffer, strlen(log_buffer));
-      if (bytes_sent <= 0) {
-        close(client_fd);
-        break;
-      }
+      struct log_msg log = {0};
+      if (xQueueReceive(log_queue, &log, portMAX_DELAY) == pdPASS) {
+        if (write_log(client_fd, &log) <= 0) {
+          close(client_fd);
+          break;
+        }
+      };
     }
   }
 error:
@@ -151,19 +147,19 @@ enum logger_level logger_get_level(void) {
  * @param ... variable arguments for string formatter
  */
 void logger_out(const enum logger_level level, const char *fmt, ...) {
-  struct log_msg log = {0};
   va_list args;
-  // filter output by log level
+  struct log_msg log = {0};
   if (logger_get_level() > level) {
     return;
   }
   log.epoch = xTaskGetTickCount();
   log.level = level;
-  // variable arguments must be processed here otherwise they will go out of scope
   va_start(args, fmt);
-  vsnprintf(log.message, MAX_LOGGING_LINE_LEN, fmt, args);
+  vsnprintf(log.message, MAX_LOG_MESSAGE_LEN, fmt, args);
   va_end(args);
-  xQueueSendToBack(log_queue, (void *)&log, 20);
+  if (log_queue != NULL) {
+    xQueueSend(log_queue, &log, 0);
+  }
 }
 
 /**
