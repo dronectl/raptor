@@ -93,7 +93,7 @@ static void scpi_task(__attribute__((unused)) void *argument) {
     }
     info("fd (%d) accepting connection\n", client_fd);
     handle_client_session(client_fd);
-    info("fd (%d) closing session\n");
+    info("fd (%d) closing session\n", client_fd);
     close(client_fd);
   }
 error:
