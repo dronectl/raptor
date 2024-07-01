@@ -10,7 +10,6 @@
 
 #include "app_ethernet.h"
 #include "ethernetif.h"
-#include "netif/ethernet.h"
 #include "stm32h7xx_nucleo.h"
 #if LWIP_DHCP
 #include <lwip/dhcp.h>
