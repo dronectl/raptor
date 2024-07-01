@@ -18,10 +18,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32h7xx_hal.h"
-#include "lwip/timeouts.h"
-#include "netif/ethernet.h"
 #include "netif/etharp.h"
-#include "lwip/stats.h"
 #include "lwip/snmp.h"
 #include "lwip/tcpip.h"
 #include "ethernetif.h"
