@@ -65,7 +65,7 @@ static void handle_client_session(int client_fd) {
     if (strncmp(shandle.buffer, "\n", 1) == 0) {
       continue;
     }
-    info("handling inbound request: %s\n", shandle.buffer);
+    info("handling inbound request: %s", shandle.buffer);
     handle_scpi_request(&shandle);
   }
 }

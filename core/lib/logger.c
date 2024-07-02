@@ -19,7 +19,7 @@
 #include <string.h>
 
 #define MAX_LOG_HEADER_LEN 21
-#define MAX_LOG_OUT_LEN 200
+#define MAX_LOG_OUT_LEN 270
 #define MAX_LOG_MESSAGE_LEN (MAX_LOG_OUT_LEN - MAX_LOG_HEADER_LEN)
 #define MAX_LOG_BUFFER_SIZE 10
 #define LOG_HEADER_FMT "[ %9ld %5s ]\t"
@@ -37,11 +37,11 @@ struct log_msg {
 };
 
 // auxiliary ram for buffered logs
-__attribute__((section(".ram_d4"))) static uint8_t log_queue_stack[MAX_LOG_BUFFER_SIZE * sizeof(struct log_msg)];
+__attribute__((section(".ram_d4"))) uint8_t log_queue_stack[MAX_LOG_BUFFER_SIZE * sizeof(struct log_msg)];
 
 static enum logger_level _level = LOGGER_INFO;
 static StaticQueue_t log_static_queue;
-static QueueHandle_t log_queue = NULL;
+static QueueHandle_t log_queue;
 static TaskHandle_t log_task_handle;
 
 /**
@@ -137,6 +137,10 @@ enum logger_level logger_get_level(void) {
   return _level;
 }
 
+static int _build_msg(char *message, const char *fmt, va_list args) {
+  return vsnprintf(message, MAX_LOG_MESSAGE_LEN - 1, fmt, args);
+}
+
 /**
  * @brief Write logging message to buffer.
  *
@@ -155,7 +159,7 @@ void logger_out(const enum logger_level level, const char *fmt, ...) {
   log.epoch = xTaskGetTickCount();
   log.level = level;
   va_start(args, fmt);
-  vsnprintf(log.message, MAX_LOG_MESSAGE_LEN, fmt, args);
+  int bytes = _build_msg(log.message, fmt, args);
   va_end(args);
   if (log_queue != NULL) {
     xQueueSend(log_queue, &log, 0);
