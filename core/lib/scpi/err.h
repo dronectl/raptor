@@ -23,7 +23,7 @@ typedef enum ScpiErrorType {
 
 void scpi_error_init(void);
 void scpi_error_push(const scpi_err_t error);
-int scpi_error_strfmt(const scpi_err_t error, char *buffer, size_t len);
+int scpi_error_strfmt(const scpi_err_t error, char *buffer);
 scpi_err_t scpi_error_pop(void);
 
 #endif // __ERR_H__

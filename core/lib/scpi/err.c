@@ -1,13 +1,11 @@
 
+#include "logger.h"
 #include "sysreg.h"
 #include "cbuffer.h"
 #include "scpi/ieee.h"
 #include "scpi/err.h"
 #include <stdio.h>
 
-struct fifo_queue {
-  int index;
-};
 static scpi_err_t errors[IEEE_SCPI_MAX_ERR_QUEUE_LEN];
 static struct cbuffer_handle equeue;
 
@@ -24,7 +22,8 @@ void scpi_error_init(void) {
 
 void scpi_error_push(const scpi_err_t error) {
   uint8_t stb;
-  cbuffer_status_t status = cbuffer_push(&equeue, (void *)error);
+  cbuffer_status_t status = cbuffer_push(&equeue, &error);
+  trace("pushing error (%d) to fifo queue\n", error);
   if (status == CBUFFER_OVERFLOW) {
     errors[equeue.tail] = SCPI_ERR_EQUEUE_OF;
   }
@@ -37,20 +36,19 @@ scpi_err_t scpi_error_pop(void) {
   uint8_t stb;
   scpi_err_t err;
   cbuffer_status_t status = cbuffer_pop(&equeue, &err);
+  trace("popping error (%d) from fifo queue\n", err);
   if (status == CBUFFER_UNDERFLOW) {
+    trace("FIFO error queue underflow\n");
     err = SCPI_ERR_NULL;
   } else if (status == CBUFFER_EMPTY) {
+    trace("FIFO error queue empty\n");
     sysreg_get_u8(SYSREG_STB, &stb);
     stb &= ~SYSREG_STB_ERR_QUEUE;
     sysreg_set_u8(SYSREG_STB, &stb);
-    err = SCPI_ERR_NULL;
   }
   return err;
 }
 
-int scpi_error_strfmt(const scpi_err_t error, char *buffer, size_t len) {
-  if (len <= MAX_REASON_LEN) {
-    return 0;
-  }
-  return snprintf(buffer, len, IEEE_ERR_STRFMT, emap[error].code, emap[error].reason);
+int scpi_error_strfmt(const scpi_err_t error, char *buffer) {
+  return snprintf(buffer, MAX_REASON_LEN, IEEE_ERR_STRFMT, emap[error].code, emap[error].reason);
 }
