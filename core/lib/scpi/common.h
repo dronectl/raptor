@@ -31,10 +31,9 @@ struct scpi_token {
 };
 
 struct scpi_handle {
-  char buffer[SCPI_MAX_INPUT_BUFFER_LEN];
-  size_t buflen;
   int clfd;
-  int error;
+  size_t buflen;
+  char buffer[SCPI_MAX_INPUT_BUFFER_LEN];
 };
 
 struct scpi_header {

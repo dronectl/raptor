@@ -20,10 +20,10 @@ void scpi_error_init(void) {
   cbuffer_init(&equeue, errors, sizeof(scpi_err_t), sizeof(errors));
 }
 
-void scpi_error_push(const scpi_err_t error) {
+void scpi_error_push(const scpi_err_t err) {
   uint8_t stb;
-  cbuffer_status_t status = cbuffer_push(&equeue, &error);
-  trace("pushing error (%d) to fifo queue\n", error);
+  cbuffer_status_t status = cbuffer_push(&equeue, &err);
+  trace("pushing error (%d) to fifo queue\n", err);
   if (status == CBUFFER_OVERFLOW) {
     errors[equeue.tail] = SCPI_ERR_EQUEUE_OF;
   }

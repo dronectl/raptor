@@ -15,9 +15,6 @@
 #include "logger.h"
 #include "stm32h7xx_hal.h" // IWYU pragma: export
 
-//__attribute__((section(".ram_d2"))) static StackType_t health_stk[STACK_SIZE];
-//__attribute__((section(".ram_d2"))) static StaticTask_t health_task_buffer;
-
 /**
  * @brief Health FSM States
  *

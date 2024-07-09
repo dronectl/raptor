@@ -27,7 +27,7 @@ __attribute__((section(".ram_d3"))) static StaticTask_t scpi_task_buffer;
 static TaskHandle_t scpi_task_handle;
 
 static void handle_scpi_request(const struct scpi_handle *shandle) {
-  char buffer[SCPI_MAX_INPUT_BUFFER_LEN] = {0};
+  char buffer[SCPI_MAX_RESPONSE_LEN] = {0};
   struct lexer_handle lhandle = {0};
   struct parser_handle phandle = {0};
   lexer_init(&lhandle);
@@ -54,10 +54,10 @@ static void handle_scpi_request(const struct scpi_handle *shandle) {
 }
 
 static void handle_client_session(int client_fd) {
-  struct scpi_handle shandle = {0};
+  struct scpi_handle shandle;
   shandle.clfd = client_fd;
   for (;;) {
-    memset(shandle.buffer, '\0', SCPI_MAX_INPUT_BUFFER_LEN);
+    memset(shandle.buffer, '\0', sizeof(shandle.buffer));
     shandle.buflen = read(client_fd, shandle.buffer, sizeof(shandle.buffer));
     if (shandle.buflen <= 0) {
       break;
