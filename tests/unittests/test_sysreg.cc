@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 
-extern "C"{
+extern "C" {
 #include "sysreg.h"
 }
 
