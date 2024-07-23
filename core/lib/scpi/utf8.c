@@ -97,7 +97,7 @@ bool utf8_is_uppercase(const char c) {
   if (idx < 0 || idx > UTF8_MAX) {
     return false;
   }
-  return utf8_lut[idx] & UTF8_LOWERCASE;
+  return utf8_lut[idx] & UTF8_UPPERCASE;
 }
 
 bool utf8_is_lowercase(const char c) {
@@ -109,14 +109,14 @@ bool utf8_is_lowercase(const char c) {
 }
 
 char utf8_uppercase_to_lowercase(char c) {
-  if (utf8_is_uppercase(c)) {
+  if (utf8_is_lowercase(c)) {
     return c;
   }
   return c + UTF8_CAPS_OFFSET;
 }
 
 char utf8_lowercase_to_uppercase(char c) {
-  if (utf8_is_lowercase(c)) {
+  if (utf8_is_uppercase(c)) {
     return c;
   }
   return c - UTF8_CAPS_OFFSET;
