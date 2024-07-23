@@ -51,7 +51,7 @@ include(CTest)
 include(GoogleTest)
 include(CodeCoverage.cmake)
 
-set(GCOVR_ADDITIONAL_ARGS --verbose --object-directory=${CMAKE_BINARY_DIR}/CMakeFiles/${LIB_RAPTOR}.dir/)
+set(GCOVR_ADDITIONAL_ARGS --print-summary --object-directory=${CMAKE_BINARY_DIR}/CMakeFiles/${LIB_RAPTOR}.dir/)
 setup_target_for_coverage_gcovr_xml(
   NAME coverage
   EXECUTABLE ctest
