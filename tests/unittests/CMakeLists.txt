@@ -24,8 +24,6 @@ project(
 )
 
 enable_testing()
-
-# build raptor libs
 set(LIB_RAPTOR "libraptor")
 add_library(
   ${LIB_RAPTOR}
@@ -38,8 +36,8 @@ target_include_directories(
   ../../core/lib
   ../../core/lib/scpi
 )
-target_compile_options(${LIB_RAPTOR} PUBLIC -g -O0)
-target_link_options(${LIB_RAPTOR} PUBLIC --coverage -fprofile-arcs -ftest-coverage)
+target_compile_options(${LIB_RAPTOR} PUBLIC -g -O0 -ftest-coverage -fprofile-arcs)
+target_link_options(${LIB_RAPTOR} PUBLIC --coverage)
 
 add_executable(
   ${PROJECT_NAME}
@@ -47,17 +45,20 @@ add_executable(
   test_utf8.cc
 )
 target_compile_options(${PROJECT_NAME} PUBLIC -g -O0)
-target_link_options(${PROJECT_NAME} PUBLIC --coverage -fprofile-arcs -ftest-coverage)
-target_link_libraries(${PROJECT_NAME} ${LIB_RAPTOR} GTest::gtest_main)
+target_link_libraries(${PROJECT_NAME} PRIVATE ${LIB_RAPTOR} GTest::gtest_main)
 
+include(CTest)
 include(GoogleTest)
 include(CodeCoverage.cmake)
-append_coverage_compiler_flags()
 
+set(GCOVR_ADDITIONAL_ARGS --verbose --object-directory=${CMAKE_BINARY_DIR}/CMakeFiles/${LIB_RAPTOR}.dir/)
 setup_target_for_coverage_gcovr_xml(
   NAME coverage
-  EXECUTABLE GTEST_COLOR=1 ctest
-  EXCLUDE "_deps/*" "*"
+  EXECUTABLE ctest
+  BASE_DIRECTORY "../../"
+  DEPENDANCIES ${LIB_RAPTOR}
 )
+
+
 gtest_discover_tests(${PROJECT_NAME})
 

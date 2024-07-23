@@ -16,10 +16,10 @@ TEST(UTF8Test, UTF8IsAlpha) {
   EXPECT_EQ(utf8_is_alpha('\0'), false) << "utf8_is_alpha returns true for numeric";
   EXPECT_EQ(utf8_is_alpha('1'), false) << "utf8_is_alpha returns true for numeric";
   for (char c = 'A'; c <= 'Z'; c++) {
-    EXPECT_EQ(utf8_is_alpha(c), true) << "utf8_is_alpha returns false for non-numeric";
+    EXPECT_EQ(utf8_is_alpha(c), true) << "utf8_is_alpha returns false for alpha";
   }
   for (char c = 'a'; c <= 'z'; c++) {
-    EXPECT_EQ(utf8_is_alpha(c), true) << "utf8_is_alpha returns false for non-numeric";
+    EXPECT_EQ(utf8_is_alpha(c), true) << "utf8_is_alpha returns false for alpha";
   }
 }
 
