@@ -1,4 +1,5 @@
 #pragma once
+
 #include <stdint.h>
 #include <stdio.h>
 
@@ -25,7 +26,7 @@ struct sockaddr {
 
 #define SOCK_STREAM 1
 
-int errno;
+extern int errno;
 
 uint16_t htons(uint16_t n);
 
