@@ -12,6 +12,7 @@
 #define __LOGGER_H__
 
 #include "system.h"
+#include <stdint.h>
 
 #define LOGGER_DEFAULT_PORT 3000
 #define LOGGER_DEFAULT_LEVEL (enum logger_level)1

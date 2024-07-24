@@ -9,7 +9,6 @@
  */
 
 #include "logger.h"
-#include "FreeRTOSConfig.h"
 #include "lwip/inet.h"
 #include "lwip/sockets.h"
 #include <FreeRTOS.h>
