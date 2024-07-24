@@ -17,7 +17,7 @@ static const struct scpi_err emap[NUM_SCPI_ERR] = {
 };
 
 void scpi_error_init(void) {
-  cbuffer_init(&equeue, errors, sizeof(scpi_err_t), sizeof(errors));
+  cbuffer_init(&equeue, errors, sizeof(scpi_err_t), sizeof(errors) / sizeof(scpi_err_t));
 }
 
 void scpi_error_push(const scpi_err_t err) {
@@ -25,7 +25,9 @@ void scpi_error_push(const scpi_err_t err) {
   cbuffer_status_t status = cbuffer_push(&equeue, &err);
   trace("pushing error (%d) to fifo queue\n", err);
   if (status == CBUFFER_OVERFLOW) {
-    errors[equeue.tail] = SCPI_ERR_EQUEUE_OF;
+    scpi_err_t err = SCPI_ERR_EQUEUE_OF;
+    equeue.head--;
+    cbuffer_push(&equeue, &err);
   }
   sysreg_get_u8(SYSREG_STB, &stb);
   stb |= SYSREG_STB_ERR_QUEUE;
