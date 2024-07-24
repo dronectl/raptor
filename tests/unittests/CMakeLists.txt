@@ -28,11 +28,20 @@ set(LIB_RAPTOR "libraptor")
 add_library(
   ${LIB_RAPTOR}
   ../../core/lib/sysreg.c
+  ../../core/lib/logger.c
+  ../../core/lib/cbuffer.c
   ../../core/lib/scpi/utf8.c
+  ../../core/lib/scpi/err.c
+  mock/queue.c
+  mock/FreeRTOS.c
+  mock/task.c
+  mock/lwip/sockets.c
+  mock/lwip/inet.c
 )
 target_include_directories(
   ${LIB_RAPTOR}
   PUBLIC
+  mock
   ../../core/lib
   ../../core/lib/scpi
 )
@@ -43,6 +52,7 @@ add_executable(
   ${PROJECT_NAME}
   test_sysreg.cc
   test_utf8.cc
+  test_scpi_err.cc
 )
 target_compile_options(${PROJECT_NAME} PUBLIC -g -O0)
 target_link_libraries(${PROJECT_NAME} PRIVATE ${LIB_RAPTOR} GTest::gtest_main)
@@ -55,6 +65,7 @@ set(GCOVR_ADDITIONAL_ARGS --print-summary)
 setup_target_for_coverage_gcovr_xml(
   NAME coverage
   EXECUTABLE ctest
+  EXCLUDE "tests/unittests/*"
   BASE_DIRECTORY "../../"
   DEPENDANCIES ${LIB_RAPTOR}
 )
