@@ -1,5 +1,6 @@
 # Raptor Firmware
 [![ci](https://github.com/dronectl/raptor/actions/workflows/ci.yaml/badge.svg)](https://github.com/dronectl/raptor/actions/workflows/ci.yaml)
+[![codecov](https://codecov.io/gh/dronectl/raptor/graph/badge.svg?token=F9WPLD2AP8)](https://codecov.io/gh/dronectl/raptor)
 
 Modified: 2024-01
 
