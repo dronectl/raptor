@@ -1,4 +1,3 @@
-# Fetch the Google Test framework
 cmake_minimum_required(VERSION 3.22)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -20,7 +19,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 project(
   raptor-test
   LANGUAGES C CXX
-  DESCRIPTION "Raptor unittest binary."
+  DESCRIPTION "Raptor unittests"
 )
 
 if (NOT CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
@@ -40,11 +39,9 @@ add_library(
   ../../core/lib/cbuffer.c
   ../../core/lib/scpi/utf8.c
   ../../core/lib/scpi/err.c
-  mock/queue.c
-  mock/FreeRTOS.c
-  mock/task.c
-  mock/lwip/sockets.c
-  mock/lwip/inet.c
+  ../../core/lib/scpi/commands.c
+  ../../core/lib/scpi/lexer.c
+  ../../core/lib/scpi/parser.c
 )
 
 set(LIB_MOCK "libmock")
@@ -53,7 +50,6 @@ add_subdirectory(mock)
 target_include_directories(
   ${LIB_RAPTOR}
   PUBLIC
-  mock
   ../../core/lib
   ../../core/lib/scpi
 )
@@ -66,6 +62,7 @@ add_executable(
   test_sysreg.cc
   test_utf8.cc
   test_scpi_err.cc
+  test_lexer.cc
 )
 target_compile_options(${PROJECT_NAME} PUBLIC -g -O0)
 target_link_libraries(${PROJECT_NAME} PRIVATE ${LIB_RAPTOR} ${LIB_MOCK} GTest::gtest_main)
@@ -87,7 +84,5 @@ setup_target_for_coverage_gcovr_xml(
   BASE_DIRECTORY "../../"
   DEPENDANCIES ${LIB_RAPTOR}
 )
-
-
 gtest_discover_tests(${PROJECT_NAME})
 
