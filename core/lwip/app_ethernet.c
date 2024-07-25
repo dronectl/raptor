@@ -8,23 +8,21 @@
  *
  */
 
-#include "lwip/opt.h"
-#include "lwip/tcpip.h"
+#include "app_ethernet.h"
+#include "ethernetif.h"
 #include "stm32h7xx_nucleo.h"
 #if LWIP_DHCP
-#include "lwip/dhcp.h"
+#include <lwip/dhcp.h>
 #endif
-#include "lwip/netif.h"
-#include "app_ethernet.h"
-#include "cmsis_os2.h"
-#include "ethernetif.h"
-#include "netif/ethernet.h"
+#include <lwip/tcpip.h>
+#include <lwip/netifapi.h>
+#include <cmsis_os.h>
 
 /*Static IP ADDRESS: IP_ADDR0.IP_ADDR1.IP_ADDR2.IP_ADDR3 */
-#define IP_ADDR0 ((uint8_t)192U)
-#define IP_ADDR1 ((uint8_t)168U)
-#define IP_ADDR2 ((uint8_t)0U)
-#define IP_ADDR3 ((uint8_t)10U)
+#define IP_ADDR0 ((uint8_t)172U)
+#define IP_ADDR1 ((uint8_t)16U)
+#define IP_ADDR2 ((uint8_t)1U)
+#define IP_ADDR3 ((uint8_t)101U)
 
 /*NETMASK*/
 #define NETMASK_ADDR0 ((uint8_t)255U)
@@ -33,25 +31,16 @@
 #define NETMASK_ADDR3 ((uint8_t)0U)
 
 /*Gateway Address*/
-#define GW_ADDR0 ((uint8_t)192U)
-#define GW_ADDR1 ((uint8_t)168U)
-#define GW_ADDR2 ((uint8_t)0U)
+#define GW_ADDR0 ((uint8_t)172U)
+#define GW_ADDR1 ((uint8_t)16U)
+#define GW_ADDR2 ((uint8_t)1U)
 #define GW_ADDR3 ((uint8_t)1U)
 
 // global gnetif struct
 static struct netif gnetif;
-
-const osThreadAttr_t link_attr = {
-    .name = "link_task",
-    .priority = osPriorityNormal,
-};
-const osThreadAttr_t dhcp_attr = {
-    .name = "dhcp_task",
-    .priority = osPriorityNormal,
-};
-
-static osThreadId_t link_handle;
-static osThreadId_t dhcp_handle;
+osThreadAttr_t attr;
+osThreadId LinkHandle;
+osThreadId DHCPHandle;
 
 #if LWIP_DHCP
 #define MAX_DHCP_TRIES 4
@@ -99,21 +88,15 @@ static void dhcp_task(void *argument) {
           BSP_LED_On(LED2);
           BSP_LED_Off(LED3);
         } else {
-          dhcp = (struct dhcp *)netif_get_client_data(
-              netif, LWIP_NETIF_CLIENT_DATA_INDEX_DHCP);
-
+          dhcp = (struct dhcp *)netif_get_client_data(netif, LWIP_NETIF_CLIENT_DATA_INDEX_DHCP);
           /* DHCP timeout */
           if (dhcp->tries > MAX_DHCP_TRIES) {
             DHCP_state = DHCP_TIMEOUT;
-
             /* Static address used */
             IP_ADDR4(&ipaddr, IP_ADDR0, IP_ADDR1, IP_ADDR2, IP_ADDR3);
-            IP_ADDR4(&netmask, NETMASK_ADDR0, NETMASK_ADDR1, NETMASK_ADDR2,
-                     NETMASK_ADDR3);
+            IP_ADDR4(&netmask, NETMASK_ADDR0, NETMASK_ADDR1, NETMASK_ADDR2, NETMASK_ADDR3);
             IP_ADDR4(&gw, GW_ADDR0, GW_ADDR1, GW_ADDR2, GW_ADDR3);
-            netif_set_addr(netif, ip_2_ip4(&ipaddr), ip_2_ip4(&netmask),
-                           ip_2_ip4(&gw));
-
+            netif_set_addr(netif, ip_2_ip4(&ipaddr), ip_2_ip4(&netmask), ip_2_ip4(&gw));
             BSP_LED_On(LED2);
             BSP_LED_Off(LED3);
           }
@@ -166,40 +149,48 @@ static void ethernet_link_status_updated(struct netif *netif) {
  * @param  None
  * @retval None
  */
-static void netconfig_init(void __attribute__((unused)) * args) {
+static void netif_config(void) {
   ip_addr_t ipaddr;
   ip_addr_t netmask;
   ip_addr_t gw;
+
 #if LWIP_DHCP
   ip_addr_set_zero_ip4(&ipaddr);
   ip_addr_set_zero_ip4(&netmask);
   ip_addr_set_zero_ip4(&gw);
 #else
-  /* IP address default setting */
-  IP4_ADDR(&ipaddr, IP_ADDR0, IP_ADDR1, IP_ADDR2, IP_ADDR3);
-  IP4_ADDR(&netmask, NETMASK_ADDR0, NETMASK_ADDR1, NETMASK_ADDR2, NETMASK_ADDR3);
-  IP4_ADDR(&gw, GW_ADDR0, GW_ADDR1, GW_ADDR2, GW_ADDR3);
-#endif
+  IP_ADDR4(&ipaddr, IP_ADDR0, IP_ADDR1, IP_ADDR2, IP_ADDR3);
+  IP_ADDR4(&netmask, NETMASK_ADDR0, NETMASK_ADDR1, NETMASK_ADDR2, NETMASK_ADDR3);
+  IP_ADDR4(&gw, GW_ADDR0, GW_ADDR1, GW_ADDR2, GW_ADDR3);
+#endif /* LWIP_DHCP */
+
   /* add the network interface */
-  netif_add(&gnetif, &ipaddr, &netmask, &gw, NULL, &ethernetif_init, &ethernet_input);
-  /*  Registers the default network interface */
+  netif_add(&gnetif, &ipaddr, &netmask, &gw, NULL, &ethernetif_init, &tcpip_input);
+
+  /*  Registers the default network interface. */
   netif_set_default(&gnetif);
+
   ethernet_link_status_updated(&gnetif);
+
 #if LWIP_NETIF_LINK_CALLBACK
   netif_set_link_callback(&gnetif, ethernet_link_status_updated);
-  link_handle = osThreadNew(ethernet_link_thread, &gnetif, &link_attr);
-  if (link_handle == NULL) {
-  }
+  attr.name = "EthLink";
+  attr.stack_size = 4 * configMINIMAL_STACK_SIZE;
+  attr.priority = osPriorityNormal;
+  LinkHandle = osThreadNew(ethernet_link_thread, &gnetif, &attr);
 #endif
+
 #if LWIP_DHCP
-  dhcp_handle = osThreadNew(dhcp_task, &gnetif, &dhcp_attr);
-  if (dhcp_handle == NULL) {
-  }
+  /* Start DHCPClient */
+  attr.name = "DHCP";
+  attr.stack_size = 4 * configMINIMAL_STACK_SIZE;
+  attr.priority = osPriorityBelowNormal;
+  DHCPHandle = osThreadNew(dhcp_task, &gnetif, &attr);
 #endif
 }
-
 system_status_t app_ethernet_init(void) {
   // invoke netconfig_init once tcpip init is complete
-  tcpip_init(netconfig_init, NULL);
+  tcpip_init(NULL, NULL);
+  netif_config();
   return SYSTEM_OK;
 }

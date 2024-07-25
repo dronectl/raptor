@@ -1,7 +1,9 @@
-#include <stdint.h>
-#include "cmsis_gcc.h"
+#include <stdint.h> // IWYU pragma: export
+#include "logger.h"
+#include "system.h"
 #include "FreeRTOS.h"
 #include "task.h"
+#include "stm32h7xx_nucleo.h"
 
 #ifdef __GNUC__
 #define USED __attribute__((used))
@@ -20,7 +22,6 @@ void vApplicationStackOverflowHook(xTaskHandle xTask, signed char *pcTaskName);
 void vApplicationMallocFailedHook(void);
 void vApplicationDaemonTaskStartupHook(void);
 
-/* USER CODE BEGIN 2 */
 void vApplicationIdleHook(void) {
   /* vApplicationIdleHook() will only be called if configUSE_IDLE_HOOK is set
   to 1 in FreeRTOSConfig.h. It will be called on each iteration of the idle
@@ -32,28 +33,15 @@ void vApplicationIdleHook(void) {
   function, because it is the responsibility of the idle task to clean up
   memory allocated by the kernel to any task that has since been deleted. */
 }
-/* USER CODE END 2 */
 
-/* USER CODE BEGIN 3 */
 void vApplicationTickHook(void) {
-  /* This function will be called by each tick interrupt if
-  configUSE_TICK_HOOK is set to 1 in FreeRTOSConfig.h. User code can be
-  added here, but the tick hook is called from an interrupt context, so
-  code must not attempt to block, and only the interrupt safe FreeRTOS API
-  functions can be used (those that end in FromISR()). */
+  system_health_indicator();
 }
-/* USER CODE END 3 */
 
-/* USER CODE BEGIN 4 */
 void vApplicationStackOverflowHook(xTaskHandle xTask, signed char *pcTaskName) {
-  /* Run time stack overflow checking is performed if
-  configCHECK_FOR_STACK_OVERFLOW is defined to 1 or 2. This hook function is
-  called if a stack overflow is detected. */
-  __BKPT(0);
+  critical("Stack overflow signal in task %s\n", pcTaskName);
 }
-/* USER CODE END 4 */
 
-/* USER CODE BEGIN 5 */
 void vApplicationMallocFailedHook(void) {
   /* vApplicationMallocFailedHook() will only be called if
   configUSE_MALLOC_FAILED_HOOK is set to 1 in FreeRTOSConfig.h. It is a hook
@@ -65,9 +53,11 @@ void vApplicationMallocFailedHook(void) {
   FreeRTOSConfig.h, and the xPortGetFreeHeapSize() API function can be used
   to query the size of free heap space that remains (although it does not
   provide information on how the remaining heap might be fragmented). */
-  __BKPT(0);
+  while (1) {
+    BSP_LED_Toggle(LED3);
+    HAL_Delay(250);
+  }
 }
-/* USER CODE END 5 */
 
 /* USER CODE BEGIN DAEMON_TASK_STARTUP_HOOK */
 void vApplicationDaemonTaskStartupHook(void) {

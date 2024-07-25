@@ -59,49 +59,53 @@ jobs:
         working-directory: build 
         run: make objdump
       - name: archive compile commands 
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: compile_commands.json
           path: build/compile_commands.json
           retention-days: 5
       - name: archive binary 
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: raptor
           # relative to $GITHUB_WORKSPACE 
           path: build/core/raptor.elf
           retention-days: 5
-  # test:
-  #   name: tests
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: checkout source
-  #       uses: actions/checkout@v4
-  #     - name: install gcc-arm-none-eabi & openocd
-  #       run: |
-  #         sudo apt-get update -y
-  #         sudo apt-get install -y gcc-arm-none-eabi openocd
-  #       env:
-  #         DEBIAN_FRONTEND: noninteractive
-  #     - name: setup cmake
-  #       uses: jwlawson/actions-setup-cmake@v1.14
-  #       with:
-  #         cmake-version: '3.22.x'
-  #     - name: build integration test binaries
-  #       run: |
-  #         mkdir $GITHUB_WORKSPACE/build
-  #         cd build
-  #         cmake .. -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTS=On
-  #         make -j`nproc`
-  #     - name: build unittests
-  #       run: |
-  #         mkdir $GITHUB_WORKSPACE/tests/unit/build
-  #         cmake -B tests/unit/build -S tests/unit
-  #         cmake --build tests/unit/build
-  #     - name: run unittests
-  #       run: ctest --test-dir tests/unit/build
-  #     - name: Upload coverage reports to Codecov
-  #       uses: codecov/codecov-action@v4.0.1
-  #       with:
-  #         token: ${{ secrets.CODECOV_TOKEN }}
-  #         slug: dronectl/raptor
+  test:
+    name: tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout source
+        uses: actions/checkout@v4
+      - name: install gcovr
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y python3 python3-pip
+          python3 -m pip install gcovr
+        env:
+          DEBIAN_FRONTEND: noninteractive
+      - name: setup cmake
+        uses: jwlawson/actions-setup-cmake@v1.14
+        with:
+          cmake-version: '3.22.x'
+      - name: build unittests
+        run: |
+          mkdir -p $GITHUB_WORKSPACE/tests/unittests/build
+          cmake -B tests/unittests/build -S tests/unittests -DCMAKE_BUILD_TYPE=Debug
+          make -C tests/unittests/build -j
+      - name: run unittests
+        run: make -C tests/unittests/build coverage
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v4.0.1
+        with:
+          fail_ci_if_error: true
+          file: tests/unittests/build/coverage.xml
+          disable_search: true
+          token: ${{ secrets.CODECOV_TOKEN }}
+          verbose: true
+      - name: Upload coverage artefact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage.xml
+          path: tests/unittests/build/coverage.xml
+          retention-days: 0

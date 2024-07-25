@@ -53,8 +53,8 @@ extern uint32_t SystemCoreClock;
 #endif /* CMSIS_device_header */
 
 #define configUSE_PREEMPTION 1
-#define configUSE_IDLE_HOOK 1
-#define configUSE_TICK_HOOK 0
+#define configUSE_IDLE_HOOK 0
+#define configUSE_TICK_HOOK 1
 #define configCPU_CLOCK_HZ (SystemCoreClock)
 #define configTICK_RATE_HZ ((TickType_t)1000)
 /*
@@ -70,7 +70,7 @@ extern uint32_t SystemCoreClock;
 #define configUSE_PORT_OPTIMISED_TASK_SELECTION 0
 
 #define configMINIMAL_STACK_SIZE ((uint16_t)512)
-#define configTOTAL_HEAP_SIZE ((size_t)(50 * 1024))
+#define configTOTAL_HEAP_SIZE ((uint16_t)(100 * 1024))
 #define configMAX_TASK_NAME_LEN (16)
 #define configUSE_TRACE_FACILITY 1
 #define configUSE_16_BIT_TICKS 0

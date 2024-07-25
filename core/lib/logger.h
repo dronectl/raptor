@@ -12,6 +12,7 @@
 #define __LOGGER_H__
 
 #include "system.h"
+#include <stdint.h>
 
 #define LOGGER_DEFAULT_PORT 3000
 #define LOGGER_DEFAULT_LEVEL (enum logger_level)1
@@ -28,32 +29,32 @@ enum logger_level {
 
 enum logger_level logger_get_level(void);
 void logger_set_level(const enum logger_level level);
-void logger_out(const enum logger_level level, const char *func, const int line, const char *fmt, ...);
+void logger_out(const enum logger_level level, const char *fmt, ...);
 system_status_t logger_init(const enum logger_level level);
 
 #ifndef critical
 #define critical(...) __CRITICAL(__VA_ARGS__, "")
-#define __CRITICAL(fmt, ...) logger_out(LOGGER_CRITICAL, __func__, __LINE__, fmt, __VA_ARGS__)
+#define __CRITICAL(fmt, ...) logger_out(LOGGER_CRITICAL, fmt, __VA_ARGS__)
 #endif
 
 #ifndef error
 #define error(...) __ERROR(__VA_ARGS__, "")
-#define __ERROR(fmt, ...) logger_out(LOGGER_ERROR, __func__, __LINE__, fmt, __VA_ARGS__)
+#define __ERROR(fmt, ...) logger_out(LOGGER_ERROR, fmt, __VA_ARGS__)
 #endif
 
 #ifndef warning
 #define warning(...) __WARNING(__VA_ARGS__, "")
-#define __WARNING(fmt, ...) logger_out(LOGGER_WARNING, __func__, __LINE__, fmt, __VA_ARGS__)
+#define __WARNING(fmt, ...) logger_out(LOGGER_WARNING, fmt, __VA_ARGS__)
 #endif
 
 #ifndef info
 #define info(...) __INFO(__VA_ARGS__, "")
-#define __INFO(fmt, ...) logger_out(LOGGER_INFO, __func__, __LINE__, fmt, __VA_ARGS__)
+#define __INFO(fmt, ...) logger_out(LOGGER_INFO, fmt, __VA_ARGS__)
 #endif
 
 #ifndef trace
 #define trace(...) __TRACE(__VA_ARGS__, "")
-#define __TRACE(fmt, ...) logger_out(LOGGER_TRACE, __func__, __LINE__, fmt, __VA_ARGS__)
+#define __TRACE(fmt, ...) logger_out(LOGGER_TRACE, fmt, __VA_ARGS__)
 #endif
 
 #endif // __LOGGER_H__
