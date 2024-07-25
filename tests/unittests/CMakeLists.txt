@@ -24,6 +24,7 @@ project(
 )
 
 enable_testing()
+set(CMAKE_STATIC_LIBRARY_PREFIX "")
 set(LIB_RAPTOR "libraptor")
 add_library(
   ${LIB_RAPTOR}
@@ -38,6 +39,10 @@ add_library(
   mock/lwip/sockets.c
   mock/lwip/inet.c
 )
+
+set(LIB_MOCK "libmock")
+add_subdirectory(mock)
+
 target_include_directories(
   ${LIB_RAPTOR}
   PUBLIC
@@ -47,6 +52,7 @@ target_include_directories(
 )
 target_compile_options(${LIB_RAPTOR} PUBLIC -g -O0 -ftest-coverage -fprofile-arcs)
 target_link_options(${LIB_RAPTOR} PUBLIC --coverage)
+target_link_libraries(${LIB_RAPTOR} PUBLIC ${LIB_MOCK})
 
 add_executable(
   ${PROJECT_NAME}
@@ -55,7 +61,7 @@ add_executable(
   test_scpi_err.cc
 )
 target_compile_options(${PROJECT_NAME} PUBLIC -g -O0)
-target_link_libraries(${PROJECT_NAME} PRIVATE ${LIB_RAPTOR} GTest::gtest_main)
+target_link_libraries(${PROJECT_NAME} PRIVATE ${LIB_RAPTOR} ${LIB_MOCK} GTest::gtest_main)
 
 include(CTest)
 include(GoogleTest)
