@@ -23,6 +23,13 @@ project(
   DESCRIPTION "Raptor unittest binary."
 )
 
+if (NOT CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+  message(FATAL_ERROR "This project requires a GNU GCC compiler. The current compiler is ${CMAKE_CXX_COMPILER_ID}.")
+endif()
+if (NOT CMAKE_C_COMPILER_ID STREQUAL "GNU")
+  message(FATAL_ERROR "This project requires a GNU GCC compiler. The current compiler is ${CMAKE_C_COMPILER_ID}.")
+endif()
+
 enable_testing()
 set(CMAKE_STATIC_LIBRARY_PREFIX "")
 set(LIB_RAPTOR "libraptor")
@@ -67,7 +74,12 @@ include(CTest)
 include(GoogleTest)
 include(CodeCoverage.cmake)
 
-set(GCOVR_ADDITIONAL_ARGS --print-summary)
+set(GCOVR_ADDITIONAL_ARGS "")
+if (RAPTOR_COVERAGE_GCOV)
+  message(STATUS "Adding custom gcov executable to gcovr: ${RAPTOR_COVERAGE_GCOV}")
+  list(APPEND GCOVR_ADDITIONAL_ARGS --gcov-executable ${RAPTOR_COVERAGE_GCOV})
+endif()
+list(APPEND GCOVR_ADDITIONAL_ARGS --txt --branches --gcov-ignore-parse-errors --exclude-unreachable-branches)
 setup_target_for_coverage_gcovr_xml(
   NAME coverage
   EXECUTABLE ctest
