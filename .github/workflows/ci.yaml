@@ -98,5 +98,7 @@ jobs:
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v4.0.1
         with:
+          fail_ci_if_error: true
+          files: tests/unittests/build/coverage.xml
           token: ${{ secrets.CODECOV_TOKEN }}
-          slug: dronectl/raptor
+          verbose: true
