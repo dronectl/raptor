@@ -102,3 +102,9 @@ jobs:
           files: tests/unittests/build/coverage.xml
           token: ${{ secrets.CODECOV_TOKEN }}
           verbose: true
+      - name: Upload coverage artefact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage.xml
+          path: tests/unittests/build/coverage.xml
+          retention-days: 0
