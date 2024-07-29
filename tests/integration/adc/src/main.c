@@ -22,15 +22,42 @@
 #include "dma.h"
 #include "usart.h"
 #include "gpio.h"
+#include "tim.h"
 
+#include <stdint.h>
 #include <string.h>
 #include <stdio.h>
 
-#define ADC_DMA_BUFFER_LEN 4096
+#define ADC_VREF (float)3.3
+#define ADC_CHANNELS 2
+#define ADC_DMA_BUFFER_LEN ADC_CHANNELS
+#define ADC_OFFSET 0
+#define ADC_RESOLUTION (1 << 16)
+#define SPLIT_IDX (int)((ADC_DMA_BUFFER_LEN / 2) - 1)
 
-__attribute__((section(".dma_buffer"))) uint16_t adc_dma_buffer[ADC_DMA_BUFFER_LEN];
+#define ACCL1_BUFLEN 16
+#define ACCL2_BUFLEN 512
 
-/* Private function prototypes -----------------------------------------------*/
+#define UART_BATCH_SIZE 50
+#define UART_MSG_LEN (UART_BATCH_SIZE * 6) + 10
+
+volatile __attribute__((section(".dma_buffer"))) uint16_t adc_dma_buffer[ADC_DMA_BUFFER_LEN];
+
+struct accumulator_l1_ctx {
+  uint32_t cumulative;
+  uint8_t head;
+  uint16_t adc_raw_buffer[ACCL1_BUFLEN];
+};
+
+struct accumulator_l2_ctx {
+  uint8_t read_idx;
+  uint8_t write_idx;
+  float voltages[ACCL2_BUFLEN];
+};
+
+static volatile struct accumulator_l1_ctx accumulator_l1 = {0};
+static volatile struct accumulator_l2_ctx accumulator_l2 = {0};
+
 void SystemClock_Config(void);
 
 void adc_polling(void) {
@@ -48,23 +75,71 @@ void adc_polling(void) {
   }
 }
 
-void HAL_ADC_ConvHalfCpltCallback(ADC_HandleTypeDef *hadc) {
-  HAL_GPIO_WritePin(GPIOE, GPIO_PIN_1, GPIO_PIN_SET);
+void run_accumulator_l2() {
+  volatile struct accumulator_l1_ctx *acc1 = &accumulator_l1;
+  volatile struct accumulator_l2_ctx *acc2 = &accumulator_l2;
+  if ((acc2->write_idx + 1) % ACCL2_BUFLEN != acc2->read_idx) {
+    acc2->voltages[acc2->write_idx] = ((float)acc1->cumulative / (ACCL1_BUFLEN * ADC_RESOLUTION)) * ADC_VREF;
+    acc2->write_idx = (acc2->write_idx + 1) % ACCL2_BUFLEN;
+  }
+}
+
+void run_accumulator_l1() {
+  volatile struct accumulator_l1_ctx *acc = &accumulator_l1;
+  for (int i = 0; i < ADC_CHANNELS; i++) {
+    uint16_t raw = adc_dma_buffer[i];
+    acc->cumulative -= acc->adc_raw_buffer[acc->head];
+    acc->cumulative += raw;
+    acc->adc_raw_buffer[acc->head] = raw;
+    acc->head = (acc->head + 1) % ACCL1_BUFLEN;
+  }
 }
 
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc) {
-  HAL_GPIO_WritePin(GPIOE, GPIO_PIN_1, GPIO_PIN_RESET);
+  HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_6);
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_15, GPIO_PIN_SET);
+  run_accumulator_l1();
+  run_accumulator_l2();
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_15, GPIO_PIN_RESET);
 }
 
 void HAL_ADC_ErrorCallback(ADC_HandleTypeDef *hadc) {
   HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, GPIO_PIN_SET);
 }
+void uart_batch_write() {
+  char message[UART_MSG_LEN];
+  int len = 0;
+  char *ptr = message;
+  memset(message, 0, UART_MSG_LEN);
+  volatile struct accumulator_l2_ctx *acc2 = &accumulator_l2;
+  for (int i = 0; i < UART_BATCH_SIZE; i++) {
+    if (acc2->read_idx != acc2->write_idx) {
+      len = sprintf(ptr, "%.3f", acc2->voltages[i]);
+      ptr += len;
+      if (i < UART_BATCH_SIZE - 1) {
+        *ptr++ = ',';
+      } else {
+        *ptr++ = '\r';
+        *ptr++ = '\n';
+      }
+      acc2->read_idx = (acc2->read_idx + 1) % ACCL2_BUFLEN;
+    }
+  }
+  HAL_UART_Transmit(&huart3, (uint8_t *)message, strlen(message), HAL_MAX_DELAY);
+}
 
 void adc_dma(void) {
+  HAL_ADCEx_Calibration_Start(&hadc1, ADC_CALIB_OFFSET_LINEARITY, ADC_SINGLE_ENDED);
   HAL_ADC_Start_DMA(&hadc1, (uint32_t *)adc_dma_buffer, ADC_DMA_BUFFER_LEN);
+  HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_2);
+  char msg[10];
   while (1) {
-    HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_0);
-    HAL_Delay(1000);
+    volatile struct accumulator_l2_ctx *acc2 = &accumulator_l2;
+    if (acc2->read_idx != acc2->write_idx) {
+      sprintf(msg, "%.4f\r\n", acc2->voltages[acc2->read_idx]);
+      acc2->read_idx = (acc2->read_idx + 1) % ACCL2_BUFLEN;
+    }
+    HAL_UART_Transmit(&huart3, (uint8_t *)msg, strlen(msg), HAL_MAX_DELAY);
   }
 }
 
@@ -98,6 +173,7 @@ int main(void) {
   MX_DMA_Init();
   MX_ADC1_Init();
   MX_USART3_UART_Init();
+  MX_TIM2_Init();
   // adc_polling();
   adc_dma();
 }
