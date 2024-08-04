@@ -10,8 +10,8 @@
 
 #include "scpi/lexer.h"
 
-#include <string.h>
 #include <stdbool.h>
+#include <string.h>
 #include <unistd.h>
 
 /**
@@ -26,112 +26,105 @@
 #define LEXER_CHAR_COMMON '*'  // common command
 
 /**
- * @brief Append a character to the correct token structure. Handle incrementing of token and chracter indices
+ * @brief Classify token to the an enum type
  *
- * @param[in,out] lhandle lexer context
- * @param[in] c next input buffer char
- * @param[in] type token tag to write to token position
+ * @param[in] c char to classify
  */
-static void append_char(struct lexer_handle *lhandle, const char c, const enum LexerTokenType type) {
-  // token and character index handling
-  switch (type) {
-    case LEXER_TT_TOKEN:
-      if (lhandle->prev_tt == LEXER_TT_TOKEN) {
-        lhandle->cidx++;
-      } else {
-        if (lhandle->prev_tt != LEXER_TT_NULL) {
-          lhandle->tidx++;
-        }
-        lhandle->cidx = 0;
-      }
-      break;
-    default:
-      if (lhandle->prev_tt != LEXER_TT_NULL) {
-        lhandle->tidx++;
-      }
-      lhandle->cidx = 0;
-      break;
+static enum LexerTokenType classify_char(const char c) {
+  enum LexerTokenType type;
+  switch (c) {
+  case LEXER_CHAR_HDR_SEP:
+    type = LEXER_TT_HDR_SEP;
+    break;
+  case LEXER_CHAR_ARG_SEP:
+    type = LEXER_TT_ARG_SEP;
+    break;
+  case LEXER_CHAR_CMD_SEP:
+    type = LEXER_TT_CMD_SEP;
+    break;
+  case LEXER_CHAR_QUERY:
+    type = LEXER_TT_QUERY;
+    break;
+  case LEXER_CHAR_COMMON:
+    type = LEXER_TT_COMMON;
+    break;
+  case LEXER_CHAR_SPACE:
+    type = LEXER_TT_SPACE;
+    break;
+  case LEXER_CHAR_EOS:
+    type = LEXER_TT_EOS;
+    break;
+  default:
+    // assume character is part of a token
+    type = LEXER_TT_TOKEN;
+    break;
   }
-  // overflow protection
-  if (lhandle->cidx >= SCPI_MAX_TOKEN_LEN) {
-    lhandle->status |= LEXER_STAT_ERR;
-    lhandle->err |= LEXER_ERR_LOF;
-    return;
-  }
-  // append char
-  lhandle->tokens[lhandle->tidx].type = type;
-  lhandle->tokens[lhandle->tidx].token.len += 1;
-  lhandle->tokens[lhandle->tidx].token.token[lhandle->cidx] = c;
-  lhandle->prev_tt = type;
+  return type;
 }
 
 /**
- * @brief Handle the single char token classification.
+ * @brief Append a character to the correct token structure. Handle incrementing of token and chracter indices
  *
- * @param[in,out] lhandle lexer context
- * @param[in] c next input buffer character
+ * @param[in,out] lexer lexer context
+ * @param[in] c next input buffer char
  */
-static void handle_sc_token(struct lexer_handle *lhandle, const char c) {
-  enum LexerTokenType type = LEXER_TT_EOS;
-  switch (c) {
-    case LEXER_CHAR_HDR_SEP:
-      type = LEXER_TT_HDR_SEP;
-      break;
-    case LEXER_CHAR_ARG_SEP:
-      type = LEXER_TT_ARG_SEP;
-      break;
-    case LEXER_CHAR_CMD_SEP:
-      type = LEXER_TT_CMD_SEP;
-      break;
-    case LEXER_CHAR_QUERY:
-      type = LEXER_TT_QUERY;
-      break;
-    case LEXER_CHAR_COMMON:
-      type = LEXER_TT_COMMON;
-      break;
-    case LEXER_CHAR_SPACE:
-      type = LEXER_TT_SPACE;
-      break;
-    case LEXER_CHAR_EOS:
-      lhandle->status |= LEXER_STAT_EOS;
-      type = LEXER_TT_EOS;
-      break;
-    default:
-      // unsupported single char token; return
-      lhandle->status |= LEXER_STAT_ERR;
-      lhandle->err |= LEXER_ERR_USCT;
-      return;
+static void process_char(struct lexer_handle *lexer, const char c) {
+  enum LexerTokenType type = classify_char(c);
+  if (type == LEXER_TT_EOS) {
+    lexer->status_flags |= LEXER_STAT_EOS;
   }
-  append_char(lhandle, c, type);
+  if (type == LEXER_TT_TOKEN) {
+    if (lexer->prev_token_type == LEXER_TT_TOKEN) {
+      lexer->char_index++;
+    } else {
+      if (lexer->prev_token_type != LEXER_TT_NULL) {
+        lexer->token_index++;
+      }
+      lexer->char_index = 0;
+    }
+  } else {
+    if (lexer->prev_token_type != LEXER_TT_NULL) {
+      lexer->token_index++;
+    }
+    lexer->char_index = 0;
+  }
+  // overflow protection
+  if (lexer->char_index >= SCPI_MAX_TOKEN_LEN) {
+    lexer->status_flags |= LEXER_STAT_ERR;
+    lexer->error_flags |= LEXER_ERR_LOF;
+    return;
+  }
+  lexer->tokens[lexer->token_index].type = type;
+  lexer->tokens[lexer->token_index].token.len += 1;
+  lexer->tokens[lexer->token_index].token.value[lexer->char_index] = c;
+  lexer->prev_token_type = type;
 }
 
-void lexer_run(struct lexer_handle *lhandle, const char *buffer, const size_t len) {
+lex_status_t lexer_process_buffer(struct lexer_handle *lexer, const char *buffer, const size_t len) {
+  if (lexer == NULL || buffer == NULL || len == 0) {
+    return LEX_STAT_BAD_ARG;
+  }
+  lex_status_t status = LEX_STAT_GEN_ERR;
   for (size_t i = 0; i < len; i++) {
     char c = buffer[i];
-    switch (c) {
-      case LEXER_CHAR_HDR_SEP:
-      case LEXER_CHAR_CMD_SEP:
-      case LEXER_CHAR_QUERY:
-      case LEXER_CHAR_COMMON:
-      case LEXER_CHAR_ARG_SEP:
-      case LEXER_CHAR_SPACE:
-      case LEXER_CHAR_EOS:
-        handle_sc_token(lhandle, c);
-        break;
-      default:
-        append_char(lhandle, c, LEXER_TT_TOKEN);
-        break;
-    }
-    // OPT: return on error or end of sequence
-    if ((lhandle->status & LEXER_STAT_EOS) || (lhandle->status & LEXER_STAT_ERR))
+    process_char(lexer, c);
+    if (lexer->status_flags & LEXER_STAT_ERR) {
+      status = LEX_STAT_GEN_ERR;
       break;
+    }
+    if ((lexer->status_flags & LEXER_STAT_EOS)) {
+      status = LEX_STAT_OK;
+      break;
+    }
   }
+  return status;
 }
-void lexer_init(struct lexer_handle *lhandle) {
-  lhandle->tidx = 0;
-  lhandle->cidx = 0;
-  lhandle->err = 0;
-  lhandle->status = 0;
-  lhandle->prev_tt = LEXER_TT_NULL;
-  memset(&lhandle->tokens, 0, sizeof(lhandle->tokens));
+
+void lexer_init(struct lexer_handle *lexer) {
+  lexer->token_index = 0;
+  lexer->char_index = 0;
+  lexer->error_flags = 0;
+  lexer->status_flags = 0;
+  lexer->prev_token_type = LEXER_TT_NULL;
+  memset(&lexer->tokens, 0, sizeof(lexer->tokens));
 }

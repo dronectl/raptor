@@ -73,7 +73,7 @@ static bool header_comparator(const struct scpi_header *sh, const struct scpi_to
     return false;
   }
   char token[SCPI_MAX_TOKEN_LEN] = {0};
-  memcpy(token, st->token, st->len);
+  memcpy(token, st->value, st->len);
   for (size_t i = 0; i < st->len; i++) {
     token[i] = utf8_uppercase_to_lowercase(token[i]);
   }

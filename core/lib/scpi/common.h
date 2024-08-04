@@ -12,8 +12,8 @@
 #define __COMMON_H__
 
 #include "scpi/err.h"
-#include <stdint.h>
 #include <stddef.h>
+#include <stdint.h>
 
 #define SCPI_MAX_INPUT_BUFFER_LEN 1024
 #define SCPI_MAX_RESPONSE_LEN 128
@@ -27,7 +27,7 @@
 
 struct scpi_token {
   uint8_t len;
-  char token[SCPI_MAX_TOKEN_LEN];
+  char value[SCPI_MAX_TOKEN_LEN];
 };
 
 struct scpi_handle {
