@@ -1,25 +1,9 @@
-/* USER CODE BEGIN Header */
-/**
- ******************************************************************************
- * @file           : main.c
- * @brief          : Main program body
- ******************************************************************************
- * @attention
- *
- * Copyright (c) 2024 STMicroelectronics.
- * All rights reserved.
- *
- * This software is licensed under terms that can be found in the LICENSE file
- * in the root directory of this software component.
- * If no LICENSE file comes with this software, it is provided AS-IS.
- *
- ******************************************************************************
- */
-/* USER CODE END Header */
-/* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "adc.h"
 #include "dma.h"
+#include "stm32h7xx_hal.h"
+#include "stm32h7xx_hal_adc.h"
+#include "stm32h7xx_hal_gpio.h"
 #include "usart.h"
 #include "gpio.h"
 #include "tim.h"
@@ -29,34 +13,36 @@
 #include <stdio.h>
 
 #define ADC_VREF (float)3.3
-#define ADC_CHANNELS 2
-#define ADC_DMA_BUFFER_LEN ADC_CHANNELS
+#define ADC_CHANNELS (uint8_t)1
+#define ADC_DMA_BUFFER_LEN 100
 #define ADC_OFFSET 0
 #define ADC_RESOLUTION (1 << 16)
-#define SPLIT_IDX (int)((ADC_DMA_BUFFER_LEN / 2) - 1)
 
-#define ACCL1_BUFLEN 16
-#define ACCL2_BUFLEN 512
+#define ACC_STATUS_DATA_READY (1 << 0)
 
-#define UART_BATCH_SIZE 50
-#define UART_MSG_LEN (UART_BATCH_SIZE * 6) + 10
+#define ACC_BUFLEN (uint8_t)(ADC_DMA_BUFFER_LEN / ADC_CHANNELS)
 
-volatile __attribute__((section(".dma_buffer"))) uint16_t adc_dma_buffer[ADC_DMA_BUFFER_LEN];
+#define UART_BATCH_SIZE 20
+#define UART_HEADER_LEN 20
+#define UART_MSG_LEN (UART_BATCH_SIZE * 6 * 2) + 20
 
-struct accumulator_l1_ctx {
-  uint32_t cumulative;
-  uint8_t head;
-  uint16_t adc_raw_buffer[ACCL1_BUFLEN];
+volatile __attribute__((section(".dma_buffer"))) uint16_t adc_dma_buffer[ADC_CHANNELS * ADC_DMA_BUFFER_LEN] = {0};
+
+struct accumulator_ctx {
+  uint8_t status;
+  uint32_t timestamp;
+  volatile uint16_t *dma_buffer_head;
 };
 
-struct accumulator_l2_ctx {
-  uint8_t read_idx;
-  uint8_t write_idx;
-  float voltages[ACCL2_BUFLEN];
+struct packet {
+  uint32_t timestamp;   // ms
+  uint32_t sample_rate; // Hz
+  uint32_t samples;
+  float ch1[100];
+  float ch2[100];
 };
 
-static volatile struct accumulator_l1_ctx accumulator_l1 = {0};
-static volatile struct accumulator_l2_ctx accumulator_l2 = {0};
+static volatile struct accumulator_ctx accumulator = {0};
 
 void SystemClock_Config(void);
 
@@ -75,71 +61,62 @@ void adc_polling(void) {
   }
 }
 
-void run_accumulator_l2() {
-  volatile struct accumulator_l1_ctx *acc1 = &accumulator_l1;
-  volatile struct accumulator_l2_ctx *acc2 = &accumulator_l2;
-  if ((acc2->write_idx + 1) % ACCL2_BUFLEN != acc2->read_idx) {
-    acc2->voltages[acc2->write_idx] = ((float)acc1->cumulative / (ACCL1_BUFLEN * ADC_RESOLUTION)) * ADC_VREF;
-    acc2->write_idx = (acc2->write_idx + 1) % ACCL2_BUFLEN;
-  }
-}
-
-void run_accumulator_l1() {
-  volatile struct accumulator_l1_ctx *acc = &accumulator_l1;
-  for (int i = 0; i < ADC_CHANNELS; i++) {
-    uint16_t raw = adc_dma_buffer[i];
-    acc->cumulative -= acc->adc_raw_buffer[acc->head];
-    acc->cumulative += raw;
-    acc->adc_raw_buffer[acc->head] = raw;
-    acc->head = (acc->head + 1) % ACCL1_BUFLEN;
-  }
-}
-
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc) {
   HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_6);
-  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_15, GPIO_PIN_SET);
-  run_accumulator_l1();
-  run_accumulator_l2();
-  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_15, GPIO_PIN_RESET);
+  accumulator.dma_buffer_head = &adc_dma_buffer[ADC_DMA_BUFFER_LEN / 2];
+  accumulator.status |= ACC_STATUS_DATA_READY;
+  accumulator.timestamp = HAL_GetTick();
+}
+
+void HAL_ADC_ConvHalfCpltCallback(ADC_HandleTypeDef *hadc) {
+  HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_12);
+  accumulator.dma_buffer_head = &adc_dma_buffer[0];
+  accumulator.status |= ACC_STATUS_DATA_READY;
+  accumulator.timestamp = HAL_GetTick();
 }
 
 void HAL_ADC_ErrorCallback(ADC_HandleTypeDef *hadc) {
   HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, GPIO_PIN_SET);
+  HAL_ADC_Stop_DMA(hadc);
 }
-void uart_batch_write() {
-  char message[UART_MSG_LEN];
+
+void uart_batch_write(struct packet *payload) {
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_15, GPIO_PIN_SET);
+  char message[10] = {0};
   int len = 0;
   char *ptr = message;
-  memset(message, 0, UART_MSG_LEN);
-  volatile struct accumulator_l2_ctx *acc2 = &accumulator_l2;
-  for (int i = 0; i < UART_BATCH_SIZE; i++) {
-    if (acc2->read_idx != acc2->write_idx) {
-      len = sprintf(ptr, "%.3f", acc2->voltages[i]);
-      ptr += len;
-      if (i < UART_BATCH_SIZE - 1) {
-        *ptr++ = ',';
-      } else {
-        *ptr++ = '\r';
-        *ptr++ = '\n';
-      }
-      acc2->read_idx = (acc2->read_idx + 1) % ACCL2_BUFLEN;
-    }
+  // write header
+  // write body
+  for (int i = 0; i < payload->samples; i++) {
+    len = sprintf(ptr, "%.3f\r\n", payload->ch1[i]);
+    HAL_UART_Transmit(&huart3, (uint8_t *)message, strlen(message), HAL_MAX_DELAY);
   }
-  HAL_UART_Transmit(&huart3, (uint8_t *)message, strlen(message), HAL_MAX_DELAY);
+  *ptr++ = '\r';
+  *ptr++ = '\n';
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_15, GPIO_PIN_RESET);
+}
+
+void process_dma_stream(volatile struct accumulator_ctx *acc, struct packet *payload) {
+  payload->timestamp = acc->timestamp; // todo add timestamp
+  payload->sample_rate = 1000;
+  for (uint8_t i = 0; i < (ADC_DMA_BUFFER_LEN / 2); i++) {
+    const float sample = (float)acc->dma_buffer_head[i];
+    payload->ch1[i] = (sample / ADC_RESOLUTION) * ADC_VREF;
+  }
+  payload->samples = ADC_DMA_BUFFER_LEN / 2;
 }
 
 void adc_dma(void) {
   HAL_ADCEx_Calibration_Start(&hadc1, ADC_CALIB_OFFSET_LINEARITY, ADC_SINGLE_ENDED);
   HAL_ADC_Start_DMA(&hadc1, (uint32_t *)adc_dma_buffer, ADC_DMA_BUFFER_LEN);
   HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_2);
-  char msg[10];
   while (1) {
-    volatile struct accumulator_l2_ctx *acc2 = &accumulator_l2;
-    if (acc2->read_idx != acc2->write_idx) {
-      sprintf(msg, "%.4f\r\n", acc2->voltages[acc2->read_idx]);
-      acc2->read_idx = (acc2->read_idx + 1) % ACCL2_BUFLEN;
+    if (accumulator.status & ACC_STATUS_DATA_READY) {
+      struct packet payload = {0};
+      process_dma_stream(&accumulator, &payload);
+      uart_batch_write(&payload);
+      accumulator.status &= ~ACC_STATUS_DATA_READY;
     }
-    HAL_UART_Transmit(&huart3, (uint8_t *)msg, strlen(msg), HAL_MAX_DELAY);
   }
 }
 

@@ -28,6 +28,7 @@ add_executable(
   src/dma.c
   src/gpio.c
   src/main.c
+  src/tim.c
   src/stm32h7xx_hal_msp.c
   src/stm32h7xx_it.c
   src/syscalls.c
@@ -61,4 +62,5 @@ add_custom_target(hex ALL ${ARM_OBJCPY} -O ihex ${PROJECT_NAME}.elf ${PROJECT_NA
 add_custom_target(bin ALL ${ARM_OBJCPY} -O binary -S ${PROJECT_NAME}.elf ${PROJECT_NAME}.bin DEPENDS ${PROJECT_NAME})
 add_custom_target(objdump ALL ${ARM_OBJDUMP} -h ${PROJECT_NAME}.elf DEPENDS ${PROJECT_NAME})
 add_custom_target(flash DEPENDS size COMMAND ${OPENOCD_EXECUTABLE} -f${PROJECT_SOURCE_DIR}/stm32h723.cfg -c "program ${PROJECT_NAME}.elf verify reset exit")
+add_custom_target(debug DEPENDS size COMMAND ${OPENOCD_EXECUTABLE} -f${PROJECT_SOURCE_DIR}/stm32h723.cfg -c "program ${PROJECT_NAME}.elf verify reset")
 

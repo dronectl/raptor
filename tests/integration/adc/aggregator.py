@@ -5,7 +5,7 @@ import serial
 import logging
 import influxdb_client
 from influxdb_client import Point
-from asyncio import Queue, QueueEmpty, QueueFull
+from asyncio import Queue, QueueFull
 from dataclasses import dataclass
 from influxdb_client.client.write_api import SYNCHRONOUS
 
@@ -49,13 +49,13 @@ async def producer(dqueue: Queue, port:str, baudrate:int) -> None:
                 pass
             await asyncio.sleep(0)
 
-async def consumer(dqueue: Queue) -> None:
+async def consumer(dqueue: Queue[Telemetry]) -> None:
     points: list[Point] = []
     while True:
         telemetry = await dqueue.get()
         points.append(Point("adc-dma").field("voltage", telemetry.voltage).time(telemetry.timestamp))
         if len(points) >= 50:
-            #write_api.write(bucket=Config.INFLUX_BUCKET, org=Config.INFLUX_ORG, record=points, write_precision="ns")
+            write_api.write(bucket=Config.INFLUX_BUCKET, org=Config.INFLUX_ORG, record=points, write_precision="ns")
             points.clear()
         dqueue.task_done()
 
