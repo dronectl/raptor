@@ -14,7 +14,7 @@
 
 #define ADC_VREF (float)3.3
 #define ADC_CHANNELS (uint8_t)1
-#define ADC_DMA_BUFFER_LEN 100
+#define ADC_DMA_BUFFER_LEN 200
 #define ADC_OFFSET 0
 #define ADC_RESOLUTION (1 << 16)
 
@@ -38,8 +38,8 @@ struct packet {
   uint32_t timestamp;   // ms
   uint32_t sample_rate; // Hz
   uint32_t samples;
-  float ch1[100];
-  float ch2[100];
+  uint16_t ch1[100];
+  uint16_t ch2[100];
 };
 
 static volatile struct accumulator_ctx accumulator = {0};
@@ -80,30 +80,14 @@ void HAL_ADC_ErrorCallback(ADC_HandleTypeDef *hadc) {
   HAL_ADC_Stop_DMA(hadc);
 }
 
-void uart_batch_write(struct packet *payload) {
-  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_15, GPIO_PIN_SET);
-  char message[10] = {0};
-  int len = 0;
-  char *ptr = message;
-  // write header
-  // write body
-  for (int i = 0; i < payload->samples; i++) {
-    len = sprintf(ptr, "%.3f\r\n", payload->ch1[i]);
+void process_dma_stream(volatile struct accumulator_ctx *acc) {
+  for (uint8_t i = 0; i < ADC_DMA_BUFFER_LEN / 2; i += 2) {
+    char message[20] = {0};
+    const float s1 = ((float)acc->dma_buffer_head[i] / ADC_RESOLUTION) * ADC_VREF;
+    const float s2 = ((float)acc->dma_buffer_head[i + 1] / ADC_RESOLUTION) * ADC_VREF;
+    sprintf(message, "%.2f,%.2f\r\n", s1, s2);
     HAL_UART_Transmit(&huart3, (uint8_t *)message, strlen(message), HAL_MAX_DELAY);
   }
-  *ptr++ = '\r';
-  *ptr++ = '\n';
-  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_15, GPIO_PIN_RESET);
-}
-
-void process_dma_stream(volatile struct accumulator_ctx *acc, struct packet *payload) {
-  payload->timestamp = acc->timestamp; // todo add timestamp
-  payload->sample_rate = 1000;
-  for (uint8_t i = 0; i < (ADC_DMA_BUFFER_LEN / 2); i++) {
-    const float sample = (float)acc->dma_buffer_head[i];
-    payload->ch1[i] = (sample / ADC_RESOLUTION) * ADC_VREF;
-  }
-  payload->samples = ADC_DMA_BUFFER_LEN / 2;
 }
 
 void adc_dma(void) {
@@ -112,10 +96,10 @@ void adc_dma(void) {
   HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_2);
   while (1) {
     if (accumulator.status & ACC_STATUS_DATA_READY) {
-      struct packet payload = {0};
-      process_dma_stream(&accumulator, &payload);
-      uart_batch_write(&payload);
+      HAL_GPIO_WritePin(GPIOB, GPIO_PIN_15, GPIO_PIN_SET);
+      process_dma_stream(&accumulator);
       accumulator.status &= ~ACC_STATUS_DATA_READY;
+      HAL_GPIO_WritePin(GPIOB, GPIO_PIN_15, GPIO_PIN_RESET);
     }
   }
 }

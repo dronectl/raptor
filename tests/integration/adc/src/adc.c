@@ -50,7 +50,7 @@ void MX_ADC1_Init(void) {
   hadc1.Init.EOCSelection = ADC_EOC_SEQ_CONV;
   hadc1.Init.LowPowerAutoWait = DISABLE;
   hadc1.Init.ContinuousConvMode = DISABLE;
-  hadc1.Init.NbrOfConversion = 1;
+  hadc1.Init.NbrOfConversion = 2;
   hadc1.Init.DiscontinuousConvMode = DISABLE;
   hadc1.Init.ExternalTrigConv = ADC_EXTERNALTRIG_T2_TRGO;
   hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_RISING;
@@ -84,12 +84,11 @@ void MX_ADC1_Init(void) {
 
   /** Configure Regular Channel
    */
-  // sConfig.Channel = ADC_CHANNEL_3;
-  // sConfig.Rank = ADC_REGULAR_RANK_2;
-  // if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
-  // {
-  //   Error_Handler();
-  // }
+  sConfig.Channel = ADC_CHANNEL_3;
+  sConfig.Rank = ADC_REGULAR_RANK_2;
+  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK) {
+    Error_Handler();
+  }
   /* USER CODE BEGIN ADC1_Init 2 */
 
   /* USER CODE END ADC1_Init 2 */
