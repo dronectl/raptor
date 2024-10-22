@@ -7,6 +7,8 @@ struct in_addr {
   uint32_t s_addr;
 };
 
+#define htons(x) (x);
+
 typedef uint32_t socklen_t;
 typedef uint8_t sa_family_t;
 typedef uint16_t in_port_t;
@@ -26,9 +28,6 @@ struct sockaddr {
 
 #define SOCK_STREAM 1
 
-extern int errno;
-
-uint16_t htons(uint16_t n);
 
 int socket(int domain, int type, int protocol);
 int listen(int s, int backlog);

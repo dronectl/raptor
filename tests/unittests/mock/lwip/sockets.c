@@ -1,7 +1,5 @@
 #include "sockets.h"
 
-int errno = 0;
-
 int socket(int domain, int type, int protocol) {
   return 1;
 }
