@@ -1,5 +1,15 @@
 cmake_minimum_required(VERSION 3.22)
 
+if(MINGW OR CYGWIN OR WIN32)
+  find_program(
+    CMAKE_MAKE_PROGRAM
+    NAMES make
+          make.exe
+    DOC "Find a suitable make program for building under Windows/MinGW"
+    HINTS c:/MinGW-32/bin
+  )
+endif()
+
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 include(FetchContent)
 message(STATUS "Fetching Google Test...")
