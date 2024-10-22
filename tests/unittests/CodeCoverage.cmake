@@ -153,6 +153,8 @@ endif() # NOT GCOV_PATH
 
 # Check supported compiler (Clang, GNU and Flang)
 get_property(LANGUAGES GLOBAL PROPERTY ENABLED_LANGUAGES)
+# explicitly remove RC for GNU check
+list(REMOVE_ITEM LANGUAGES "RC")
 foreach(LANG ${LANGUAGES})
   if("${CMAKE_${LANG}_COMPILER_ID}" MATCHES "(Apple)?[Cc]lang")
     if("${CMAKE_${LANG}_COMPILER_VERSION}" VERSION_LESS 3)
@@ -160,7 +162,7 @@ foreach(LANG ${LANGUAGES})
     endif()
   elseif(NOT "${CMAKE_${LANG}_COMPILER_ID}" MATCHES "GNU"
          AND NOT "${CMAKE_${LANG}_COMPILER_ID}" MATCHES "(LLVM)?[Ff]lang")
-    message(FATAL_ERROR "Compiler is not GNU or Flang! Aborting...")
+      message(FATAL_ERROR "Compiler for ${LANG} is not GNU or Flang! Aborting...")
   endif()
 endforeach()
 
