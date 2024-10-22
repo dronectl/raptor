@@ -17,28 +17,21 @@ if(MINGW OR CYGWIN OR WIN32)
     DOC "Find a suitable make program for building under Windows/MinGW"
     HINTS c:/MinGW-32/bin
   )
-  set(UTIL_SEARCH_CMD where.exe)
   set(TOOLCHAIN_EXT ".exe" )
 elseif(UNIX OR APPLE)
-  set(UTIL_SEARCH_CMD which)
   set(TOOLCHAIN_EXT "" )
 endif()
 
 # search for arm toolchain binary and get its absolute path
-execute_process(
-  COMMAND ${UTIL_SEARCH_CMD} ${TOOLCHAIN_PREFIX}-gcc
-  OUTPUT_VARIABLE BINUTILS_PATH
-  OUTPUT_STRIP_TRAILING_WHITESPACE
-)
 
 # add handler for unfound resources
-if ("${BINUTILS_PATH}" STREQUAL "")
+if ("${TOOLCHAIN_PATH}" STREQUAL "")
   message(FATAL_ERROR "Could not locate ${TOOLCHAIN_PREFIX} compiler and utilities.")
 endif()
 
 # get the filename components path
-get_filename_component(TOOLCHAIN_DIR ${BINUTILS_PATH} DIRECTORY)
-message(STATUS "Discovered ARM CGT path: " ${TOOLCHAIN_DIR})
+get_filename_component(TOOLCHAIN_DIR ${TOOLCHAIN_PATH} DIRECTORY)
+message(STATUS "ARM CGT path: " ${TOOLCHAIN_DIR})
 
 # This avoids running the linker and is intended for use with cross-compiling toolchains
 # that cannot link without custom flags or linker scripts.
@@ -66,12 +59,12 @@ set(CMAKE_CXX_COMPILER ${TOOLCHAIN_PREFIX}-g++${TOOLCHAIN_EXT} CACHE INTERNAL "C
 set(CMAKE_ASM_COMPILER ${TOOLCHAIN_PREFIX}-gcc${TOOLCHAIN_EXT} CACHE INTERNAL "ASM Compiler")
 
 message(STATUS "Discovering ARM CGT executables.")
-find_program(ARM_OBJCPY NAMES ${TOOLCHAIN_PREFIX}-objcopy${TOOLCHAIN_EXT} PATHS ${TOOLCHAIN_DIR} NO_DEFAULT_PATH)
-find_program(ARM_OBJDUMP NAMES ${TOOLCHAIN_PREFIX}-objdump${TOOLCHAIN_EXT} PATHS ${TOOLCHAIN_DIR} NO_DEFAULT_PATH)
-find_program(ARM_SIZE NAMES ${TOOLCHAIN_PREFIX}-size${TOOLCHAIN_EXT} PATHS ${TOOLCHAIN_DIR} NO_DEFAULT_PATH)
+find_program(ARM_OBJCPY NAMES ${TOOLCHAIN_PREFIX}-objcopy${TOOLCHAIN_EXT} PATHS ${TOOLCHAIN_PATH} NO_DEFAULT_PATH)
+find_program(ARM_OBJDUMP NAMES ${TOOLCHAIN_PREFIX}-objdump${TOOLCHAIN_EXT} PATHS ${TOOLCHAIN_PATH} NO_DEFAULT_PATH)
+find_program(ARM_SIZE NAMES ${TOOLCHAIN_PREFIX}-size${TOOLCHAIN_EXT} PATHS ${TOOLCHAIN_PATH} NO_DEFAULT_PATH)
 
 # configure find_program search directives
-set(CMAKE_FIND_ROOT_PATH ${BINUTILS_PATH})
+set(CMAKE_FIND_ROOT_PATH ${TOOLCHAIN_PATH})
 set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
 set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
 set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
