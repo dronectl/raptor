@@ -68,7 +68,38 @@ The tests will now be compiled alongside the raptor source code:
 make -j
 ```
 
-## Debugging Test Binaries
+## Debugging
+
+Ensure the board is flashed with a binary (compiled with `-g`) and is connected via USB to your host machine.
+
+### GDB and OpenOCD
+Open a `gdbserver` session with `openocd`:
+```bash
+openocd -futils/stm32h723.cfg
+```
+
+In another terminal start `gdb` from the project root and pass the binary path as an argument. This will source the `~/.gdbinit` on startup:
+```bash
+christiansargusingh  22:07:08 Projects/dronectl/raptor % arm-none-eabi-gdb build/core/raptor.elf
+```
+
+You may get an auto-load warning:
+```bash
+warning: File "/Users/christiansargusingh/Projects/dronectl/raptor/.gdbinit" auto-loading has been declined by your `auto-load safe-path' set to "$debugdir:$datadir/auto-load".
+To enable execution of this file add
+        add-auto-load-safe-path /Users/christiansargusingh/Projects/dronectl/raptor/.gdbinit
+line to your configuration file "/Users/christiansargusingh/Library/Preferences/gdb/gdbinit".
+To completely disable this security protection add
+        set auto-load safe-path /
+line to your configuration file "/Users/christiansargusingh/Library/Preferences/gdb/gdbinit".
+For more information about this security protection see the
+"Auto-loading safe path" section in the GDB manual.  E.g., run from the shell:
+        info "(gdb)Auto-loading safe path"
+```
+
+If so follow the instructions to add the path to the repository root as an auto-load safe path.
+
+### Debug Adapter Protocol (VSCode)
 To debug test binaries you will need to select the `Test Debug (OpenOCD)` launch configuration and change the `executable` field to point to the correct test binary. For example if testing the bme280 binary:
 ```json
 {
@@ -79,3 +110,61 @@ To debug test binaries you will need to select the `Test Debug (OpenOCD)` launch
 ```
 
 > I am looking for a way to specify the folder as a prompt in vscode. If anyone knows how to achieve this feel free to submit a PR.
+
+## Unittesting
+
+Configure the unittest project.
+```bash
+mkdir tests/unittests/build
+cmake -B tests/unittests/build -S tests/unittests -DCMAKE_BUILD_TYPE=Debug
+make -C tests/unittests/build -j
+```
+
+Run the unittest binary
+```bash
+./tests/unittests/build/raptor-test
+```
+
+Run the coverage report powered by `gcovr`:
+```bash
+make -C tests/unittests/build coverage
+```
+You should get a report generated in stdout and an accompanying xml file named `coverage.xml`:
+```bash
+------------------------------------------------------------------------------
+                           GCC Code Coverage Report
+Directory: /Users/christiansargusingh/Projects/dronectl/raptor
+------------------------------------------------------------------------------
+File                                    Branches   Taken  Cover   Missing
+------------------------------------------------------------------------------
+core/lib/cbuffer.c                            14       9    64%   26,35,46,47
+core/lib/logger.c                             16       1     6%   49,74,85,91,97,103,104,146,154,166,171
+core/lib/scpi/commands.c                      16       0     0%   68,70,77,80,87,91,96,102,106,111,117,118,119,122
+core/lib/scpi/err.c                            6       5    83%   42
+core/lib/scpi/lexer.c                         18       0     0%   37,39,42,49,56,76,109,111,126
+core/lib/scpi/parser.c                        28       0     0%   31,33,39,44,54,58,63,73,79,87,94,99,103,104,113,128
+core/lib/scpi/utf8.c                          20      16    80%   81,89,97,105
+core/lib/sysreg.c                             94      57    60%   201,204,211,214,223,225,226,229,230,233,234,237,238,254,274,301,305,315,319,323,325,335,339,349,353,357,359,369,373,383,387,391,393,403,407,417,421
+------------------------------------------------------------------------------
+TOTAL                                        212      88    41%
+------------------------------------------------------------------------------
+Cobertura code coverage report saved in coverage.xml.
+[100%] Built target coverage
+```
+
+### Note on LLVM Clang
+For MacOS users, you must install and use a gcc toolchain in order to build the unittests. The firmware contains some gcc specific attributes and directives which will cause compile errors on LLVM based compilers such as clang. An example of this is using the section attribute:
+```c
+__attribute__((section(".ram_d3"))) static StaticTask_t scpi_task_buffer;
+```
+To avoid clutter in the firmware for supporting multiple compilers I opted to restrict the scope of the unittests to just gcc based compilers.
+
+To compile and run the unittests with coverage you need to point cmake to use the correct c and cxx compilers. For example, if my gcc compilers are located in `/opt/homebrew/bin` I can configure the cmake project using the following cmake options:
+```bash
+-DCMAKE_C_COMPILER=/opt/homebrew/bin/gcc-14 -DCMAKE_CXX_COMPILER=/opt/homebrew/bin/g++-14
+```
+
+Coverage will also not work unless you also specify the GCOV binary. This is because by default on MacOS, the `gcov` executable points to an llvm-based gcov which will not work for coverage symbols generated by the gcc linker. To solve this I have provided the optional `RAPTOR_COVERAGE_GCOV` variable for pointing to the gcc-based `gcov` binary. For example if my gcc-based gcov is discoverable by invoking `gcov-14` I can add the following to the cmake configure step:
+```bash
+-DRAPTOR_COVERAGE_GCOV=gcov-14
+```
