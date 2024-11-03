@@ -22,6 +22,7 @@
 #include "dma.h"
 #include "fdcan.h"
 #include "i2c.h"
+#include "memorymap.h"
 #include "rtc.h"
 #include "sdmmc.h"
 #include "spi.h"

@@ -14,6 +14,7 @@ add_library(
   STATIC
   drivers/bme280.c
   drivers/pwm.c
+  drivers/aggregator.c
   lib/health.c
   lib/cbuffer.c
   lib/logger.c

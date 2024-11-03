@@ -73,6 +73,6 @@ void system_boot(void) {
   }
   vTaskStartScheduler();
   // clang-format off
-  while (1) { }
+  while (1);
   // clang-format on
 }
