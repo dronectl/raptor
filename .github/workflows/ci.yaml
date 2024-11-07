@@ -20,14 +20,14 @@ jobs:
     steps:
     - name: checkout source
       uses: actions/checkout@v4
+    - name: setup python3
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.13' 
     - name: install clang formatter
       run: |
-        sudo apt-get update -y
-        sudo apt-get install -y python3 python3-pip
         python3 -m pip install -r requirements.txt
         echo `clang-format --version`
-      env:
-        DEBIAN_FRONTEND: noninteractive
     - name: run clang formatter
       run: find core -iname *.c -o -iname *.h | xargs clang-format -n -Werror --verbose
   build:
@@ -36,16 +36,26 @@ jobs:
     steps:
       - name: checkout source
         uses: actions/checkout@v3
-      - name: install gcc-arm-none-eabi & openocd
-        run: |
-          sudo apt-get update -y
-          sudo apt-get install -y gcc-arm-none-eabi openocd
-        env:
-          DEBIAN_FRONTEND: noninteractive
+      - name: install arm-none-eabi-gcc
+        uses: carlosperate/arm-none-eabi-gcc-action@v1
+        with:
+          release: '13.2.1'
+      - name: setup python3
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13' 
       - name: setup cmake
         uses: jwlawson/actions-setup-cmake@v1.14
         with:
           cmake-version: '3.22.x'
+      - name: install openocd
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y openocd
+        env:
+          DEBIAN_FRONTEND: noninteractive
+      - name: install python build dependancies
+        run: python3 -m pip install -r requirements.txt
       - name: build
         run: |
           mkdir $GITHUB_WORKSPACE/build
@@ -77,17 +87,16 @@ jobs:
     steps:
       - name: checkout source
         uses: actions/checkout@v4
-      - name: install gcovr
-        run: |
-          sudo apt-get update -y
-          sudo apt-get install -y python3 python3-pip
-          python3 -m pip install gcovr
-        env:
-          DEBIAN_FRONTEND: noninteractive
+      - name: setup python3
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13' 
       - name: setup cmake
         uses: jwlawson/actions-setup-cmake@v1.14
         with:
           cmake-version: '3.22.x'
+      - name: install python build dependancies
+        run: python3 -m pip install -r requirements.txt
       - name: build unittests
         run: |
           mkdir -p $GITHUB_WORKSPACE/tests/unittests/build
