@@ -1,1 +1,6 @@
+cmake==3.30.5
 clang-format==18.1.4
+grpcio-tools==1.67.1
+protobuf==5.28.3
+nanopb==0.4.9
+gcovr==8.2

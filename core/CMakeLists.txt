@@ -1,5 +1,19 @@
 cmake_minimum_required(VERSION 3.22)
 
+# protocols nanopb
+message(STATUS "Building raptor protocols")
+include(nanopb)
+nanopb_generate_cpp(
+  TARGET lib-protocols
+  RELPATH protocols/protobuf
+  protocols/protobuf/raptor/v1/battery.proto
+  protocols/protobuf/raptor/v1/bldc.proto
+  protocols/protobuf/raptor/v1/env.proto
+  protocols/protobuf/raptor/v1/metadata.proto
+  protocols/protobuf/raptor/v1/raptor.proto
+  protocols/protobuf/raptor/v1/relay.proto
+)
+
 # create third party libraries
 add_library(lib-freertos STATIC ${FREERTOS_SRCS})
 target_include_directories(lib-freertos PUBLIC ${FREERTOS_INC} freertos)
@@ -42,6 +56,7 @@ target_link_libraries(
   ${LIB_BSP}
   lib-freertos
   lib-lwip
+  lib-protocols
 )
 
 add_executable(
