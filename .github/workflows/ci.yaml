@@ -35,7 +35,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: checkout source
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           submodules: recursive
       - name: install arm-none-eabi-gcc
@@ -46,12 +46,6 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.13' 
-      - name: install openocd
-        run: |
-          sudo apt-get update -y
-          sudo apt-get install -y openocd
-        env:
-          DEBIAN_FRONTEND: noninteractive
       - name: install python build dependancies
         run: python3 -m pip install -r requirements.txt
       - name: build
@@ -77,7 +71,7 @@ jobs:
         with:
           name: raptor
           # relative to $GITHUB_WORKSPACE 
-          path: build/core/raptor.elf
+          path: build/raptor.elf
           retention-days: 5
   test:
     name: tests
