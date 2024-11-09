@@ -71,7 +71,7 @@ jobs:
         with:
           name: raptor
           # relative to $GITHUB_WORKSPACE 
-          path: build/core/raptor.elf
+          path: build/raptor.elf
           retention-days: 5
   test:
     name: tests
