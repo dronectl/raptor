@@ -12,6 +12,6 @@ function (find_openocd)
   )
   # Check if the program was found
   if (NOT OPENOCD_EXECUTABLE)
-    message(FATAL_ERROR "Could not find openocd program")
+    message(WARNING "Could not find openocd program")
   endif()
 endfunction()
