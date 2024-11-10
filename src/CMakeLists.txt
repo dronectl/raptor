@@ -3,7 +3,6 @@ cmake_minimum_required(VERSION 3.22)
 add_subdirectory(bsp)
 
 # protocols nanopb
-message(STATUS "Building raptor protocols")
 include(nanopb)
 nanopb_generate_cpp(
   TARGET lib-protocols

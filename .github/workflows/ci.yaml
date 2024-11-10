@@ -53,7 +53,7 @@ jobs:
           mkdir $GITHUB_WORKSPACE/build
           cd build
           cmake .. -DCMAKE_BUILD_TYPE=Release
-          make -j`nproc`
+          make -j4
       - name: binary size details
         working-directory: build 
         run: make size
