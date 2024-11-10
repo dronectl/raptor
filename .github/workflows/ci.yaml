@@ -53,8 +53,7 @@ jobs:
           mkdir $GITHUB_WORKSPACE/build
           cd build
           cmake .. -DCMAKE_BUILD_TYPE=Release
-          make lib-protocols
-          make -j
+          make -j`nproc`
       - name: binary size details
         working-directory: build 
         run: make size
