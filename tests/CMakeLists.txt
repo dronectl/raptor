@@ -78,7 +78,7 @@ if (RAPTOR_COVERAGE_GCOV)
   message(STATUS "Adding custom gcov executable to gcovr: ${RAPTOR_COVERAGE_GCOV}")
   list(APPEND GCOVR_ADDITIONAL_ARGS --gcov-executable ${RAPTOR_COVERAGE_GCOV})
 endif()
-list(APPEND GCOVR_ADDITIONAL_ARGS --txt --branches --gcov-ignore-parse-errors --exclude-unreachable-branches)
+list(APPEND GCOVR_ADDITIONAL_ARGS --txt --txt-metric branch --gcov-ignore-parse-errors --exclude-unreachable-branches)
 setup_target_for_coverage_gcovr_xml(
   NAME coverage
   EXECUTABLE ctest
