@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.22)
 
+add_subdirectory(bsp)
+
 # protocols nanopb
 message(STATUS "Building raptor protocols")
 include(nanopb)
@@ -16,41 +18,42 @@ nanopb_generate_cpp(
 
 # create third party libraries
 add_library(lib-freertos STATIC ${FREERTOS_SRCS})
-target_include_directories(lib-freertos PUBLIC ${FREERTOS_INC} freertos)
+target_include_directories(lib-freertos PUBLIC ${FREERTOS_INC} common/config)
 target_link_libraries(lib-freertos ${LIB_BSP})
 add_library(lib-lwip STATIC ${LWIP_SRCS})
-target_include_directories(lib-lwip PUBLIC ${LWIP_INC} lwip)
+target_include_directories(lib-lwip PUBLIC ${LWIP_INC} common/config)
 target_link_libraries(lib-lwip lib-freertos)
 
 message(STATUS "Consolidating files for ${LIB_RAPTOR}")
 add_library(
   ${LIB_RAPTOR}
   STATIC
+  # TODO: decouple application from driver code: https://github.com/dronectl/raptor/issues/66
+  drivers/ethernet/app_ethernet.c
+  drivers/ethernet/ethernetif.c
   drivers/bme280.c
   drivers/pwm.c
-  lib/health.c
-  lib/cbuffer.c
-  lib/logger.c
-  lib/sysreg.c
-  lib/system.c
-  lib/scpi/err.c
-  lib/scpi/utf8.c
-  lib/scpi/lexer.c
-  lib/scpi/parser.c
-  lib/scpi/commands.c
-  lib/scpi/server.c
+  common/cbuffer.c
+  common/logger.c
+  common/sysreg.c
+  os/health.c
+  os/system.c
+  os/scpi/err.c
+  os/scpi/utf8.c
+  os/scpi/lexer.c
+  os/scpi/parser.c
+  os/scpi/commands.c
+  os/scpi/server.c
 )
-target_include_directories(
-  ${LIB_RAPTOR}
-  PUBLIC
-  drivers
-  lib
-)
+
+target_include_directories(${LIB_RAPTOR} PUBLIC drivers os common)
+
 target_compile_options(
   ${LIB_RAPTOR}
   PUBLIC -Wno-unused-parameter -Wpedantic -fno-builtin -Wall -Wextra -ffunction-sections -fdata-sections -fomit-frame-pointer
   PUBLIC $<$<CONFIG:Debug>:-DRAPTOR_DEBUG>
 )
+
 target_link_libraries(
   ${LIB_RAPTOR}
   ${LIB_BSP}
@@ -61,12 +64,10 @@ target_link_libraries(
 
 add_executable(
   ${PROJECT_NAME}
-  src/startup.c
-  lwip/app_ethernet.c
-  lwip/ethernetif.c
-  freertos/freertos.c
-  freertos/sysmem.c
-  freertos/syscalls.c
+  main.c
+  os/freertos.c
+  os/sysmem.c
+  os/syscalls.c
 )
 
 set_target_properties(${PROJECT_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
@@ -74,9 +75,8 @@ set_target_properties(${PROJECT_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMA
 target_include_directories(
   ${PROJECT_NAME}
   PRIVATE drivers
-  PRIVATE freertos
-  PRIVATE lwip
-  PRIVATE src
+  PRIVATE os
+  PRIVATE common
   PRIVATE ${FREERTOS_INC}
   PRIVATE ${LWIP_INC}
 )

@@ -1,7 +1,7 @@
 
 #include "system.h"
 #include "stm32h7xx_nucleo.h"
-#include "app_ethernet.h"
+#include "ethernet/app_ethernet.h"
 #include "health.h"
 #include "logger.h"
 #include "scpi/server.h"
