@@ -53,7 +53,8 @@ jobs:
           mkdir $GITHUB_WORKSPACE/build
           cd build
           cmake .. -DCMAKE_BUILD_TYPE=Release
-          make -j4
+          make lib-protocols
+          make -j
       - name: binary size details
         working-directory: build 
         run: make size
