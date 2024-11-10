@@ -32,16 +32,17 @@ endif()
 enable_testing()
 set(CMAKE_STATIC_LIBRARY_PREFIX "")
 set(LIB_RAPTOR "libraptor")
+# TODO: include_subdirectories
 add_library(
   ${LIB_RAPTOR}
-  ../../core/lib/sysreg.c
-  ../../core/lib/logger.c
-  ../../core/lib/cbuffer.c
-  ../../core/lib/scpi/utf8.c
-  ../../core/lib/scpi/err.c
-  ../../core/lib/scpi/commands.c
-  ../../core/lib/scpi/lexer.c
-  ../../core/lib/scpi/parser.c
+  ../src/common/sysreg.c
+  ../src/common/logger.c
+  ../src/common/cbuffer.c
+  ../src/os/scpi/utf8.c
+  ../src/os/scpi/err.c
+  ../src/os/scpi/commands.c
+  ../src/os/scpi/lexer.c
+  ../src/os/scpi/parser.c
 )
 
 set(LIB_MOCK "libmock")
@@ -50,8 +51,9 @@ add_subdirectory(mock)
 target_include_directories(
   ${LIB_RAPTOR}
   PUBLIC
-  ../../core/lib
-  ../../core/lib/scpi
+  ../src/common
+  ../src/drivers
+  ../src/os
 )
 target_compile_options(${LIB_RAPTOR} PUBLIC -g -O0 -ftest-coverage -fprofile-arcs)
 target_link_options(${LIB_RAPTOR} PUBLIC --coverage)
@@ -76,7 +78,7 @@ if (RAPTOR_COVERAGE_GCOV)
   message(STATUS "Adding custom gcov executable to gcovr: ${RAPTOR_COVERAGE_GCOV}")
   list(APPEND GCOVR_ADDITIONAL_ARGS --gcov-executable ${RAPTOR_COVERAGE_GCOV})
 endif()
-list(APPEND GCOVR_ADDITIONAL_ARGS --txt --branches --gcov-ignore-parse-errors --exclude-unreachable-branches)
+list(APPEND GCOVR_ADDITIONAL_ARGS --txt --txt-metric branch --gcov-ignore-parse-errors --exclude-unreachable-branches)
 setup_target_for_coverage_gcovr_xml(
   NAME coverage
   EXECUTABLE ctest

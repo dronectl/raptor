@@ -44,12 +44,12 @@ message(STATUS "Configuring config.h header")
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/config.h.in config.h @ONLY)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
-add_subdirectory(bsp)
-add_subdirectory(core)
+add_subdirectory(src)
 
-message(STATUS "Adding custom targets")
 include(openocd)
 find_openocd()
+
+message(STATUS "Adding custom targets")
 add_custom_target(size ALL ${ARM_SIZE} -B -d ${PROJECT_NAME}.elf DEPENDS ${PROJECT_NAME})
 add_custom_target(hex ALL ${ARM_OBJCPY} -O ihex ${PROJECT_NAME}.elf ${PROJECT_NAME}.hex DEPENDS ${PROJECT_NAME})
 add_custom_target(bin ALL ${ARM_OBJCPY} -O binary -S ${PROJECT_NAME}.elf ${PROJECT_NAME}.bin DEPENDS ${PROJECT_NAME})

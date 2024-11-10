@@ -9,4 +9,3 @@ add_library(${LIB_BSP} OBJECT ${BSP_SRCS} raptor/startup_stm32h723xx.s ${HAL_SRC
 target_include_directories(${LIB_BSP} PUBLIC ${HAL_INC} inc)
 target_compile_options(${LIB_BSP} PUBLIC ${STM32H723_COMPILE_FLAGS})
 target_link_options(${LIB_BSP} PUBLIC ${STM32H723_LINKER_FLAGS})
-

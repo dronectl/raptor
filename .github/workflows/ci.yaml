@@ -85,18 +85,18 @@ jobs:
           python-version: '3.13' 
       - name: install python build dependancies
         run: python3 -m pip install -r requirements.txt
-      - name: build unittests
+      - name: build unit tests
         run: |
-          mkdir -p $GITHUB_WORKSPACE/tests/unittests/build
-          cmake -B tests/unittests/build -S tests/unittests -DCMAKE_BUILD_TYPE=Debug
-          make -C tests/unittests/build -j
-      - name: run unittests
-        run: make -C tests/unittests/build coverage
+          mkdir -p $GITHUB_WORKSPACE/tests/build
+          cmake -B tests/build -S tests -DCMAKE_BUILD_TYPE=Debug
+          make -C tests/build -j
+      - name: run unit tests
+        run: make -C tests/build coverage
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v4.0.1
         with:
           fail_ci_if_error: true
-          file: tests/unittests/build/coverage.xml
+          file: tests/build/coverage.xml
           disable_search: true
           token: ${{ secrets.CODECOV_TOKEN }}
           verbose: true
@@ -104,5 +104,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: coverage.xml
-          path: tests/unittests/build/coverage.xml
+          path: tests/build/coverage.xml
           retention-days: 0

@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 
 extern "C" {
-#include "utf8.h"
+#include "scpi/utf8.h"
 }
 
 TEST(UTF8Test, UTF8IsNumeric) {

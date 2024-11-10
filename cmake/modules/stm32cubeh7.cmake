@@ -3,28 +3,28 @@ cmake_minimum_required(VERSION 3.14)
 find_program(GIT_EXECUTABLE git)
 
 if(NOT GIT_EXECUTABLE)
-    message(FATAL_ERROR "Git not found. Please install Git to proceed.")
+  message(FATAL_ERROR "Git not found. Please install Git to proceed.")
 else()
-    message(STATUS "Git found: ${GIT_EXECUTABLE}")
+  message(STATUS "Found git executable: ${GIT_EXECUTABLE}")
 endif()
 
 # Path where you want to clone the library
 set(STM32H7_SOURCE_DIR "${CMAKE_BINARY_DIR}/external/STM32CubeH7")
 
 function(clone_repo_if_missing url dir)
-    if(NOT EXISTS "${dir}")
-        message(STATUS "Cloning ${url} into ${dir}")
-        execute_process(
-            COMMAND git clone --depth 1 --recurse-submodules ${url} ${dir}
-            WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
-            RESULT_VARIABLE GIT_CLONE_RESULT
-        )
-        if(NOT GIT_CLONE_RESULT EQUAL 0)
-            message(FATAL_ERROR "Failed to clone repository: ${url}")
-        endif()
-    else()
-        message(STATUS "Repository already cloned: ${dir}")
+  if(NOT EXISTS "${dir}")
+    message(STATUS "Cloning ${url} into ${dir}")
+    execute_process(
+      COMMAND git clone --depth 1 --recurse-submodules ${url} ${dir}
+      WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
+      RESULT_VARIABLE GIT_CLONE_RESULT
+    )
+    if(NOT GIT_CLONE_RESULT EQUAL 0)
+      message(FATAL_ERROR "Failed to clone repository: ${url}")
     endif()
+    else()
+      message(STATUS "Repository already cloned: ${dir}")
+  endif()
 endfunction()
 
 message(STATUS "Fetching STM32H7 CMSIS HAL and middleware dependancies")

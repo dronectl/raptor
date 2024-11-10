@@ -22,7 +22,7 @@
 #include "lwip/snmp.h"
 #include "lwip/tcpip.h"
 #include "ethernetif.h"
-#include "../Components/lan8742/lan8742.h"
+#include "lan8742.h"
 #include <string.h>
 #include "lwip/netifapi.h"
 
@@ -77,48 +77,19 @@ typedef struct
   uint8_t buff[(ETH_RX_BUFFER_SIZE + 31) & ~31] __ALIGNED(32);
 } RxBuff_t;
 
-#if defined(__ICCARM__) /*!< IAR Compiler */
-
-#pragma location = 0x30000000
-ETH_DMADescTypeDef DMARxDscrTab[ETH_RX_DESC_CNT]; /* Ethernet Rx DMA Descriptors */
-#pragma location = 0x30000080
-ETH_DMADescTypeDef DMATxDscrTab[ETH_TX_DESC_CNT]; /* Ethernet Tx DMA Descriptors */
-
-#elif defined(__CC_ARM) /* MDK ARM Compiler */
-
-__attribute__((section(".RxDescripSection"))) ETH_DMADescTypeDef DMARxDscrTab[ETH_RX_DESC_CNT]; /* Ethernet Rx DMA Descriptors */
-__attribute__((section(".TxDescripSection"))) ETH_DMADescTypeDef DMATxDscrTab[ETH_TX_DESC_CNT]; /* Ethernet Tx DMA Descriptors */
-
-#elif defined(__GNUC__) /* GNU Compiler */
-
 ETH_DMADescTypeDef DMARxDscrTab[ETH_RX_DESC_CNT] __attribute__((section(".RxDescripSection"))); /* Ethernet Rx DMA Descriptors */
 ETH_DMADescTypeDef DMATxDscrTab[ETH_TX_DESC_CNT] __attribute__((section(".TxDescripSection"))); /* Ethernet Tx DMA Descriptors */
-
-#endif
 
 /* Memory Pool Declaration */
 LWIP_MEMPOOL_DECLARE(RX_POOL, ETH_RX_BUFFER_CNT, sizeof(RxBuff_t), "Zero-copy RX PBUF pool")
 
-#if defined(__ICCARM__) /*!< IAR Compiler */
-#pragma location = 0x30000100
-extern u8_t memp_memory_RX_POOL_base[];
-
-#elif defined(__CC_ARM) /* MDK ARM Compiler */
 __attribute__((section(".Rx_PoolSection"))) extern u8_t memp_memory_RX_POOL_base[];
-
-#elif defined(__GNUC__) /* GNU Compiler */
-__attribute__((section(".Rx_PoolSection"))) extern u8_t memp_memory_RX_POOL_base[];
-
-#endif
 
 /* Variable Definitions */
 static uint8_t RxAllocStatus;
-
 osSemaphoreId RxPktSemaphore = NULL; /* Semaphore to signal incoming packets */
-
 TaskHandle_t EthIfThread;            /* Handle of the interface thread */
 osSemaphoreId TxPktSemaphore = NULL; /* Semaphore to signal transmit packet complete */
-
 /* Global Ethernet handle */
 ETH_HandleTypeDef EthHandle;
 ETH_TxPacketConfig TxConfig;
