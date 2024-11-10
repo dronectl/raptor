@@ -52,7 +52,8 @@ target_include_directories(
   ${LIB_RAPTOR}
   PUBLIC
   ../src/common
-  ../src/os/scpi
+  ../src/drivers
+  ../src/os
 )
 target_compile_options(${LIB_RAPTOR} PUBLIC -g -O0 -ftest-coverage -fprofile-arcs)
 target_link_options(${LIB_RAPTOR} PUBLIC --coverage)
