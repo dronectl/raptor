@@ -32,6 +32,7 @@ add_library(
   drivers/ethernet/ethernetif.c
   drivers/bme280.c
   drivers/pwm.c
+  common/uassert.c
   common/cbuffer.c
   common/logger.c
   common/sysreg.c
