@@ -1,7 +1,8 @@
-#include <stdint.h> // IWYU pragma: export
 #include "FreeRTOS.h"
 #include "task.h"
 #include "uassert.h"
+
+#include <stdint.h> // IWYU pragma: export
 
 #ifdef __GNUC__
 #define USED __attribute__((used))
@@ -18,6 +19,7 @@ void vApplicationIdleHook(void);
 void vApplicationStackOverflowHook(xTaskHandle xTask, signed char *pcTaskName);
 void vApplicationMallocFailedHook(void);
 void vApplicationDaemonTaskStartupHook(void);
+void vApplicationTickHook(void);
 
 void vApplicationIdleHook(void) {
   /* vApplicationIdleHook() will only be called if configUSE_IDLE_HOOK is set
@@ -33,6 +35,9 @@ void vApplicationIdleHook(void) {
 
 void vApplicationStackOverflowHook(__attribute__((unused)) xTaskHandle xTask, __attribute__((unused)) signed char *pcTaskName) {
   uassert(0);
+}
+
+void vApplicationTickHook(void) {
 }
 
 void vApplicationMallocFailedHook(void) {

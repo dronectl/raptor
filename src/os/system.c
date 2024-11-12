@@ -1,10 +1,11 @@
 
+#include "main.h"
 #include "system.h"
-#include "stm32h7xx_nucleo.h"
 #include "ethernet/app_ethernet.h"
 #include "health.h"
 #include "logger.h"
 #include "scpi/server.h"
+#include "uassert.h"
 #include <FreeRTOS.h>
 #include <task.h>
 
@@ -26,53 +27,33 @@ extern UART_HandleTypeDef huart7;
 extern UART_HandleTypeDef huart9;
 extern UART_HandleTypeDef huart3;
 
-__attribute__((section(".data.sys"))) static uint32_t tick_counter = 0;
+static struct health_ctx health_context = {
+    .bme280 = {
+        .i2c = &hi2c2,
+    },
+    .tick_rate_ms = HEALTH_TASK_DEFAULT_TICK_RATE_MS,
+    .leds = {
+        [HEALTH_STATUS_LED_OK] = {.active_high = true, .port = LED_GREEN_GPIO_Port, .pin = LED_GREEN_Pin},
+        [HEALTH_STATUS_LED_ERR] = {.active_high = true, .port = LED_RED_GPIO_Port, .pin = LED_RED_Pin},
+        [HEALTH_STATUS_LED_EVENT] = {.active_high = true, .port = LED_YELLOW_GPIO_Port, .pin = LED_YELLOW_Pin},
+    }};
+
 static TaskHandle_t system_boostrap;
 
 static void system_bootstrap_task(void __attribute__((unused)) * argument) {
   system_status_t status = SYSTEM_OK;
-  status = app_ethernet_init();
-  if (status != SYSTEM_OK) {
-    system_spinlock();
-  }
-  logger_init(LOGGER_TRACE);
-  if (status != SYSTEM_OK) {
-    system_spinlock();
-  }
-  status = health_init(hi2c2);
-  if (status != SYSTEM_OK) {
-    system_spinlock();
-  }
-  status = scpi_init();
-  if (status != SYSTEM_OK) {
-    system_spinlock();
-  }
+  // status = app_ethernet_init();
+  uassert(status == SYSTEM_OK);
+  // logger_init(LOGGER_TRACE);
+  health_init(&health_context);
   vTaskDelete(system_boostrap);
-}
-
-void system_health_indicator(void) {
-  tick_counter++;
-  if (tick_counter > 1000) {
-    tick_counter = 0;
-    BSP_LED_Toggle(LED1);
-  }
-}
-
-void system_spinlock(void) {
-  BSP_LED_On(LED3);
-  while (1) {
-    HAL_Delay(100);
-    BSP_LED_Toggle(LED3);
-  }
 }
 
 void system_boot(void) {
   BaseType_t ret = xTaskCreate(system_bootstrap_task, "bootstrap", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 20, &system_boostrap);
-  if (ret != pdPASS) {
-    system_spinlock();
-  }
+  uassert(ret == pdPASS);
   vTaskStartScheduler();
   // clang-format off
-  while (1) { }
+  uassert(0); // should never reach here
   // clang-format on
 }
