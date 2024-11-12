@@ -8,80 +8,81 @@
  *
  */
 
-#include <FreeRTOS.h>
-#include <task.h>
-#include "bme280.h"
+#include "main.h"
 #include "health.h"
 #include "logger.h"
 #include "stm32h7xx_hal.h" // IWYU pragma: export
+#include "uassert.h"
+#include <FreeRTOS.h>
+#include <task.h>
+
+#define SERVICE_BME280_LINK_DOWN_MSK (1 << 0)
 
 /**
- * @brief Health FSM States
+ * @brief Health FSM tick runner
  *
+ * @param[in,out] ctx Health context
  */
-enum state {
-  STATE_NULL,    // unknown and null state
-  STATE_RESET,   // reset state
-  STATE_INIT,    // initialization state
-  STATE_REPORT,  // alive reporting
-  STATE_READ,    // sensor read
-  STATE_SERVICE, // service watchdog
-};
+static void fsm_do_tick(struct health_ctx *ctx);
 
-/**
- * @brief Low frequency alive data
- *
- */
-struct health_report {
-  float timestamp;
-  uint8_t status;
-  float temperature;
-  float humidity;
-  float pressure;
-};
+static void led_handler(struct health_ctx *ctx) {
+  struct led_handle *hled = ctx->service_bits != 0 ? &ctx->leds[HEALTH_STATUS_LED_ERR] : &ctx->leds[HEALTH_STATUS_LED_OK];
+  if (ctx->service_bits != 0) {
+    led_disable(&ctx->leds[HEALTH_STATUS_LED_OK]);
+  } else {
+    led_disable(&ctx->leds[HEALTH_STATUS_LED_ERR]);
+  }
+  led_toggle(hled);
+}
 
-static struct health_report report;
-// devices
-static bme280_dev_t bme280;
-static bme280_meas_t bme280_meas;
-
-/**
- * @brief Health FSM runner.
- *
- * @param[in] current_state current FSM state
- */
-static enum state fsm_tick(const enum state current_state) {
-  enum state next_state;
-  switch (current_state) {
-    case STATE_INIT:
-      // bme280_init(&bme280);
-      next_state = STATE_SERVICE;
+static void fsm_do_tick(struct health_ctx *ctx) {
+  enum health_states next_state = HEALTH_STATE_NULL;
+  led_handler(ctx);
+  switch (ctx->current_state) {
+    case HEALTH_STATE_INIT:
+      if (bme280_init(&ctx->bme280) != BME280_OK) {
+        ctx->service_bits |= SERVICE_BME280_LINK_DOWN_MSK;
+      } else {
+        ctx->service_bits &= ~SERVICE_BME280_LINK_DOWN_MSK;
+      }
+      next_state = HEALTH_STATE_SERVICE;
       break;
-    case STATE_RESET:
+    case HEALTH_STATE_RESET:
       // teardown for soft reboot
-      // bme280_reset(&bme280);
-      next_state = STATE_INIT;
+      bme280_reset(&ctx->bme280);
+      next_state = HEALTH_STATE_INIT;
       break;
-    case STATE_SERVICE:
-      next_state = STATE_READ;
+    case HEALTH_STATE_SERVICE:
+      if (ctx->service_bits & SERVICE_BME280_LINK_DOWN_MSK) {
+        // retry bme280 init
+        if (bme280_init(&ctx->bme280) != BME280_OK) {
+          ctx->service_bits |= SERVICE_BME280_LINK_DOWN_MSK;
+        } else {
+          ctx->service_bits &= ~SERVICE_BME280_LINK_DOWN_MSK;
+        }
+      }
+      next_state = HEALTH_STATE_READ;
       break;
-    case STATE_READ:
-      // read from alive sensors
-      // bme280_trigger_read(&bme280, &bme280_meas);
-      report.humidity = bme280_meas.humidity;
-      report.pressure = bme280_meas.pressure;
-      report.temperature = bme280_meas.temperature;
-      next_state = STATE_REPORT;
+    case HEALTH_STATE_READ:
+      if (!(ctx->service_bits & SERVICE_BME280_LINK_DOWN_MSK)) {
+        bme280_trigger_read(&ctx->bme280, &ctx->telemetry.ambient_temperature, &ctx->telemetry.pressure, &ctx->telemetry.humidity);
+      }
+      next_state = HEALTH_STATE_REPORT;
       break;
-    case STATE_REPORT:
+    case HEALTH_STATE_REPORT:
       // export health alive telemetry
-      next_state = STATE_SERVICE;
+      next_state = HEALTH_STATE_SERVICE;
       break;
-    default:
-      next_state = STATE_NULL;
+    case HEALTH_STATE_ERROR:
+      next_state = HEALTH_STATE_ERROR;
+      break;
+    default:                 // intentional fallthrough
+    case HEALTH_STATE_COUNT: // intentional fallthrough
+    case HEALTH_STATE_NULL:
+      uassert(0);
       break;
   }
-  return next_state;
+  ctx->current_state = next_state;
 }
 
 /**
@@ -90,14 +91,15 @@ static enum state fsm_tick(const enum state current_state) {
  * @param[in] I2C_HandleTypeDef for bme280 sensor
  */
 static void health_main(void *argument) {
-  enum state current_state = STATE_INIT;
-  // get i2c2 handle and set bme280
-  I2C_HandleTypeDef hi2c2 = *(I2C_HandleTypeDef *)argument;
-  bme280.i2c = hi2c2;
+  struct health_ctx *ctx = (struct health_ctx *)argument;
+  uassert(ctx != NULL);
+  ctx->service_bits = 0;
+  ctx->current_state = HEALTH_STATE_INIT;
   info("Starting health task FSM\n");
   while (1) {
-    current_state = fsm_tick(current_state);
-    vTaskDelay(500);
+    HAL_GPIO_TogglePin(BATT_PWR_RELAY_GPIO_Port, BATT_PWR_RELAY_Pin);
+    fsm_do_tick(ctx);
+    vTaskDelay(ctx->tick_rate_ms / portTICK_PERIOD_MS);
   }
 }
 
@@ -107,11 +109,8 @@ static void health_main(void *argument) {
  * @param[in] hi2c i2c handle for bme280 environment sensor
  * @return system status code
  */
-system_status_t health_init(I2C_HandleTypeDef hi2c) {
+void health_init(struct health_ctx *ctx) {
   TaskHandle_t health_handle = NULL;
-  BaseType_t ret = xTaskCreate(health_main, "health_task", configMINIMAL_STACK_SIZE, &hi2c, 10, &health_handle);
-  if (ret != pdPASS) {
-    return SYSTEM_MOD_FAIL;
-  }
-  return SYSTEM_OK;
+  BaseType_t ret = xTaskCreate(health_main, "health_task", configMINIMAL_STACK_SIZE, ctx, 10, &health_handle);
+  uassert(ret == pdPASS);
 }
