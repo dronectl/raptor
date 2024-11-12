@@ -71,6 +71,7 @@ typedef int bme280_status_t;
 #define BME280_NVM_ERR (bme280_status_t)4
 #define BME280_FORCE_ERR (bme280_status_t)5
 #define BME280_MEAS_TIMEOUT (bme280_status_t)6
+#define BME280_NO_DEVICE (bme280_status_t)7
 
 /**
  * @brief Oversampling register settings
@@ -188,4 +189,3 @@ bme280_status_t bme280_sleep(struct bme280_dev *dev);
 bme280_status_t bme280_trigger_read(struct bme280_dev *dev, float *temperature, float *pressure, float *humidity);
 
 #endif // __BME280_H__
-

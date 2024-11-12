@@ -271,6 +271,10 @@ static bme280_status_t set_power_mode(struct bme280_dev *dev, const enum BME280_
  */
 bme280_status_t bme280_init(struct bme280_dev *dev) {
   bme280_status_t status;
+  // fast detection
+  if (HAL_I2C_IsDeviceReady(dev->i2c, BME280_DEFAULT_DEV_ADDR, 1, 3) != HAL_OK) {
+    return BME280_NO_DEVICE;
+  };
   // chip verification
   status = _read(dev->i2c, BME280_ID, &dev->chip_id, 1);
   if (status != BME280_OK) {
@@ -365,4 +369,3 @@ bme280_status_t bme280_trigger_read(struct bme280_dev *dev, float *temperature, 
 bme280_status_t bme280_sleep(struct bme280_dev *dev) {
   return set_power_mode(dev, BME280_SLEEP);
 }
-
