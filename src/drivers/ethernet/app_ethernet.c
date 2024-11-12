@@ -10,7 +10,6 @@
 
 #include "app_ethernet.h"
 #include "ethernetif.h"
-#include "stm32h7xx_nucleo.h"
 #if LWIP_DHCP
 #include <lwip/dhcp.h>
 #endif
@@ -76,17 +75,12 @@ static void dhcp_task(void *argument) {
         ip_addr_set_zero_ip4(&netif->gw);
         DHCP_state = DHCP_WAIT_ADDRESS;
 
-        BSP_LED_Off(LED2);
-        BSP_LED_Off(LED3);
-
         dhcp_start(netif);
       } break;
       case DHCP_WAIT_ADDRESS: {
         if (dhcp_supplied_address(netif)) {
           DHCP_state = DHCP_ADDRESS_ASSIGNED;
 
-          BSP_LED_On(LED2);
-          BSP_LED_Off(LED3);
         } else {
           dhcp = (struct dhcp *)netif_get_client_data(netif, LWIP_NETIF_CLIENT_DATA_INDEX_DHCP);
           /* DHCP timeout */
@@ -97,8 +91,6 @@ static void dhcp_task(void *argument) {
             IP_ADDR4(&netmask, NETMASK_ADDR0, NETMASK_ADDR1, NETMASK_ADDR2, NETMASK_ADDR3);
             IP_ADDR4(&gw, GW_ADDR0, GW_ADDR1, GW_ADDR2, GW_ADDR3);
             netif_set_addr(netif, ip_2_ip4(&ipaddr), ip_2_ip4(&netmask), ip_2_ip4(&gw));
-            BSP_LED_On(LED2);
-            BSP_LED_Off(LED3);
           }
         }
       } break;
@@ -106,8 +98,6 @@ static void dhcp_task(void *argument) {
 
         DHCP_state = DHCP_OFF;
 
-        BSP_LED_Off(LED2);
-        BSP_LED_On(LED3);
       } break;
       default:
         break;
@@ -130,16 +120,12 @@ static void ethernet_link_status_updated(struct netif *netif) {
     /* Update DHCP state machine */
     DHCP_state = DHCP_START;
 #else
-    BSP_LED_On(LED2);
-    BSP_LED_Off(LED3);
 #endif /* LWIP_DHCP */
   } else {
 #if LWIP_DHCP
     /* Update DHCP state machine */
     DHCP_state = DHCP_LINK_DOWN;
 #else
-    BSP_LED_Off(LED2);
-    BSP_LED_On(LED3);
 #endif /* LWIP_DHCP */
   }
 }

@@ -19,7 +19,6 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include "stm32h7xx_nucleo.h"
 #include "stm32h7xx_it.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -62,13 +61,6 @@ extern DMA_HandleTypeDef hdma_adc3;
 extern TIM_HandleTypeDef htim6;
 
 /* USER CODE BEGIN EV */
-static void spinlock(void) {
-  while (1) {
-    BSP_LED_Toggle(LED1);
-    HAL_Delay(250);
-  }
-}
-
 /* USER CODE END EV */
 
 /******************************************************************************/
@@ -82,7 +74,7 @@ void NMI_Handler(void) {
 
   /* USER CODE END NonMaskableInt_IRQn 0 */
   /* USER CODE BEGIN NonMaskableInt_IRQn 1 */
-  spinlock();
+  while (1);
   /* USER CODE END NonMaskableInt_IRQn 1 */
 }
 
@@ -91,9 +83,8 @@ void NMI_Handler(void) {
  */
 void HardFault_Handler(void) {
   /* USER CODE BEGIN HardFault_IRQn 0 */
-
+  while (1);
   /* USER CODE END HardFault_IRQn 0 */
-  spinlock();
 }
 
 /**
@@ -101,9 +92,8 @@ void HardFault_Handler(void) {
  */
 void MemManage_Handler(void) {
   /* USER CODE BEGIN MemoryManagement_IRQn 0 */
-
+  while (1);
   /* USER CODE END MemoryManagement_IRQn 0 */
-  spinlock();
 }
 
 /**
@@ -111,9 +101,8 @@ void MemManage_Handler(void) {
  */
 void BusFault_Handler(void) {
   /* USER CODE BEGIN BusFault_IRQn 0 */
-
+  while (1);
   /* USER CODE END BusFault_IRQn 0 */
-  spinlock();
 }
 
 /**
@@ -121,9 +110,8 @@ void BusFault_Handler(void) {
  */
 void UsageFault_Handler(void) {
   /* USER CODE BEGIN UsageFault_IRQn 0 */
-
+  while (1);
   /* USER CODE END UsageFault_IRQn 0 */
-  spinlock();
 }
 
 /**
@@ -131,7 +119,7 @@ void UsageFault_Handler(void) {
  */
 void DebugMon_Handler(void) {
   /* USER CODE BEGIN DebugMonitor_IRQn 0 */
-
+  while (1);
   /* USER CODE END DebugMonitor_IRQn 0 */
   /* USER CODE BEGIN DebugMonitor_IRQn 1 */
 
@@ -150,7 +138,6 @@ void DebugMon_Handler(void) {
  */
 void TIM6_DAC_IRQHandler(void) {
   /* USER CODE BEGIN TIM6_DAC_IRQn 0 */
-
   /* USER CODE END TIM6_DAC_IRQn 0 */
   HAL_TIM_IRQHandler(&htim6);
   /* USER CODE BEGIN TIM6_DAC_IRQn 1 */
