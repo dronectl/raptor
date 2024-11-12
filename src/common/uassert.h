@@ -27,7 +27,7 @@ extern void assert_handler(const uint32_t line, const uint32_t *pc, const uint32
 #define GET_LR() __builtin_return_address(0)
 #define GET_PC(_a) __asm volatile("mov %0, pc" : "=r"(_a))
 
-#define ASSERT_RECORD(__LINE__)       \
+#define __uassert_record(__LINE__)    \
   do {                                \
     void *pc;                         \
     GET_PC(pc);                       \
@@ -35,11 +35,11 @@ extern void assert_handler(const uint32_t line, const uint32_t *pc, const uint32
     assert_handler(__LINE__, pc, lr); \
   } while (0)
 
-#define ASSERT(exp)            \
-  do {                         \
-    if (!(exp)) {              \
-      ASSERT_RECORD(__LINE__); \
-    }                          \
+#define uassert(exp)              \
+  do {                            \
+    if (!(exp)) {                 \
+      __uassert_record(__LINE__); \
+    }                             \
   } while (0)
 
 #endif // __UASSERT_H__
