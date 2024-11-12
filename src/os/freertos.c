@@ -1,9 +1,7 @@
 #include <stdint.h> // IWYU pragma: export
-#include "logger.h"
-#include "system.h"
 #include "FreeRTOS.h"
 #include "task.h"
-#include "stm32h7xx_nucleo.h"
+#include "uassert.h"
 
 #ifdef __GNUC__
 #define USED __attribute__((used))
@@ -17,7 +15,6 @@ const volatile int USED uxTopUsedPriority = configMAX_PRIORITIES - 1;
 void configureTimerForRunTimeStats(void);
 unsigned long getRunTimeCounterValue(void);
 void vApplicationIdleHook(void);
-void vApplicationTickHook(void);
 void vApplicationStackOverflowHook(xTaskHandle xTask, signed char *pcTaskName);
 void vApplicationMallocFailedHook(void);
 void vApplicationDaemonTaskStartupHook(void);
@@ -34,12 +31,8 @@ void vApplicationIdleHook(void) {
   memory allocated by the kernel to any task that has since been deleted. */
 }
 
-void vApplicationTickHook(void) {
-  system_health_indicator();
-}
-
-void vApplicationStackOverflowHook(xTaskHandle xTask, signed char *pcTaskName) {
-  critical("Stack overflow signal in task %s\n", pcTaskName);
+void vApplicationStackOverflowHook(__attribute__((unused)) xTaskHandle xTask, __attribute__((unused)) signed char *pcTaskName) {
+  uassert(0);
 }
 
 void vApplicationMallocFailedHook(void) {
@@ -53,10 +46,7 @@ void vApplicationMallocFailedHook(void) {
   FreeRTOSConfig.h, and the xPortGetFreeHeapSize() API function can be used
   to query the size of free heap space that remains (although it does not
   provide information on how the remaining heap might be fragmented). */
-  while (1) {
-    BSP_LED_Toggle(LED3);
-    HAL_Delay(250);
-  }
+  uassert(0);
 }
 
 /* USER CODE BEGIN DAEMON_TASK_STARTUP_HOOK */
