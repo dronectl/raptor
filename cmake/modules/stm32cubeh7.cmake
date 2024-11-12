@@ -99,13 +99,11 @@ set(
   HAL_SRCS
   ${FILTERED_SRCS}
   ${STM32H7_SOURCE_DIR}/Drivers/BSP/Components/lan8742/lan8742.c
-  ${STM32H7_SOURCE_DIR}/Drivers/BSP/STM32H7xx_Nucleo/stm32h7xx_nucleo.c
   CACHE INTERNAL "HAL_SRCS"
 )
 set(
   HAL_INC
   ${STM32H7_SOURCE_DIR}/Drivers/BSP/Components/lan8742
-  ${STM32H7_SOURCE_DIR}/Drivers/BSP/STM32H7xx_Nucleo
   ${STM32H7_SOURCE_DIR}/Drivers/STM32H7xx_HAL_Driver/Inc
   ${CMSIS_INCLUDE}
   CACHE INTERNAL "HAL_INC"
