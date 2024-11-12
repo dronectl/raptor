@@ -120,7 +120,7 @@ enum BME280_MMap {
  * @brief Compensation parameters
  * 4.2.2 Trimming Parameter Readout Table 16: Compensation parameter storage, naming and dtype
  */
-typedef struct bme280_calib_t {
+struct bme280_calibration {
   uint16_t dig_t1;
   int16_t dig_t2;
   int16_t dig_t3;
@@ -140,30 +140,17 @@ typedef struct bme280_calib_t {
   int16_t dig_h5;
   uint16_t dig_h6; // uint8_t (space optimized due to struct padding)
   int16_t t_fine;
-} bme280_calib_t;
-
-/**
- * @brief BME280 measurements to store converted and raw measurement fields
- *
- */
-typedef struct bme280_meas_t {
-  uint32_t temperature_raw; // raw
-  uint32_t pressure_raw;    // raw
-  uint32_t humidity_raw;    // raw
-  double temperature;       // °C
-  double pressure;          // Pa
-  double humidity;          // %
-} bme280_meas_t;
+};
 
 /**
  * @brief BME280 device struct required for using the bme280 driver.
  *
  */
-typedef struct bme280_dev_t {
+struct bme280_dev {
   uint8_t chip_id;
-  I2C_HandleTypeDef i2c;
-  bme280_calib_t calib_data;
-} bme280_dev_t;
+  I2C_HandleTypeDef *i2c;
+  struct bme280_calibration calib_data;
+};
 
 /**
  * @brief Verify sensor, reset, load calibration trimming parameters, enable measurement subsystems.
@@ -171,7 +158,7 @@ typedef struct bme280_dev_t {
  * @param dev bme280 device struct
  * @return bme280_status_t status code
  */
-bme280_status_t bme280_init(bme280_dev_t *dev);
+bme280_status_t bme280_init(struct bme280_dev *dev);
 
 /**
  * @brief Sensor soft reset
@@ -179,7 +166,7 @@ bme280_status_t bme280_init(bme280_dev_t *dev);
  * @param dev bme280 device struct
  * @return bme280_status_t status code
  */
-bme280_status_t bme280_reset(bme280_dev_t *dev);
+bme280_status_t bme280_reset(struct bme280_dev *dev);
 
 /**
  * @brief Power off BME280
@@ -187,15 +174,18 @@ bme280_status_t bme280_reset(bme280_dev_t *dev);
  * @param dev bme280 device struct
  * @return bme280_status_t status code
  */
-bme280_status_t bme280_sleep(bme280_dev_t *dev);
+bme280_status_t bme280_sleep(struct bme280_dev *dev);
 
 /**
  * @brief Perform a triggered bulk read of temperature, humidity, and pressure using forced mode.
  *
- * @param dev bme280 device struct
- * @param measurements measurement payload struct
- * @return bme280_status_t status code
+ * @param[in,out] dev BME280 device struct
+ * @param[out] Temperature measurement (˚C)
+ * @param[out] Pressure measurement (Pa)
+ * @param[out] Humidity measurement (%)
+ * @return status code
  */
-bme280_status_t bme280_trigger_read(bme280_dev_t *dev, bme280_meas_t *measurements);
+bme280_status_t bme280_trigger_read(struct bme280_dev *dev, float *temperature, float *pressure, float *humidity);
 
 #endif // __BME280_H__
+
