@@ -42,9 +42,9 @@ static TaskHandle_t system_boostrap;
 
 static void system_bootstrap_task(void __attribute__((unused)) * argument) {
   system_status_t status = SYSTEM_OK;
-  // status = app_ethernet_init();
+  status = app_ethernet_init();
   uassert(status == SYSTEM_OK);
-  // logger_init(LOGGER_TRACE);
+  logger_init(LOGGER_TRACE);
   health_init(&health_context);
   vTaskDelete(system_boostrap);
 }
