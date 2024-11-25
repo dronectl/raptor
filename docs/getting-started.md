@@ -29,7 +29,23 @@ brew install --cask gcc-arm-embedded
 Download the required version from the windows install link [here](https://developer.arm.com/downloads/-/gnu-rm)
 
 ## Python3
-This project depends on a number of Python libraries. This is desireable because unlike system packages, python package versions can be checked into source control and enforced for all developers. You will need to [install `python3`](https://www.python.org/downloads/) and [setup a virtual environment](https://realpython.com/python-virtual-environments-a-primer/).
+This project depends on a number of Python libraries. This is desireable because unlike system packages, python package versions can be checked into source control and enforced for all developers. You will need to [install `python3`](https://www.python.org/downloads/)
+
+### Automated Setup (recommended)
+To bootstrap the python virtual environment setup and dependancy installation:
+
+```bash
+python3 utils/setup.py
+```
+
+This will create a virtual environment directory in the repository root called `venv`. This can be activated by running the `activate` binary under `venv/bin`:
+
+```bash
+source venv/bin/activate
+```
+
+### Manual Setup
+For manual setup: [setup a virtual environment](https://realpython.com/python-virtual-environments-a-primer/).
 
 Activate the virtual environment, upgrade pip and install the dependancies with `pip`:
 ```bash
