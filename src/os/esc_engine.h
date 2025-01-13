@@ -1,7 +1,6 @@
+#ifndef __ESC_ENGINE_H__
+#define __ESC_ENGINE_H__
 
-struct esc_engine_ctx {
-  void *null;
-};
+void esc_engine_init(void);
 
-void esc_engine_init(struct esc_engine_ctx *ctx);
-
+#endif // __ESC_ENGINE_H__

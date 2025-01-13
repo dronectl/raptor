@@ -1,6 +1,7 @@
 
-struct power_manager_ctx {
-  void *null;
-};
+#ifndef __POWER_MANAGER_H__
+#define __POWER_MANAGER_H__
 
-void power_manager_init(struct power_manager_ctx *ctx);
+void power_manager_init(void);
+
+#endif // __POWER_MANAGER_H__
