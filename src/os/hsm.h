@@ -1,15 +1,13 @@
 /**
  * @file hsm.h
- * @brief Hierarchical State Machine (HSM) for raptor
+ * @brief Hierarchical State Machine (HSM)
  * @date 2025-01
  *
- * @copyright Copyright © 2025 Christian Sargusingh
+ * @copyright Copyright © 2025 dronectl
  */
 
 #ifndef __HSM_H__
 #define __HSM_H__
-
-
 
 enum hsm_event {
   HSM_EVENT_NONE = 0,
@@ -28,13 +26,14 @@ enum hsm_state {
   HSM_STATE_INIT,
   HSM_STATE_IDLE,
   HSM_STATE_RUN,
+  HSM_STATE_START,
+  HSM_STATE_STOP,
   HSM_STATE_ERROR,
   HSM_STATE_CALIBRATION,
 
   // run substates
   HSM_STATE_RUN_STARTUP,
   HSM_STATE_RUN_PROFILE,
-  HSM_STATE_RUN_SHUTDOWN,
 
   // calibration substates
   HSM_STATE_CALIBRATION_TRIM,
@@ -43,6 +42,7 @@ enum hsm_state {
   HSM_STATE_COUNT
 };
 
+void hsm_start(void);
 enum hsm_state hsm_get_current_state(void);
 void hsm_post_event(const enum hsm_event event);
 

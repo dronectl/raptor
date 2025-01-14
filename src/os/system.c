@@ -4,7 +4,6 @@
 #include "ethernet/app_ethernet.h"
 #include "health.h"
 #include "logger.h"
-#include "scpi/server.h"
 #include "uassert.h"
 #include <FreeRTOS.h>
 #include <task.h>
