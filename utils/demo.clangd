@@ -1,3 +1,16 @@
+If:
+  PathMatch: src/*
+
 CompileFlags:
   CompilationDatabase: build
   Add: [-isystem, "/Applications/ArmGNUToolchain/11.3.rel1/arm-none-eabi/arm-none-eabi/include"]
+
+---
+
+If:
+  PathMatch: tests/*
+
+CompileFlags:
+  CompilationDatabase: tests/build
+
+
