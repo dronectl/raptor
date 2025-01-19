@@ -6,6 +6,7 @@
 #include "led.h"
 #include "logger.h"
 #include "uassert.h"
+#include "grpc.h"
 
 #include <FreeRTOS.h>
 #include <task.h>
@@ -79,6 +80,7 @@ static void system_bootstrap_task(void __attribute__((unused)) * argument) {
   app_ethernet_init();
   logger_init(LOGGER_TRACE);
   hsm_init(&hsm_init_params);
+  grpc_init();
   vTaskDelete(system_boostrap);
 }
 
