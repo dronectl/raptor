@@ -10,5 +10,6 @@ TickType_t xTaskGetTickCount(void) {
   return ticks;
 }
 
-void vTaskDelete(TaskHandle_t xTaskToDelete) {
-}
+void vTaskDelete(TaskHandle_t xTaskToDelete) {}
+
+void vTaskDelay(const TickType_t ticks) {}

@@ -16,3 +16,4 @@ extern TickType_t ticks;
 TickType_t xTaskGetTickCount(void);
 BaseType_t xTaskCreate(TaskFunction_t pxTaskCode, const char *const pcName, const configSTACK_DEPTH_TYPE usStackDepth, void *const pvParameters, UBaseType_t uxPriority, TaskHandle_t *const pxCreatedTask);
 void vTaskDelete(TaskHandle_t xTaskToDelete);
+void vTaskDelay(TickType_t ticks);
