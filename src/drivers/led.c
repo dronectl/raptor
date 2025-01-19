@@ -2,7 +2,6 @@
 #include "led.h"
 #include "uassert.h"
 
-#include <stm32h7xx_hal_gpio.h>
 #include <string.h>
 
 void led_init(const struct led_ctx *ctx) {
@@ -36,4 +35,3 @@ void led_periodic_toggle(struct led_ctx *ctx, const uint32_t toggle_rate_ms) {
     ctx->last_toggle_ms = current_time;
   }
 }
-

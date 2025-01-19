@@ -12,13 +12,11 @@
 #ifndef __LED_H__
 #define __LED_H__
 
-#include "stm32h723xx.h"
-#include <stm32h7xx_hal.h>
+#include <stm32h7xx.h>
 #include <stdbool.h>
 
-
 struct led_init_ctx {
-  GPIO_TypeDef* port;
+  GPIO_TypeDef *port;
   uint16_t pin;
   bool active_high;
 };
