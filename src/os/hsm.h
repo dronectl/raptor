@@ -9,6 +9,9 @@
 #ifndef __HSM_H__
 #define __HSM_H__
 
+/**
+ * @brief HSM LED identifiers
+ */
 enum hsm_led_id {
   HSM_LED_ID_ERROR = 0,
   HSM_LED_ID_IDLE,
@@ -16,6 +19,9 @@ enum hsm_led_id {
   HSM_LED_ID_COUNT
 };
 
+/**
+ * @brief HSM events
+ */
 enum hsm_event {
   HSM_EVENT_NONE = 0,
   HSM_EVENT_SOFT_RESET,
@@ -28,6 +34,9 @@ enum hsm_event {
   HSM_EVENT_COUNT
 };
 
+/**
+ * @brief HSM states
+ */
 enum hsm_state {
   // root states
   HSM_STATE_ROOT,
@@ -51,12 +60,33 @@ enum hsm_state {
   HSM_STATE_COUNT
 };
 
+/**
+ * struct hsm_init_params - HSM initialization parameters
+ */
 struct hsm_init_params {
   struct led_ctx *led_ctxs[HSM_LED_ID_COUNT];
 };
 
+/**
+ * @brief Initialize the HSM with external modules and configuration
+ *
+ * @param[in] init_params initialization parameters
+ */
 void hsm_init(const struct hsm_init_params *init_params);
+
+/**
+ * @brief Get the current state of the HSM
+ *
+ * @return current state
+ */
 enum hsm_state hsm_get_current_state(void);
+
+/**
+ * @brief Post an event to the HSM event queue
+ * 
+ * @note ISR safe
+ * @param[in] event - event to post to queue
+ */
 void hsm_post_event(const enum hsm_event event);
 
 #endif // __HSM_H__
