@@ -13,6 +13,7 @@ nanopb_generate_cpp(
   protocols/protobuf/raptor/v1/metadata.proto
   protocols/protobuf/raptor/v1/raptor.proto
   protocols/protobuf/raptor/v1/relay.proto
+  protocols/protobuf/raptor/v1/commands.proto
 )
 
 # create third party libraries
@@ -38,6 +39,7 @@ add_library(
   common/logger.c
   common/sysreg.c
   common/dtc.c
+  os/grpc.c
   os/power_manager.c
   os/esc_engine.c
   os/hsm.c
