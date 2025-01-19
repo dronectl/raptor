@@ -2,11 +2,14 @@
 #include "main.h"
 #include "system.h"
 #include "ethernet/app_ethernet.h"
-#include "health.h"
+#include "hsm.h"
+#include "led.h"
 #include "logger.h"
 #include "uassert.h"
+
 #include <FreeRTOS.h>
 #include <task.h>
+#include <stdbool.h>
 
 extern ADC_HandleTypeDef hadc1;
 extern ADC_HandleTypeDef hadc2;
@@ -26,16 +29,49 @@ extern UART_HandleTypeDef huart7;
 extern UART_HandleTypeDef huart9;
 extern UART_HandleTypeDef huart3;
 
-static struct health_ctx health_context = {
-    .bme280 = {
-        .i2c = &hi2c2,
+// Hardware driver module resources
+static const struct led_init_ctx led_error_init = {
+    .port = LED_RED_GPIO_Port,
+    .pin = LED_RED_Pin,
+    .active_high = true,
+};
+
+static const struct led_init_ctx led_idle_init = {
+    .port = LED_GREEN_GPIO_Port,
+    .pin = LED_GREEN_Pin,
+    .active_high = true,
+};
+
+static const struct led_init_ctx led_run_init = {
+    .port = LED_YELLOW_GPIO_Port,
+    .pin = LED_YELLOW_Pin,
+    .active_high = true,
+};
+
+static struct led_ctx led_error_ctx = {
+    .init_ctx = &led_error_init,
+    .last_toggle_ms = 0,
+};
+
+static struct led_ctx led_run_ctx = {
+    .init_ctx = &led_run_init,
+    .last_toggle_ms = 0,
+};
+
+static struct led_ctx led_idle_ctx = {
+    .init_ctx = &led_idle_init,
+    .last_toggle_ms = 0,
+};
+
+// Module contexts
+
+const struct hsm_init_params hsm_init_params = {
+    .led_ctxs = {
+        [HSM_LED_ID_ERROR] = &led_error_ctx,
+        [HSM_LED_ID_IDLE] = &led_idle_ctx,
+        [HSM_LED_ID_RUN] = &led_run_ctx,
     },
-    .tick_rate_ms = HEALTH_TASK_DEFAULT_TICK_RATE_MS,
-    .leds = {
-        [HEALTH_STATUS_LED_OK] = {.active_high = true, .port = LED_GREEN_GPIO_Port, .pin = LED_GREEN_Pin},
-        [HEALTH_STATUS_LED_ERR] = {.active_high = true, .port = LED_RED_GPIO_Port, .pin = LED_RED_Pin},
-        [HEALTH_STATUS_LED_EVENT] = {.active_high = true, .port = LED_YELLOW_GPIO_Port, .pin = LED_YELLOW_Pin},
-    }};
+};
 
 static TaskHandle_t system_boostrap;
 
@@ -44,7 +80,7 @@ static void system_bootstrap_task(void __attribute__((unused)) * argument) {
   status = app_ethernet_init();
   uassert(status == SYSTEM_OK);
   logger_init(LOGGER_TRACE);
-  health_init(&health_context);
+  hsm_init(&hsm_init_params);
   vTaskDelete(system_boostrap);
 }
 

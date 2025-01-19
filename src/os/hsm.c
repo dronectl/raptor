@@ -14,17 +14,15 @@
 #include "uassert.h"
 #include "power_manager.h"
 
+#include <string.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <FreeRTOS.h>
 #include <task.h>
 
-enum led_id {
-  LED_IDLE = 0,
-  LED_RUN,
-  LED_ERROR,
-  LED_COUNT
-};
+#define HSM_TICK_RATE_MS 10
+#define IDLE_LED_TOGGLE_RATE_MS 1000
+#define RUN_LED_TOGGLE_RATE_MS 500
 
 enum event_handle_result {
   EVENT_UNHANDLED = 0,
@@ -36,7 +34,7 @@ struct hsm_ctx {
   enum hsm_state next_state;
   enum DTCID pending_dtc;
   uint32_t enter_timestamp;
-  struct led_handle leds[LED_COUNT];
+  struct led_ctx *leds[HSM_LED_ID_COUNT];
 } _hsm_ctx;
 
 struct state_table {
@@ -52,7 +50,15 @@ struct state_table {
 /* raptor state handlers */
 static enum event_handle_result handle_event_root(const enum hsm_event event);
 
-static void run_init(void);
+
+// reset state callbacks
+static void enter_reset(void);
+static void tick_reset(void);
+static void exit_reset(void);
+
+// init state callbacks
+static void tick_init(void);
+
 
 // idle state callbacks
 static void enter_idle(void);
@@ -100,28 +106,14 @@ static struct hsm_ctx ctx = {
   .current_state = HSM_STATE_RESET,
   .next_state = HSM_STATE_RESET,
   .enter_timestamp = 0,
-  .leds = {
-    [LED_IDLE] = {
-      .port = GPIOB,
-      .pin = GPIO_PIN_0,
-      .active_high = 1,
-    },
-    [LED_RUN] = {
-      .port = GPIOB,
-      .pin = GPIO_PIN_1,
-      .active_high = 1,
-    },
-    [LED_ERROR] = {
-      .port = GPIOB,
-      .pin = GPIO_PIN_2,
-      .active_high = 1,
-    }
-  }
 };
+
+static TaskHandle_t hsm_task_handle;
 
 static const struct state_table state_table[HSM_STATE_COUNT] = {
   {HSM_STATE_ROOT, .parent = HSM_STATE_ROOT, .enter = NULL, .tick = NULL, .exit = NULL, .handle_event = handle_event_root},
-  {HSM_STATE_INIT, .parent = HSM_STATE_ROOT, .enter = NULL, .tick = run_init, .exit = NULL, .handle_event = NULL},
+  {HSM_STATE_RESET, .parent = HSM_STATE_ROOT, .enter = enter_reset, .tick = tick_reset, .exit = exit_reset, .handle_event = NULL},
+  {HSM_STATE_INIT, .parent = HSM_STATE_ROOT, .enter = NULL, .tick = tick_init, .exit = NULL, .handle_event = NULL},
   {HSM_STATE_IDLE, .parent = HSM_STATE_ROOT, .enter = enter_idle, .tick = tick_idle, .exit = exit_idle, .handle_event = handle_event_idle},
 
   {HSM_STATE_RUN, .parent = HSM_STATE_ROOT, .enter = enter_run, .tick = tick_run, .exit = exit_run, .handle_event = handle_event_run},
@@ -134,9 +126,10 @@ static const struct state_table state_table[HSM_STATE_COUNT] = {
   {HSM_STATE_CALIBRATION, .parent = HSM_STATE_ROOT, .enter = enter_calibration, .tick = tick_calibration, .exit = exit_calibration, .handle_event = handle_event_calibration},
 };
 
-static TaskHandle_t hsm_task_handle;
 
-static enum event_handle_result handle_event_root(const enum hsm_event event){
+// root state handlers
+
+static enum event_handle_result handle_event_root(const enum hsm_event event) {
   enum event_handle_result result = EVENT_UNHANDLED;
   switch (event) {
     default:
@@ -148,23 +141,55 @@ static enum event_handle_result handle_event_root(const enum hsm_event event){
   return result;
 }
 
-static void run_init(void) {
-  power_manager_init();
-  esc_engine_init();
+// reset state handlers
+
+static void tick_init(void) {
+  power_manager_init(NULL);
+  esc_engine_init(NULL);
+  ctx.next_state = HSM_STATE_IDLE;
+}
+
+// reset state handlers
+
+static void enter_reset(void) {
+  struct led_ctx *led_ctx = ctx.leds[0];
+  for (; led_ctx < ctx.leds[0] + HSM_LED_ID_COUNT; led_ctx++) {
+    led_disable(led_ctx);
+  }
+}
+
+static void tick_reset(void) {
+  struct led_ctx *led_ctx = ctx.leds[0];
+  for (; led_ctx < ctx.leds[0] + HSM_LED_ID_COUNT; led_ctx++) {
+    led_toggle(led_ctx);
+  }
+  vTaskDelay(500);
+  for (; led_ctx < ctx.leds[0] + HSM_LED_ID_COUNT; led_ctx++) {
+    led_toggle(led_ctx);
+  }
+  // todo: perform calibration
+  ctx.next_state = HSM_STATE_INIT;
+}
+
+static void exit_reset(void) {
+  struct led_ctx *led_ctx = ctx.leds[0];
+  for (; led_ctx < ctx.leds[0] + HSM_LED_ID_COUNT; led_ctx++) {
+    led_disable(led_ctx);
+  }
 }
 
 // idle state handlers
 
 static void enter_idle(void) {
-  led_enable(&ctx.leds[LED_IDLE]);
+  led_enable(ctx.leds[HSM_LED_ID_IDLE]);
 }
 
 static void tick_idle(void) {
-  led_toggle(&ctx.leds[LED_IDLE]);
+  led_periodic_toggle(ctx.leds[HSM_LED_ID_IDLE], IDLE_LED_TOGGLE_RATE_MS);
 }
 
 static void exit_idle(void) {
-  led_disable(&ctx.leds[LED_IDLE]);
+  led_disable(ctx.leds[HSM_LED_ID_IDLE]);
 }
 
 static enum event_handle_result handle_event_idle(const enum hsm_event event) {
@@ -187,15 +212,15 @@ static enum event_handle_result handle_event_idle(const enum hsm_event event) {
 // run state handlers
 
 static void enter_run(void) {
-  led_enable(&ctx.leds[LED_RUN]);
+  led_enable(ctx.leds[HSM_LED_ID_RUN]);
 }
 
 static void tick_run(void) {
-  led_toggle(&ctx.leds[LED_RUN]);
+  led_toggle(ctx.leds[HSM_LED_ID_RUN]);
 }
 
 static void exit_run(void) {
-  led_disable(&ctx.leds[LED_RUN]);
+  led_disable(ctx.leds[HSM_LED_ID_RUN]);
 }
 
 static enum event_handle_result handle_event_run(const enum hsm_event event) {
@@ -263,15 +288,15 @@ static void enter_error(void) {
     dtc_post_event(ctx.pending_dtc);
     ctx.pending_dtc = DTCID_NONE;
   }
-  led_enable(&ctx.leds[LED_ERROR]);
+  led_enable(ctx.leds[HSM_LED_ID_ERROR]);
 }
 
 static void tick_error(void) {
-  led_toggle(&ctx.leds[LED_ERROR]);
+  led_toggle(ctx.leds[HSM_LED_ID_ERROR]);
 }
 
 static void exit_error(void) {
-  led_disable(&ctx.leds[LED_ERROR]);
+  led_disable(ctx.leds[HSM_LED_ID_ERROR]);
 }
 
 static enum event_handle_result handle_event_error(const enum hsm_event event) {
@@ -331,19 +356,9 @@ static void enter_state(void) {
   }
 }
 
-void hsm_init(void) {
-  ctx.current_state = HSM_STATE_RESET;
-  ctx.next_state = HSM_STATE_RESET;
-  ctx.enter_timestamp = 0;
-}
-
 static void hsm_main(void __attribute__((unused)) *argument) {
+  info("Starting HSM\n");
   while (1) {
-    if (ctx.current_state == HSM_STATE_RESET) {
-      ctx.current_state = HSM_STATE_INIT;
-      ctx.next_state = HSM_STATE_INIT;
-      ctx.enter_timestamp = 0;
-    }
     if (ctx.current_state != ctx.next_state) {
       exit_state();
       enter_state();
@@ -355,7 +370,7 @@ static void hsm_main(void __attribute__((unused)) *argument) {
       }
       current_state = state_table[current_state].parent;
     }
-    vTaskDelay(10);
+    vTaskDelay(HSM_TICK_RATE_MS);
   }
 }
 
@@ -376,7 +391,11 @@ enum hsm_state hsm_get_current_state(void) {
   return ctx.current_state;
 }
 
-void hsm_start(void) {
+void hsm_init(const struct hsm_init_params *init_params) {
+  memcpy(ctx.leds, init_params->led_ctxs, sizeof(ctx.leds));
+  ctx.current_state = HSM_STATE_RESET;
+  ctx.next_state = HSM_STATE_RESET;
+  ctx.enter_timestamp = 0;
   BaseType_t ret = xTaskCreate(hsm_main, "hsm", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 20, &hsm_task_handle);
   uassert(ret == pdPASS);
 }

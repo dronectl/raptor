@@ -9,8 +9,17 @@
 #ifndef __HSM_H__
 #define __HSM_H__
 
+enum hsm_led_id {
+  HSM_LED_ID_ERROR = 0,
+  HSM_LED_ID_IDLE,
+  HSM_LED_ID_RUN,
+  HSM_LED_ID_COUNT
+};
+
 enum hsm_event {
   HSM_EVENT_NONE = 0,
+  HSM_EVENT_SOFT_RESET,
+  HSM_EVENT_HARD_RESET,
   HSM_EVENT_RUN,
   HSM_EVENT_STOP,
   HSM_EVENT_ABORT,
@@ -42,7 +51,11 @@ enum hsm_state {
   HSM_STATE_COUNT
 };
 
-void hsm_start(void);
+struct hsm_init_params {
+  struct led_ctx *led_ctxs[HSM_LED_ID_COUNT];
+};
+
+void hsm_init(const struct hsm_init_params *init_params);
 enum hsm_state hsm_get_current_state(void);
 void hsm_post_event(const enum hsm_event event);
 
