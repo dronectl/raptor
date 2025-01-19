@@ -115,19 +115,19 @@ To debug test binaries you will need to select the `Test Debug (OpenOCD)` launch
 
 Configure the unittest project.
 ```bash
-mkdir tests/unittests/build
-cmake -B tests/unittests/build -S tests/unittests -DCMAKE_BUILD_TYPE=Debug
-make -C tests/unittests/build -j
+mkdir tests/build
+cmake -B tests/build -S tests/unittests -DCMAKE_BUILD_TYPE=Debug
+make -C tests/build -j
 ```
 
 Run the unittest binary
 ```bash
-./tests/unittests/build/raptor-test
+./tests/build/raptor-test
 ```
 
 Run the coverage report powered by `gcovr`:
 ```bash
-make -C tests/unittests/build coverage
+make -C tests/build coverage
 ```
 You should get a report generated in stdout and an accompanying xml file named `coverage.xml`:
 ```bash
