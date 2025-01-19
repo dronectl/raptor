@@ -11,12 +11,10 @@
 #ifndef __APP_ETHERNET_H
 #define __APP_ETHERNET_H
 
-#include "system.h"
-
 /**
  * @brief Initialize LWIP TCPIP network stack
  * @note CS: LWIP `tcpip_init` implements `LWIP_ASSERT` which implements its own spinlock
  */
-system_status_t app_ethernet_init(void);
+void app_ethernet_init(void);
 
 #endif /* __APP_ETHERNET_H */

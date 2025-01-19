@@ -76,9 +76,7 @@ const struct hsm_init_params hsm_init_params = {
 static TaskHandle_t system_boostrap;
 
 static void system_bootstrap_task(void __attribute__((unused)) * argument) {
-  system_status_t status = SYSTEM_OK;
-  status = app_ethernet_init();
-  uassert(status == SYSTEM_OK);
+  app_ethernet_init();
   logger_init(LOGGER_TRACE);
   hsm_init(&hsm_init_params);
   vTaskDelete(system_boostrap);

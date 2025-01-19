@@ -8,6 +8,7 @@
  *
  */
 
+#include "uassert.h"
 #include "logger.h"
 #include "scpi/ieee.h"
 #include "scpi/lexer.h"
@@ -101,11 +102,8 @@ error:
   vTaskDelete(NULL);
 }
 
-system_status_t scpi_init(void) {
+void scpi_init(void) {
   scpi_error_init();
   scpi_task_handle = xTaskCreateStatic(scpi_task, "scpi_task", STACK_SIZE, NULL, tskIDLE_PRIORITY + 10, scpi_task_stk, &scpi_task_buffer);
-  if (scpi_task_handle == NULL) {
-    return SYSTEM_MOD_FAIL;
-  }
-  return SYSTEM_OK;
+  uassert(scpi_task_handle == NULL);
 }
