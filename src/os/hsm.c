@@ -18,9 +18,11 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <FreeRTOS.h>
+#include <queue.h>
 #include <task.h>
 
-#define HSM_TICK_RATE_MS 10
+#define HSM_DEFAULT_TICK_RATE_MS 10
+#define EVENT_QUEUE_SIZE 5 * sizeof(enum hsm_event)
 #define IDLE_LED_TOGGLE_RATE_MS 1000
 #define RUN_LED_TOGGLE_RATE_MS 500
 
@@ -33,8 +35,15 @@ struct hsm_ctx {
   enum hsm_state current_state;
   enum hsm_state next_state;
   enum DTCID pending_dtc;
+
   uint32_t enter_timestamp;
+  uint32_t hsm_tick_rate_ms;
+
   struct led_ctx *leds[HSM_LED_ID_COUNT];
+  // event queue
+  uint8_t event_queue_buffer[EVENT_QUEUE_SIZE];
+  StaticQueue_t event_queue_ctrl;
+  QueueHandle_t event_queue;
 } _hsm_ctx;
 
 struct state_table {
@@ -152,6 +161,7 @@ static void tick_init(void) {
 // reset state handlers
 
 static void enter_reset(void) {
+  info("HSM Reset\n");
   struct led_ctx *led_ctx = ctx.leds[0];
   for (; led_ctx < ctx.leds[0] + HSM_LED_ID_COUNT; led_ctx++) {
     led_disable(led_ctx);
@@ -181,6 +191,7 @@ static void exit_reset(void) {
 // idle state handlers
 
 static void enter_idle(void) {
+  info("HSM entering idle\n");
   led_enable(ctx.leds[HSM_LED_ID_IDLE]);
 }
 
@@ -212,6 +223,7 @@ static enum event_handle_result handle_event_idle(const enum hsm_event event) {
 // run state handlers
 
 static void enter_run(void) {
+  info("HSM entering run\n");
   led_enable(ctx.leds[HSM_LED_ID_RUN]);
 }
 
@@ -334,6 +346,26 @@ static enum event_handle_result handle_event_calibration(const enum hsm_event ev
   return result;
 }
 
+// static functions
+
+static void service_event_queue(void) {
+  enum hsm_state current_state = ctx.current_state;
+  enum hsm_event event = HSM_EVENT_NONE;
+  xQueueReceive(ctx.event_queue, &event, 0);
+  if (event == HSM_EVENT_NONE) {
+    return;
+  }
+  while (current_state != HSM_STATE_ROOT) {
+    if (state_table[current_state].handle_event != NULL) {
+      enum event_handle_result result = state_table[ctx.current_state].handle_event(event);
+      if (result == EVENT_HANDLED) {
+        break;
+      }
+    }
+    current_state = state_table[current_state].parent;
+  }
+}
+
 static void exit_state(void) {
   enum hsm_state current_state = ctx.current_state;
   while (current_state != HSM_STATE_ROOT) {
@@ -359,6 +391,7 @@ static void enter_state(void) {
 static void hsm_main(void __attribute__((unused)) *argument) {
   info("Starting HSM\n");
   while (1) {
+    service_event_queue();
     if (ctx.current_state != ctx.next_state) {
       exit_state();
       enter_state();
@@ -370,21 +403,12 @@ static void hsm_main(void __attribute__((unused)) *argument) {
       }
       current_state = state_table[current_state].parent;
     }
-    vTaskDelay(HSM_TICK_RATE_MS);
+    vTaskDelay(ctx.hsm_tick_rate_ms);
   }
 }
 
 void hsm_post_event(const enum hsm_event event) {
-  enum hsm_state current_state = ctx.current_state;
-  while (current_state != HSM_STATE_ROOT) {
-    if (state_table[current_state].handle_event != NULL) {
-      enum event_handle_result result = state_table[ctx.current_state].handle_event(event);
-      if (result == EVENT_HANDLED) {
-        break;
-      }
-    }
-    current_state = state_table[current_state].parent;
-  }
+  xQueueSend(ctx.event_queue, &event, 0);
 }
 
 enum hsm_state hsm_get_current_state(void) {
@@ -392,10 +416,14 @@ enum hsm_state hsm_get_current_state(void) {
 }
 
 void hsm_init(const struct hsm_init_params *init_params) {
+  uassert(init_params != NULL);
   memcpy(ctx.leds, init_params->led_ctxs, sizeof(ctx.leds));
   ctx.current_state = HSM_STATE_RESET;
+  ctx.hsm_tick_rate_ms = HSM_DEFAULT_TICK_RATE_MS;
   ctx.next_state = HSM_STATE_RESET;
   ctx.enter_timestamp = 0;
+  ctx.event_queue = xQueueCreateStatic(sizeof(ctx.event_queue_buffer), sizeof(enum hsm_event), ctx.event_queue_buffer, &ctx.event_queue_ctrl);
+  uassert(ctx.event_queue != NULL);
   BaseType_t ret = xTaskCreate(hsm_main, "hsm", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 20, &hsm_task_handle);
   uassert(ret == pdPASS);
 }
