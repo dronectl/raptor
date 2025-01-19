@@ -11,7 +11,6 @@
 #ifndef __LOGGER_H__
 #define __LOGGER_H__
 
-#include "system.h"
 #include <stdint.h>
 
 #define LOGGER_DEFAULT_PORT 3000
@@ -30,7 +29,7 @@ enum logger_level {
 enum logger_level logger_get_level(void);
 void logger_set_level(const enum logger_level level);
 void logger_out(const enum logger_level level, const char *fmt, ...);
-system_status_t logger_init(const enum logger_level level);
+void logger_init(const enum logger_level level);
 
 #ifndef critical
 #define critical(...) __CRITICAL(__VA_ARGS__, "")

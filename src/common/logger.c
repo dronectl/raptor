@@ -8,6 +8,7 @@
  *
  */
 
+#include "uassert.h"
 #include "logger.h"
 #include "lwip/inet.h"
 #include "lwip/sockets.h"
@@ -161,15 +162,10 @@ void logger_out(const enum logger_level level, const char *fmt, ...) {
  *
  * @param level logging level configuration
  */
-system_status_t logger_init(const enum logger_level level) {
+void logger_init(const enum logger_level level) {
   log_queue = xQueueCreate(MAX_LOG_BUFFER_SIZE, sizeof(struct log_msg));
-  if (log_queue == NULL) {
-    return SYSTEM_MOD_FAIL;
-  }
+  uassert(log_queue != NULL);
   logger_set_level(level);
   BaseType_t ret = xTaskCreate(log_server_task, "log_task", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, &log_task_handle);
-  if (ret != pdPASS) {
-    return SYSTEM_MOD_FAIL;
-  }
-  return SYSTEM_OK;
+  uassert(ret == pdPASS);
 }
