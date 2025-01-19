@@ -89,4 +89,8 @@ enum hsm_state hsm_get_current_state(void);
  */
 void hsm_post_event(const enum hsm_event event);
 
+
+#ifdef UNITTEST
+#endif // UNITTEST
+
 #endif // __HSM_H__

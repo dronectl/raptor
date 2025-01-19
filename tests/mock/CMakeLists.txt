@@ -8,6 +8,7 @@ add_library(
   task.c
   lwip/sockets.c
   lwip/inet.c
+  stm32h7xx.c
 )
 target_include_directories(${LIB_MOCK} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_compile_options(${LIB_MOCK} PUBLIC -g -O0)

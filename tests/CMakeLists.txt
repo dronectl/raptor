@@ -35,9 +35,15 @@ set(LIB_RAPTOR "libraptor")
 # TODO: include_subdirectories
 add_library(
   ${LIB_RAPTOR}
+  ../src/drivers/led.c
   ../src/common/sysreg.c
   ../src/common/logger.c
   ../src/common/cbuffer.c
+  ../src/common/uassert.c
+  ../src/common/dtc.c
+  ../src/os/hsm.c
+  ../src/os/power_manager.c
+  ../src/os/esc_engine.c
   ../src/os/scpi/utf8.c
   ../src/os/scpi/err.c
   ../src/os/scpi/commands.c
@@ -55,6 +61,8 @@ target_include_directories(
   ../src/drivers
   ../src/os
 )
+
+target_compile_definitions(${LIB_RAPTOR} PUBLIC UNITTEST)
 target_compile_options(${LIB_RAPTOR} PUBLIC -g -O0 -ftest-coverage -fprofile-arcs)
 target_link_options(${LIB_RAPTOR} PUBLIC --coverage)
 target_link_libraries(${LIB_RAPTOR} PUBLIC ${LIB_MOCK})
@@ -65,7 +73,9 @@ add_executable(
   test_utf8.cc
   test_scpi_err.cc
   test_lexer.cc
+  test_hsm.cc
 )
+
 target_compile_options(${PROJECT_NAME} PUBLIC -g -O0)
 target_link_libraries(${PROJECT_NAME} PRIVATE ${LIB_RAPTOR} ${LIB_MOCK} GTest::gtest_main)
 

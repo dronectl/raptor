@@ -417,6 +417,7 @@ enum hsm_state hsm_get_current_state(void) {
 
 void hsm_init(const struct hsm_init_params *init_params) {
   uassert(init_params != NULL);
+  uassert(init_params->led_ctxs != NULL);
   memcpy(ctx.leds, init_params->led_ctxs, sizeof(ctx.leds));
   ctx.current_state = HSM_STATE_RESET;
   ctx.hsm_tick_rate_ms = HSM_DEFAULT_TICK_RATE_MS;
@@ -428,3 +429,5 @@ void hsm_init(const struct hsm_init_params *init_params) {
   uassert(ret == pdPASS);
 }
 
+#ifdef UNITTEST
+#endif // UNITTEST
