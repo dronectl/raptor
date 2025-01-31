@@ -12,6 +12,7 @@
 #ifndef __LED_H__
 #define __LED_H__
 
+#include <stdint.h>
 #include <stm32h7xx.h>
 #include <stdbool.h>
 
@@ -58,6 +59,7 @@ void led_toggle(const struct led_ctx *ctx);
  * @brief Toggle LED state at a fixed rate. Requires periodic call to update state.
  *
  * @param[in] ctx LED context
+ * @param[in] rate_ms toggle rate (ms)
  */
 void led_periodic_toggle(struct led_ctx *ctx, const uint32_t rate_ms);
 
