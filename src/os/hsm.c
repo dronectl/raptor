@@ -55,10 +55,8 @@ struct state_table {
   enum event_handle_result (*handle_event)(const enum hsm_event event);
 } _hsm_state_table;
 
-
 /* raptor state handlers */
 static enum event_handle_result handle_event_root(const enum hsm_event event);
-
 
 // reset state callbacks
 static void enter_reset(void);
@@ -67,7 +65,6 @@ static void exit_reset(void);
 
 // init state callbacks
 static void tick_init(void);
-
 
 // idle state callbacks
 static void enter_idle(void);
@@ -112,29 +109,28 @@ static void exit_calibration(void);
 static enum event_handle_result handle_event_calibration(const enum hsm_event event);
 
 static struct hsm_ctx ctx = {
-  .current_state = HSM_STATE_RESET,
-  .next_state = HSM_STATE_RESET,
-  .enter_timestamp = 0,
+    .current_state = HSM_STATE_RESET,
+    .next_state = HSM_STATE_RESET,
+    .enter_timestamp = 0,
 };
 
 static TaskHandle_t hsm_task_handle;
 
 static const struct state_table state_table[HSM_STATE_COUNT] = {
-  {HSM_STATE_ROOT, .parent = HSM_STATE_ROOT, .enter = NULL, .tick = NULL, .exit = NULL, .handle_event = handle_event_root},
-  {HSM_STATE_RESET, .parent = HSM_STATE_ROOT, .enter = enter_reset, .tick = tick_reset, .exit = exit_reset, .handle_event = NULL},
-  {HSM_STATE_INIT, .parent = HSM_STATE_ROOT, .enter = NULL, .tick = tick_init, .exit = NULL, .handle_event = NULL},
-  {HSM_STATE_IDLE, .parent = HSM_STATE_ROOT, .enter = enter_idle, .tick = tick_idle, .exit = exit_idle, .handle_event = handle_event_idle},
+    {HSM_STATE_ROOT, .parent = HSM_STATE_ROOT, .enter = NULL, .tick = NULL, .exit = NULL, .handle_event = handle_event_root},
+    {HSM_STATE_RESET, .parent = HSM_STATE_ROOT, .enter = enter_reset, .tick = tick_reset, .exit = exit_reset, .handle_event = NULL},
+    {HSM_STATE_INIT, .parent = HSM_STATE_ROOT, .enter = NULL, .tick = tick_init, .exit = NULL, .handle_event = NULL},
+    {HSM_STATE_IDLE, .parent = HSM_STATE_ROOT, .enter = enter_idle, .tick = tick_idle, .exit = exit_idle, .handle_event = handle_event_idle},
 
-  {HSM_STATE_RUN, .parent = HSM_STATE_ROOT, .enter = enter_run, .tick = tick_run, .exit = exit_run, .handle_event = handle_event_run},
-  {HSM_STATE_RUN_STARTUP, .parent = HSM_STATE_RUN, .enter = enter_run_startup, .tick = tick_run_startup, .exit = exit_run_startup, .handle_event = handle_event_run_startup},
-  {HSM_STATE_RUN_PROFILE, .parent = HSM_STATE_RUN, .enter = enter_run_profile, .tick = tick_run_profile, .exit = exit_run_profile, .handle_event = handle_event_run_profile},
+    {HSM_STATE_RUN, .parent = HSM_STATE_ROOT, .enter = enter_run, .tick = tick_run, .exit = exit_run, .handle_event = handle_event_run},
+    {HSM_STATE_RUN_STARTUP, .parent = HSM_STATE_RUN, .enter = enter_run_startup, .tick = tick_run_startup, .exit = exit_run_startup, .handle_event = handle_event_run_startup},
+    {HSM_STATE_RUN_PROFILE, .parent = HSM_STATE_RUN, .enter = enter_run_profile, .tick = tick_run_profile, .exit = exit_run_profile, .handle_event = handle_event_run_profile},
 
-  {HSM_STATE_STOP, .parent = HSM_STATE_ROOT, .enter = enter_stop, .tick = tick_stop, .exit = exit_stop, .handle_event = handle_event_stop},
-  {HSM_STATE_ERROR, .parent = HSM_STATE_ROOT, .enter = enter_error, .tick = tick_error, .exit = exit_error, .handle_event = handle_event_error},
+    {HSM_STATE_STOP, .parent = HSM_STATE_ROOT, .enter = enter_stop, .tick = tick_stop, .exit = exit_stop, .handle_event = handle_event_stop},
+    {HSM_STATE_ERROR, .parent = HSM_STATE_ROOT, .enter = enter_error, .tick = tick_error, .exit = exit_error, .handle_event = handle_event_error},
 
-  {HSM_STATE_CALIBRATION, .parent = HSM_STATE_ROOT, .enter = enter_calibration, .tick = tick_calibration, .exit = exit_calibration, .handle_event = handle_event_calibration},
+    {HSM_STATE_CALIBRATION, .parent = HSM_STATE_ROOT, .enter = enter_calibration, .tick = tick_calibration, .exit = exit_calibration, .handle_event = handle_event_calibration},
 };
-
 
 // root state handlers
 
@@ -251,13 +247,13 @@ static enum event_handle_result handle_event_run(const enum hsm_event event) {
 
 // run startup state handlers
 
-static void enter_run_startup(void) { }
+static void enter_run_startup(void) {}
 
 static void tick_run_startup(void) {
   ctx.next_state = HSM_STATE_RUN_PROFILE;
 }
 
-static void exit_run_startup(void) { }
+static void exit_run_startup(void) {}
 
 static enum event_handle_result handle_event_run_startup(const enum hsm_event event) {
   return EVENT_UNHANDLED;
@@ -265,11 +261,11 @@ static enum event_handle_result handle_event_run_startup(const enum hsm_event ev
 
 // run profile state handlers
 
-static void enter_run_profile(void) { }
+static void enter_run_profile(void) {}
 
-static void tick_run_profile(void) { }
+static void tick_run_profile(void) {}
 
-static void exit_run_profile(void) { }
+static void exit_run_profile(void) {}
 
 static enum event_handle_result handle_event_run_profile(const enum hsm_event event) {
   return EVENT_UNHANDLED;
@@ -277,7 +273,7 @@ static enum event_handle_result handle_event_run_profile(const enum hsm_event ev
 
 // stop state handlers
 
-static void enter_stop(void) { }
+static void enter_stop(void) {}
 
 static void tick_stop(void) {
   if (ctx.pending_dtc != DTCID_NONE) {
@@ -287,7 +283,7 @@ static void tick_stop(void) {
   }
 }
 
-static void exit_stop(void) { }
+static void exit_stop(void) {}
 
 static enum event_handle_result handle_event_stop(const enum hsm_event event) {
   return EVENT_UNHANDLED;
@@ -326,11 +322,11 @@ static enum event_handle_result handle_event_error(const enum hsm_event event) {
 
 // calibration state handlers
 
-static void enter_calibration(void) { }
+static void enter_calibration(void) {}
 
-static void tick_calibration(void) { }
+static void tick_calibration(void) {}
 
-static void exit_calibration(void) { }
+static void exit_calibration(void) {}
 
 static enum event_handle_result handle_event_calibration(const enum hsm_event event) {
   enum event_handle_result result = EVENT_UNHANDLED;
@@ -388,7 +384,7 @@ static void enter_state(void) {
   }
 }
 
-static void hsm_main(void __attribute__((unused)) *argument) {
+static void hsm_main(void __attribute__((unused)) * argument) {
   info("Starting HSM\n");
   while (1) {
     service_event_queue();

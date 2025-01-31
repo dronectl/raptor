@@ -83,12 +83,11 @@ enum hsm_state hsm_get_current_state(void);
 
 /**
  * @brief Post an event to the HSM event queue
- * 
+ *
  * @note ISR safe
  * @param[in] event - event to post to queue
  */
 void hsm_post_event(const enum hsm_event event);
-
 
 #ifdef UNITTEST
 #endif // UNITTEST
