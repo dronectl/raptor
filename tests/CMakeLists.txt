@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.22)
 
+set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../cmake/modules ${CMAKE_MODULE_PATH})
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 include(FetchContent)
 message(STATUS "Fetching Google Test...")
@@ -31,57 +32,26 @@ endif()
 
 enable_testing()
 set(CMAKE_STATIC_LIBRARY_PREFIX "")
-set(LIB_RAPTOR "libraptor")
-# TODO: include_subdirectories
-add_library(
-  ${LIB_RAPTOR}
-  ../src/drivers/led.c
-  ../src/common/sysreg.c
-  ../src/common/logger.c
-  ../src/common/cbuffer.c
-  ../src/common/uassert.c
-  ../src/common/dtc.c
-  ../src/os/hsm.c
-  ../src/os/power_manager.c
-  ../src/os/esc_engine.c
-  ../src/os/scpi/utf8.c
-  ../src/os/scpi/err.c
-  ../src/os/scpi/commands.c
-  ../src/os/scpi/lexer.c
-  ../src/os/scpi/parser.c
-)
-
-set(LIB_MOCK "libmock")
-add_subdirectory(mock)
-
-target_include_directories(
-  ${LIB_RAPTOR}
-  PUBLIC
-  ../src/common
-  ../src/drivers
-  ../src/os
-)
-
-target_compile_definitions(${LIB_RAPTOR} PUBLIC UNITTEST)
-target_compile_options(${LIB_RAPTOR} PUBLIC -g -O0 -ftest-coverage -fprofile-arcs)
-target_link_options(${LIB_RAPTOR} PUBLIC --coverage)
-target_link_libraries(${LIB_RAPTOR} PUBLIC ${LIB_MOCK})
-
-add_executable(
-  ${PROJECT_NAME}
-  test_sysreg.cc
-  test_utf8.cc
-  test_scpi_err.cc
-  test_lexer.cc
-  test_hsm.cc
-)
-
-target_compile_options(${PROJECT_NAME} PUBLIC -g -O0)
-target_link_libraries(${PROJECT_NAME} PRIVATE ${LIB_RAPTOR} ${LIB_MOCK} GTest::gtest_main)
 
 include(CTest)
 include(GoogleTest)
 include(CodeCoverage.cmake)
+include(stm32cubeh7)
+
+# configure headers as global system includes to supress cross-compile warnings
+include_directories(SYSTEM ${HAL_INC} ${LWIP_INC} ${FREERTOS_INC} ../src/common/config ../src/os ../src/common ../src/drivers ../src/bsp/inc)
+
+add_executable(hsm_test ../src/os/hsm.c test_hsm.cc)
+target_include_directories(hsm_test PRIVATE mock)
+target_link_libraries(hsm_test PRIVATE GTest::gtest_main GTest::gmock)
+target_compile_definitions(hsm_test PUBLIC UNITTEST STM32H723xx USE_HAL_DRIVER)
+target_compile_options(hsm_test PUBLIC -g -O0 -ftest-coverage -fprofile-arcs -fpermissive)
+
+# Add tests to ctest
+add_test(
+  NAME hsm_test
+  COMMAND $<TARGET_FILE:hsm_test>
+)
 
 set(GCOVR_ADDITIONAL_ARGS "")
 if (RAPTOR_COVERAGE_GCOV)
@@ -92,9 +62,8 @@ list(APPEND GCOVR_ADDITIONAL_ARGS --txt --txt-metric branch --gcov-ignore-parse-
 setup_target_for_coverage_gcovr_xml(
   NAME coverage
   EXECUTABLE ctest
-  EXCLUDE "tests/unittests/*"
-  BASE_DIRECTORY "../../"
-  DEPENDANCIES ${LIB_RAPTOR}
+  EXCLUDE "tests/*"
+  BASE_DIRECTORY "../"
+  DEPENDANCIES ../src/os/hsm.c
 )
-gtest_discover_tests(${PROJECT_NAME})
 
