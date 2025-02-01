@@ -1,8 +1,11 @@
 
 #pragma once
 
-#include <stdint.h>
 #include "gmock/gmock.h"
+
+extern "C" {
+#include "logger.h"
+}
 
 class MockLogger {
 public:
@@ -16,7 +19,6 @@ MockLogger *mock_logger = nullptr;
 
 // C-style wrapper functions for the mocks
 extern "C" {
-#include "logger.h"
 
 void logger_init(const enum logger_level level) {
   return mock_logger->logger_init(level);
