@@ -9,13 +9,22 @@
 #ifndef __HSM_H__
 #define __HSM_H__
 
-/**
- * @brief HSM LED identifiers
- */
+#include "dtc.h"
+#include "led.h"
+#include "system.h"
+
+#include <stdint.h>
+#include <FreeRTOS.h>
+#include <queue.h>
+
+#define HSM_DEFAULT_TICK_RATE_MS 10
+#define HSM_EVENT_QUEUE_SIZE 5 * sizeof(enum hsm_event)
+
 enum hsm_led_id {
-  HSM_LED_ID_ERROR = 0,
+  HSM_LED_ID_ERROR,
   HSM_LED_ID_IDLE,
   HSM_LED_ID_RUN,
+  
   HSM_LED_ID_COUNT
 };
 
@@ -60,19 +69,29 @@ enum hsm_state {
   HSM_STATE_COUNT
 };
 
-/**
- * struct hsm_init_params - HSM initialization parameters
- */
-struct hsm_init_params {
-  struct led_ctx *led_ctxs[HSM_LED_ID_COUNT];
+struct hsm_init_context {
+  const struct led_init_context led_init_ctx[HSM_LED_ID_COUNT];
+};
+
+struct hsm_context {
+  enum hsm_state current_state;
+  enum hsm_state next_state;
+  enum DTCID pending_dtc;
+  uint32_t enter_timestamp;
+  uint32_t hsm_tick_rate_ms;
+  uint8_t event_queue_buffer[HSM_EVENT_QUEUE_SIZE];
+  TaskHandle_t task_handle;
+  StaticQueue_t event_queue_ctrl;
+  QueueHandle_t event_queue;
+  struct led_context led_ctx[HSM_LED_ID_COUNT];
 };
 
 /**
- * @brief Initialize the HSM with external modules and configuration
+ * @brief Initialize and spawn the HSM process
  *
- * @param[in] init_params initialization parameters
+ * @param[in] task_ctx task initialization context
  */
-void hsm_init(const struct hsm_init_params *init_params);
+void hsm_start(const struct system_task_context *task_ctx);
 
 /**
  * @brief Get the current state of the HSM
@@ -90,6 +109,8 @@ enum hsm_state hsm_get_current_state(void);
 void hsm_post_event(const enum hsm_event event);
 
 #ifdef UNITTEST
+struct hsm_ctx *test_hsm_get_context(void);
+void *test_hsm_get_main(void);
 #endif // UNITTEST
 
 #endif // __HSM_H__

@@ -8,21 +8,14 @@
 
 #include "hsm.h"
 #include "logger.h"
-#include "dtc.h"
-#include "led.h"
 #include "esc_engine.h"
 #include "uassert.h"
 #include "power_manager.h"
 
 #include <string.h>
 #include <stdlib.h>
-#include <stdint.h>
-#include <FreeRTOS.h>
-#include <queue.h>
 #include <task.h>
 
-#define HSM_DEFAULT_TICK_RATE_MS 10
-#define EVENT_QUEUE_SIZE 5 * sizeof(enum hsm_event)
 #define IDLE_LED_TOGGLE_RATE_MS 1000
 #define RUN_LED_TOGGLE_RATE_MS 500
 
@@ -30,21 +23,6 @@ enum event_handle_result {
   EVENT_UNHANDLED = 0,
   EVENT_HANDLED = 1,
 };
-
-struct hsm_ctx {
-  enum hsm_state current_state;
-  enum hsm_state next_state;
-  enum DTCID pending_dtc;
-
-  uint32_t enter_timestamp;
-  uint32_t hsm_tick_rate_ms;
-
-  struct led_ctx *leds[HSM_LED_ID_COUNT];
-  // event queue
-  uint8_t event_queue_buffer[EVENT_QUEUE_SIZE];
-  StaticQueue_t event_queue_ctrl;
-  QueueHandle_t event_queue;
-} _hsm_ctx;
 
 struct state_table {
   enum hsm_state state;
@@ -108,13 +86,8 @@ static void tick_calibration(void);
 static void exit_calibration(void);
 static enum event_handle_result handle_event_calibration(const enum hsm_event event);
 
-static struct hsm_ctx ctx = {
-    .current_state = HSM_STATE_RESET,
-    .next_state = HSM_STATE_RESET,
-    .enter_timestamp = 0,
-};
-
-static TaskHandle_t hsm_task_handle;
+// static hsm context
+static struct hsm_context ctx = {0};
 
 static const struct state_table state_table[HSM_STATE_COUNT] = {
     {HSM_STATE_ROOT, .parent = HSM_STATE_ROOT, .enter = NULL, .tick = NULL, .exit = NULL, .handle_event = handle_event_root},
@@ -158,19 +131,19 @@ static void tick_init(void) {
 
 static void enter_reset(void) {
   info("HSM Reset\n");
-  struct led_ctx *led_ctx = ctx.leds[0];
-  for (; led_ctx < ctx.leds[0] + HSM_LED_ID_COUNT; led_ctx++) {
+  struct led_context *led_ctx = &ctx.led_ctx[0];
+  for (; led_ctx < &ctx.led_ctx[0] + HSM_LED_ID_COUNT; led_ctx++) {
     led_disable(led_ctx);
   }
 }
 
 static void tick_reset(void) {
-  struct led_ctx *led_ctx = ctx.leds[0];
-  for (; led_ctx < ctx.leds[0] + HSM_LED_ID_COUNT; led_ctx++) {
+  struct led_context *led_ctx = &ctx.led_ctx[0];
+  for (; led_ctx < &ctx.led_ctx[0] + HSM_LED_ID_COUNT; led_ctx++) {
     led_toggle(led_ctx);
   }
   vTaskDelay(500);
-  for (; led_ctx < ctx.leds[0] + HSM_LED_ID_COUNT; led_ctx++) {
+  for (; led_ctx < &ctx.led_ctx[0] + HSM_LED_ID_COUNT; led_ctx++) {
     led_toggle(led_ctx);
   }
   // todo: perform calibration
@@ -178,8 +151,8 @@ static void tick_reset(void) {
 }
 
 static void exit_reset(void) {
-  struct led_ctx *led_ctx = ctx.leds[0];
-  for (; led_ctx < ctx.leds[0] + HSM_LED_ID_COUNT; led_ctx++) {
+  struct led_context *led_ctx = &ctx.led_ctx[0];
+  for (; led_ctx < &ctx.led_ctx[0] + HSM_LED_ID_COUNT; led_ctx++) {
     led_disable(led_ctx);
   }
 }
@@ -188,15 +161,15 @@ static void exit_reset(void) {
 
 static void enter_idle(void) {
   info("HSM entering idle\n");
-  led_enable(ctx.leds[HSM_LED_ID_IDLE]);
+  led_enable(&ctx.led_ctx[HSM_LED_ID_IDLE]);
 }
 
 static void tick_idle(void) {
-  led_periodic_toggle(ctx.leds[HSM_LED_ID_IDLE], IDLE_LED_TOGGLE_RATE_MS);
+  led_periodic_toggle(&ctx.led_ctx[HSM_LED_ID_IDLE], IDLE_LED_TOGGLE_RATE_MS);
 }
 
 static void exit_idle(void) {
-  led_disable(ctx.leds[HSM_LED_ID_IDLE]);
+  led_disable(&ctx.led_ctx[HSM_LED_ID_IDLE]);
 }
 
 static enum event_handle_result handle_event_idle(const enum hsm_event event) {
@@ -220,15 +193,15 @@ static enum event_handle_result handle_event_idle(const enum hsm_event event) {
 
 static void enter_run(void) {
   info("HSM entering run\n");
-  led_enable(ctx.leds[HSM_LED_ID_RUN]);
+  led_enable(&ctx.led_ctx[HSM_LED_ID_RUN]);
 }
 
 static void tick_run(void) {
-  led_toggle(ctx.leds[HSM_LED_ID_RUN]);
+  led_toggle(&ctx.led_ctx[HSM_LED_ID_RUN]);
 }
 
 static void exit_run(void) {
-  led_disable(ctx.leds[HSM_LED_ID_RUN]);
+  led_disable(&ctx.led_ctx[HSM_LED_ID_RUN]);
 }
 
 static enum event_handle_result handle_event_run(const enum hsm_event event) {
@@ -296,15 +269,15 @@ static void enter_error(void) {
     dtc_post_event(ctx.pending_dtc);
     ctx.pending_dtc = DTCID_NONE;
   }
-  led_enable(ctx.leds[HSM_LED_ID_ERROR]);
+  led_enable(&ctx.led_ctx[HSM_LED_ID_ERROR]);
 }
 
 static void tick_error(void) {
-  led_toggle(ctx.leds[HSM_LED_ID_ERROR]);
+  led_toggle(&ctx.led_ctx[HSM_LED_ID_ERROR]);
 }
 
 static void exit_error(void) {
-  led_disable(ctx.leds[HSM_LED_ID_ERROR]);
+  led_disable(&ctx.led_ctx[HSM_LED_ID_ERROR]);
 }
 
 static enum event_handle_result handle_event_error(const enum hsm_event event) {
@@ -384,7 +357,7 @@ static void enter_state(void) {
   }
 }
 
-static void hsm_main(void __attribute__((unused)) * argument) {
+static void hsm_main(void* argument) {
   info("Starting HSM\n");
   while (1) {
     service_event_queue();
@@ -411,19 +384,36 @@ enum hsm_state hsm_get_current_state(void) {
   return ctx.current_state;
 }
 
-void hsm_init(const struct hsm_init_params *init_params) {
-  uassert(init_params != NULL);
-  uassert(init_params->led_ctxs != NULL);
-  memcpy(ctx.leds, init_params->led_ctxs, sizeof(ctx.leds));
+void hsm_start(const struct system_task_context *task_ctx) {
+  // header guards
+  uassert(task_ctx != NULL);
+  uassert(task_ctx->init_ctx != NULL);
+
+  // populate static context
+  const struct hsm_init_context* init = (const struct hsm_init_context *)task_ctx->init_ctx;
+  uassert(init->led_init_ctx != NULL);
+  for (uint8_t i = 0; i < sizeof(init->led_init_ctx) / sizeof(struct led_init_context); i++) {
+    led_init(&ctx.led_ctx[i], &init->led_init_ctx[i]);
+  }
   ctx.current_state = HSM_STATE_RESET;
   ctx.hsm_tick_rate_ms = HSM_DEFAULT_TICK_RATE_MS;
   ctx.next_state = HSM_STATE_RESET;
   ctx.enter_timestamp = 0;
   ctx.event_queue = xQueueCreateStatic(sizeof(ctx.event_queue_buffer), sizeof(enum hsm_event), ctx.event_queue_buffer, &ctx.event_queue_ctrl);
   uassert(ctx.event_queue != NULL);
-  BaseType_t ret = xTaskCreate(hsm_main, "hsm", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 20, &hsm_task_handle);
+
+  // start task
+  BaseType_t ret = xTaskCreate(hsm_main, task_ctx->name, task_ctx->stack_size, NULL, task_ctx->priority, &ctx.task_handle);
   uassert(ret == pdPASS);
 }
 
 #ifdef UNITTEST
+
+struct hsm_ctx *test_hsm_get_main(void) {
+  return &ctx;
+}
+void *test_hsm_get_main(void) {
+  return hsm_main;
+}
+
 #endif // UNITTEST
