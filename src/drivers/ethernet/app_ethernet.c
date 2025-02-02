@@ -175,7 +175,7 @@ static void netif_config(void) {
 #endif
 }
 
-void app_ethernet_init(void) {
+void app_ethernet_init(const struct system_task_context *task_ctx) {
   // invoke netconfig_init once tcpip init is complete
   tcpip_init(NULL, NULL);
   netif_config();
