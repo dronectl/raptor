@@ -25,7 +25,7 @@ extern "C" {
 #include "hsm.h"
 }
 
-class HsmTest : public ::testing::Test {
+class HsmTestFixture : public ::testing::Test {
 protected:
   MockLogger m_logger;
   MockUassert m_uassert;
@@ -59,16 +59,28 @@ protected:
   }
 };
 
-TEST_F(HsmTest, HsmTaskStart) {
+TEST_F(HsmTestFixture, HsmTaskStart) {
+  GPIO_TypeDef mock_port;
+  struct hsm_init_context hsm_init_ctx = {
+    .led_init_ctx = {
+      {
+        .port = &mock_port,
+        .pin = 1,
+        .active_high=true,
+      }
+    },
+    .num_led_init_ctx = 1
+  };
   struct system_task_context task_ctx = {
     .name = "name",
     .priority = 13,
     .stack_size = 230,
+    .init_ctx = &hsm_init_ctx
   };
   struct hsm_context *ctx = test_hsm_get_context();
   TaskFunction_t hsm_main = test_hsm_get_main();
   QueueHandle_t queue_handle;
-  BaseType_t base;
+  BaseType_t base = pdPASS;
 
   EXPECT_CALL(
     *mock_freertos,
@@ -80,6 +92,8 @@ TEST_F(HsmTest, HsmTaskStart) {
     xTaskCreate(hsm_main, task_ctx.name, task_ctx.stack_size, NULL, task_ctx.priority, &ctx->task_handle))
     .Times(1)
     .WillOnce(::testing::Return(base));
+  EXPECT_CALL(*mock_uassert, assert_handler(::testing::_, ::testing::_, ::testing::_)).Times(0);
+  EXPECT_CALL(*mock_led, led_init(&ctx->led_ctx[0], &hsm_init_ctx.led_init_ctx[0])).Times(1);
 
   hsm_start(&task_ctx);
 
@@ -88,4 +102,58 @@ TEST_F(HsmTest, HsmTaskStart) {
   EXPECT_EQ(ctx->current_state, HSM_STATE_RESET) << "current state not set to reset state";
   EXPECT_EQ(ctx->next_state, HSM_STATE_RESET) << "next state not set to reset state";
   EXPECT_EQ(ctx->enter_timestamp, 0) << "enter timestamp not reset to 0";
+}
+
+TEST_F(HsmTestFixture, HsmEventPostSuccess){
+  // event post success
+  enum hsm_event event = HSM_EVENT_ABORT;
+  EXPECT_CALL(*mock_freertos, xQueueGenericSend(::testing::_, &event, 0, queueSEND_TO_BACK)).Times(1).WillOnce(::testing::Return(pdPASS));
+  EXPECT_CALL(*mock_logger, logger_out);
+  EXPECT_CALL(*mock_uassert, assert_handler(::testing::_, ::testing::_, ::testing::_)).Times(0);
+  EXPECT_EQ(HSM_STATUS_OK, hsm_post_event(&event, 0)) << "hsm event post reported failure";
+}
+
+TEST_F(HsmTestFixture, HsmEventPostFail) {
+  // queue full with blocking
+  enum hsm_event event = HSM_EVENT_RUN;
+  EXPECT_CALL(*mock_freertos, xQueueGenericSend(::testing::_, &event, 10, queueSEND_TO_BACK)).Times(1).WillOnce(::testing::Return(errQUEUE_FULL));
+  EXPECT_CALL(*mock_logger, logger_out);
+  EXPECT_CALL(*mock_uassert, assert_handler(::testing::_, ::testing::_, ::testing::_)).Times(0);
+  EXPECT_EQ(HSM_STATUS_EVE_QUEUE_FULL, hsm_post_event(&event, 10)) << "hsm event post reported success";
+}
+
+TEST_F(HsmTestFixture, HsmEventPostISRSuccess){
+  // event post from isr success
+  enum hsm_event event = HSM_EVENT_ABORT;
+  bool req_ctx_switch;
+  EXPECT_CALL(*mock_freertos, xQueueGenericSendFromISR(::testing::_, &event, ::testing::_, queueSEND_TO_BACK))
+    .Times(1)
+    .WillOnce(::testing::DoAll(
+      ::testing::SetArgPointee<2>(pdTRUE),
+      ::testing::Return(pdPASS)
+    ));
+  EXPECT_CALL(*mock_uassert, assert_handler(::testing::_, ::testing::_, ::testing::_)).Times(0);
+  EXPECT_EQ(HSM_STATUS_OK, hsm_post_event_isr(&event, &req_ctx_switch)) << "hsm event post reported failure";
+  EXPECT_TRUE(req_ctx_switch);
+}
+
+TEST_F(HsmTestFixture, HsmEventPostISRFail) {
+  // queue full from isr
+  enum hsm_event event = HSM_EVENT_RUN;
+  bool req_ctx_switch;
+  EXPECT_CALL(*mock_freertos, xQueueGenericSendFromISR(::testing::_, &event, ::testing::_, queueSEND_TO_BACK))
+    .Times(1)
+    .WillOnce(::testing::DoAll(
+      ::testing::SetArgPointee<2>(pdFALSE),
+      ::testing::Return(errQUEUE_FULL)
+    ));
+  EXPECT_CALL(*mock_uassert, assert_handler(::testing::_, ::testing::_, ::testing::_)).Times(0);
+  EXPECT_EQ(HSM_STATUS_EVE_QUEUE_FULL, hsm_post_event_isr(&event, &req_ctx_switch)) << "hsm event post did not succeed";
+  EXPECT_FALSE(req_ctx_switch);
+}
+
+TEST(HsmTest, HSMGetState) {
+  struct hsm_context *ctx = test_hsm_get_context();
+  ctx->current_state = HSM_STATE_RUN;
+  EXPECT_EQ(ctx->current_state, hsm_get_current_state()) << "fetched hsm state does not match current state";
 }

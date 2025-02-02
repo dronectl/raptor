@@ -35,6 +35,7 @@ static const struct hsm_init_context hsm_init_ctx = {
     [HSM_LED_ID_IDLE] = { .port = LED_GREEN_GPIO_Port, .pin = LED_GREEN_Pin, .active_high = true },
     [HSM_LED_ID_RUN] = { .port = LED_YELLOW_GPIO_Port, .pin = LED_YELLOW_Pin, .active_high = true }
   },
+  .num_led_init_ctx = 3
 };
 
 static const struct logger_init_context logger_init_ctx = {
