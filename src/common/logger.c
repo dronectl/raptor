@@ -8,13 +8,12 @@
  *
  */
 
+#include "common.h"
 #include "uassert.h"
 #include "logger.h"
 #include "lwip/inet.h"
 #include "lwip/sockets.h"
-#include <FreeRTOS.h>
-#include <task.h>
-#include <queue.h>
+
 #include <stdarg.h>
 #include <string.h>
 
@@ -24,7 +23,6 @@
 #define MAX_LOG_BUFFER_SIZE 3
 #define LOG_HEADER_FMT "[ %9ld %5s ]\t"
 
-#define min(a, b) a > b ? b : a
 
 /**
  * @brief Log message struct.
@@ -36,9 +34,7 @@ struct log_msg {
   char message[MAX_LOG_MESSAGE_LEN];
 };
 
-static enum logger_level _level = LOGGER_INFO;
-static QueueHandle_t log_queue;
-static TaskHandle_t log_task_handle;
+static struct logger_context ctx = {0};
 
 /**
  * @brief Get logger level string from enum
@@ -65,29 +61,31 @@ static const char *_get_level_str(const enum logger_level level) {
  * @brief Construct log string message from log struct. This method builds the log header and
  * combines the formatted log message with the header.
  *
+ * @param[in] client_fd client socket descriptor
  * @param[in] log log entry
- * @param[in,out] buffer input write buffer
- * @param[in] size size of buffer
  */
-static int write_log(const int client_fd, const struct log_msg *log) {
+static int write_log(const int client_sd, const struct log_msg *log) {
   char buffer[MAX_LOG_OUT_LEN] = {0};
   int offset = snprintf(buffer, MAX_LOG_HEADER_LEN, LOG_HEADER_FMT, (long)log->epoch, _get_level_str(log->level));
   memcpy(&buffer[offset], log->message, min(strlen(log->message), (size_t)(MAX_LOG_MESSAGE_LEN - offset - 1)));
-  return write(client_fd, buffer, strlen(buffer));
+  return write(client_sd, buffer, strlen(buffer));
 }
 
 /**
- * @brief Logging server task. Listen on port 3000 for connections and stream logs out to client.
+ * @brief Logging server task runner
  *
+ * @param[in] argument task argument (unused)
  */
-static void log_server_task(void __attribute__((unused)) * argument) {
+static void log_server_task(void* __attribute__((unused)) argument) {
   int sock, size, client_fd;
   struct sockaddr_in address, remotehost;
+  uassert(ctx.init != NULL);
+  logger_set_level(ctx.init->log_level);
   if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
     goto error;
   }
   address.sin_family = AF_INET;
-  address.sin_port = htons(LOGGER_DEFAULT_PORT);
+  address.sin_port = htons(ctx.init->port);
   address.sin_addr.s_addr = INADDR_ANY;
   if (bind(sock, (struct sockaddr *)&address, sizeof(address)) < 0) {
     goto error;
@@ -101,7 +99,7 @@ static void log_server_task(void __attribute__((unused)) * argument) {
     }
     while (1) {
       struct log_msg log = {0};
-      if (xQueueReceive(log_queue, &log, portMAX_DELAY) == pdPASS) {
+      if (xQueueReceive(ctx.log_queue, &log, portMAX_DELAY) == pdPASS) {
         if (write_log(client_fd, &log) <= 0) {
           close(client_fd);
           break;
@@ -111,16 +109,16 @@ static void log_server_task(void __attribute__((unused)) * argument) {
   }
 error:
   critical("Socket init failed with %i", errno);
-  vTaskDelete(log_task_handle);
+  vTaskDelete(ctx.task_handle);
 }
 
 /**
  * @brief Set the program log level.
  *
- * @param level target logging level
+ * @param[in] level target logging level
  */
 void logger_set_level(const enum logger_level level) {
-  _level = level;
+  ctx.log_level = level;
 }
 
 /**
@@ -129,17 +127,15 @@ void logger_set_level(const enum logger_level level) {
  * @return enum Level
  */
 enum logger_level logger_get_level(void) {
-  return _level;
+  return ctx.log_level;
 }
 
 /**
  * @brief Write logging message to buffer.
  *
- * @param level log level enum
- * @param func macro expanded log containing function name
- * @param line macro expanded log line
- * @param fmt log string formatter
- * @param ... variable arguments for string formatter
+ * @param[in] level log level enum
+ * @param[in] fmt log string formatter
+ * @param[in] ... variable arguments for string formatter
  */
 void logger_out(const enum logger_level level, const char *fmt, ...) {
   va_list args;
@@ -152,20 +148,22 @@ void logger_out(const enum logger_level level, const char *fmt, ...) {
   va_start(args, fmt);
   vsnprintf(log.message, MAX_LOG_MESSAGE_LEN - 1, fmt, args);
   va_end(args);
-  if (log_queue != NULL) {
-    xQueueSend(log_queue, &log, 0);
+  if (ctx.log_queue != NULL) {
+    xQueueSend(ctx.log_queue, &log, 0);
   }
 }
 
-/**
- * @brief Initialize queues semaphores TCPIP logging socket and start logging task.
- *
- * @param level logging level configuration
- */
-void logger_init(const enum logger_level level) {
-  log_queue = xQueueCreate(MAX_LOG_BUFFER_SIZE, sizeof(struct log_msg));
-  uassert(log_queue != NULL);
-  logger_set_level(level);
-  BaseType_t ret = xTaskCreate(log_server_task, "log_task", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, &log_task_handle);
+void logger_start(const struct system_task_context *task_ctx) {
+  // header guards
+  uassert(task_ctx != NULL);
+  uassert(task_ctx->init_ctx != NULL);
+
+  // populate context
+  ctx.init = task_ctx->init_ctx;
+  ctx.log_queue = xQueueCreate(MAX_LOG_BUFFER_SIZE, sizeof(struct log_msg));
+  uassert(ctx.log_queue != NULL);
+  
+  // start logger task
+  BaseType_t ret = xTaskCreate(log_server_task, task_ctx->name, task_ctx->stack_size, NULL, task_ctx->priority, &ctx.task_handle);
   uassert(ret == pdPASS);
 }
