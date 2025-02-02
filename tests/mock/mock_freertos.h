@@ -12,6 +12,7 @@ public:
   MOCK_METHOD(void, vTaskDelay, (const TickType_t));
   MOCK_METHOD(BaseType_t, xQueueReceive, (QueueHandle_t, void *const, TickType_t));
   MOCK_METHOD(BaseType_t, xQueueGenericSend, ( QueueHandle_t, const void * const, TickType_t, const BaseType_t));
+  MOCK_METHOD(BaseType_t, xQueueGenericSendFromISR, ( QueueHandle_t, const void * const, BaseType_t * const, const BaseType_t));
 	MOCK_METHOD(QueueHandle_t, xQueueGenericCreateStatic, (const UBaseType_t, const UBaseType_t, uint8_t *, StaticQueue_t *, const uint8_t));
   MOCK_METHOD(BaseType_t, xTaskCreate, (TaskFunction_t, const char * const, const configSTACK_DEPTH_TYPE, void * const, UBaseType_t, TaskHandle_t * const));
 };
@@ -31,6 +32,10 @@ BaseType_t xQueueReceive(QueueHandle_t xQueue, void *const pvBuffer, TickType_t 
 
 BaseType_t xQueueGenericSend(QueueHandle_t xQueue, const void * const pvItemToQueue, TickType_t xTicksToWait, const BaseType_t xCopyPosition) {
   return mock_freertos->xQueueGenericSend(xQueue, pvItemToQueue, xTicksToWait, xCopyPosition);
+}
+
+BaseType_t xQueueGenericSendFromISR(QueueHandle_t xQueue, const void * const pvItemToQueue, BaseType_t * const pxHigherPriorityTaskWoken, const BaseType_t xCopyPosition) {
+  return mock_freertos->xQueueGenericSendFromISR(xQueue, pvItemToQueue, pxHigherPriorityTaskWoken, xCopyPosition);
 }
 
 QueueHandle_t xQueueGenericCreateStatic(const UBaseType_t uxQueueLength, const UBaseType_t uxItemSize, uint8_t *pucQueueStorage, StaticQueue_t *pxStaticQueue, const uint8_t ucQueueType) {
