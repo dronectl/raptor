@@ -59,6 +59,33 @@ protected:
   }
 };
 
-TEST_F(HsmTest, HsmInitTest) {
-  hsm_init(NULL);
+TEST_F(HsmTest, HsmTaskStart) {
+  struct system_task_context task_ctx = {
+    .name = "name",
+    .priority = 13,
+    .stack_size = 230,
+  };
+  struct hsm_context *ctx = test_hsm_get_context();
+  TaskFunction_t hsm_main = test_hsm_get_main();
+  QueueHandle_t queue_handle;
+  BaseType_t base;
+
+  EXPECT_CALL(
+    *mock_freertos,
+    xQueueGenericCreateStatic(sizeof(ctx->event_queue_buffer), sizeof(enum hsm_event), ctx->event_queue_buffer, &ctx->event_queue_ctrl, queueQUEUE_TYPE_BASE))
+    .Times(1)
+    .WillOnce(::testing::Return(queue_handle));
+  EXPECT_CALL(
+    *mock_freertos,
+    xTaskCreate(hsm_main, task_ctx.name, task_ctx.stack_size, NULL, task_ctx.priority, &ctx->task_handle))
+    .Times(1)
+    .WillOnce(::testing::Return(base));
+
+  hsm_start(&task_ctx);
+
+  EXPECT_EQ(ctx->hsm_tick_rate_ms, HSM_DEFAULT_TICK_RATE_MS) << "hsm tick rate not initialized to default";
+  EXPECT_EQ(ctx->event_queue, queue_handle) << "event queue not initialized";
+  EXPECT_EQ(ctx->current_state, HSM_STATE_RESET) << "current state not set to reset state";
+  EXPECT_EQ(ctx->next_state, HSM_STATE_RESET) << "next state not set to reset state";
+  EXPECT_EQ(ctx->enter_timestamp, 0) << "enter timestamp not reset to 0";
 }

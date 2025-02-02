@@ -409,11 +409,12 @@ void hsm_start(const struct system_task_context *task_ctx) {
 
 #ifdef UNITTEST
 
-struct hsm_ctx *test_hsm_get_main(void) {
+struct hsm_context *test_hsm_get_context(void) {
   return &ctx;
 }
-void *test_hsm_get_main(void) {
-  return hsm_main;
+
+TaskFunction_t test_hsm_get_main(void) {
+  return (TaskFunction_t)hsm_main;
 }
 
 #endif // UNITTEST

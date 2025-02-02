@@ -41,29 +41,30 @@ include(stm32cubeh7)
 # configure headers as global system includes to supress cross-compile warnings
 include_directories(SYSTEM ${HAL_INC} ${LWIP_INC} ${FREERTOS_INC} ../src/common/config ../src/os ../src/common ../src/drivers ../src/bsp/inc)
 
-add_executable(hsm_test ../src/os/hsm.c test_hsm.cc)
-target_include_directories(hsm_test PRIVATE mock)
-target_link_libraries(hsm_test PRIVATE GTest::gtest_main GTest::gmock)
-target_compile_definitions(hsm_test PUBLIC UNITTEST STM32H723xx USE_HAL_DRIVER)
-target_compile_options(hsm_test PUBLIC -g -O0 -ftest-coverage -fprofile-arcs -fpermissive)
+add_executable(test_hsm ../src/os/hsm.c test_hsm.cc)
+target_include_directories(test_hsm PRIVATE mock)
+target_link_libraries(test_hsm PRIVATE GTest::gtest_main GTest::gmock)
+target_compile_definitions(test_hsm PUBLIC UNITTEST STM32H723xx USE_HAL_DRIVER)
+target_compile_options(test_hsm PUBLIC -g -O0 -ftest-coverage -fprofile-arcs -fpermissive)
 
 # Add tests to ctest
 add_test(
-  NAME hsm_test
-  COMMAND $<TARGET_FILE:hsm_test>
+  NAME test_hsm
+  COMMAND $<TARGET_FILE:test_hsm>
 )
 
 set(GCOVR_ADDITIONAL_ARGS "")
 if (RAPTOR_COVERAGE_GCOV)
   message(STATUS "Adding custom gcov executable to gcovr: ${RAPTOR_COVERAGE_GCOV}")
   list(APPEND GCOVR_ADDITIONAL_ARGS --gcov-executable ${RAPTOR_COVERAGE_GCOV})
+  list(APPEND GCOVR_ADDITIONAL_ARGS --txt --txt-metric branch --gcov-ignore-parse-errors --exclude-unreachable-branches)
+  setup_target_for_coverage_gcovr_xml(
+    NAME coverage
+    EXECUTABLE ctest
+    EXCLUDE "tests/*"
+    BASE_DIRECTORY "../"
+    DEPENDANCIES ../src/os/hsm.c
+  )
 endif()
-list(APPEND GCOVR_ADDITIONAL_ARGS --txt --txt-metric branch --gcov-ignore-parse-errors --exclude-unreachable-branches)
-setup_target_for_coverage_gcovr_xml(
-  NAME coverage
-  EXECUTABLE ctest
-  EXCLUDE "tests/*"
-  BASE_DIRECTORY "../"
-  DEPENDANCIES ../src/os/hsm.c
-)
+
 

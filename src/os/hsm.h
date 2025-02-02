@@ -109,8 +109,8 @@ enum hsm_state hsm_get_current_state(void);
 void hsm_post_event(const enum hsm_event event);
 
 #ifdef UNITTEST
-struct hsm_ctx *test_hsm_get_context(void);
-void *test_hsm_get_main(void);
+struct hsm_context *test_hsm_get_context(void);
+TaskFunction_t test_hsm_get_main(void);
 #endif // UNITTEST
 
 #endif // __HSM_H__
