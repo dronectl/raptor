@@ -29,6 +29,16 @@ enum hsm_led_id {
 };
 
 /**
+ * @brief HSM External status codes
+ * 
+ */
+enum hsm_status {
+  HSM_STATUS_OK,
+  HSM_STATUS_EVE_QUEUE_FULL,
+  HSM_STATUS_COUNT,
+};
+
+/**
  * @brief HSM events
  */
 enum hsm_event {
@@ -71,6 +81,7 @@ enum hsm_state {
 
 struct hsm_init_context {
   const struct led_init_context led_init_ctx[HSM_LED_ID_COUNT];
+  const size_t num_led_init_ctx;
 };
 
 struct hsm_context {
@@ -102,11 +113,22 @@ enum hsm_state hsm_get_current_state(void);
 
 /**
  * @brief Post an event to the HSM event queue
- *
- * @note ISR safe
- * @param[in] event - event to post to queue
+ * 
+ * @warning not ISR safe -> use `hsm_post_event_isr`
+ * @param[in] event HSM event pointer
+ * @param[in] wait_ms millis to block waiting for queue space.
+ * @return hsm status code
  */
-void hsm_post_event(const enum hsm_event event);
+enum hsm_status hsm_post_event(const enum hsm_event *event, const uint16_t wait_ms);
+
+/**
+ * @brief ISR safe post to HSM event queue
+ * 
+ * @param[in] event HSM event pointer
+ * @param[out] req_ctx_switch caller is required to perform a context switch
+ * @return hsm status code
+ */
+enum hsm_status hsm_post_event_isr(const enum hsm_event *event, bool* req_ctx_switch);
 
 #ifdef UNITTEST
 struct hsm_context *test_hsm_get_context(void);

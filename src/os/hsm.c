@@ -376,8 +376,33 @@ static void hsm_main(void* argument) {
   }
 }
 
-void hsm_post_event(const enum hsm_event event) {
-  xQueueSend(ctx.event_queue, &event, 0);
+enum hsm_status hsm_post_event_isr(const enum hsm_event *event, bool* req_ctx_switch) {
+  enum hsm_status status = HSM_STATUS_EVE_QUEUE_FULL;
+  BaseType_t ctx_switch;
+  uassert(event != NULL);
+  uassert(req_ctx_switch != NULL);
+  *req_ctx_switch = false;
+  BaseType_t code = xQueueSendFromISR(ctx.event_queue, event, &ctx_switch);
+  if (ctx_switch == pdTRUE) {
+    *req_ctx_switch = true;
+  }
+  if (code == pdTRUE) {
+    status = HSM_STATUS_OK;
+  }
+  return status;
+}
+
+enum hsm_status hsm_post_event(const enum hsm_event *event, const uint16_t wait_ms) {
+  enum hsm_status status = HSM_STATUS_EVE_QUEUE_FULL;
+  uassert(event != NULL);
+  BaseType_t resp = xQueueSend(ctx.event_queue, event, pdMS_TO_TICKS(wait_ms));
+  if (resp == pdTRUE) {
+    info("posted <%i> to HSM event queue\n", event);
+    status = HSM_STATUS_OK;
+  } else {
+    warning("failed to post <%i> to HSM event queue waiting: %u ms\n", event, wait_ms);
+  }
+  return status;
 }
 
 enum hsm_state hsm_get_current_state(void) {
@@ -392,7 +417,7 @@ void hsm_start(const struct system_task_context *task_ctx) {
   // populate static context
   const struct hsm_init_context* init = (const struct hsm_init_context *)task_ctx->init_ctx;
   uassert(init->led_init_ctx != NULL);
-  for (uint8_t i = 0; i < sizeof(init->led_init_ctx) / sizeof(struct led_init_context); i++) {
+  for (uint8_t i = 0; i < init->num_led_init_ctx; i++) {
     led_init(&ctx.led_ctx[i], &init->led_init_ctx[i]);
   }
   ctx.current_state = HSM_STATE_RESET;
