@@ -118,9 +118,50 @@ make flash
 ```
 
 ## Debugging
-This section will cover the steps to debug firmware using either VSCode powered by `cortex-debug` or STM32CubeIDE. Depending on the debugging job, one or both of these tools may be used. It is important that all developers are familiar with STM32CubeIDE at minimum since it is the most feature rich debugging platform.
+
+This section will cover the steps to debug firmware using either VSCode powered by `cortex-debug`, gdb or STM32CubeIDE. Depending on the debugging job, one or both of these tools may be used. Ensure the board is flashed with a binary (compiled with `-g`) and is connected via USB to your host machine.
 
 > You must build the project with `-DCMAKE_BUILD_TYPE=DEBUG` to enable debug symbols.
+
+### GDB and OpenOCD
+Open a `gdbserver` session with `openocd`:
+```bash
+openocd -futils/stm32h723.cfg
+```
+
+In another terminal start `gdb` from the project root and pass the binary path as an argument. This will source the `~/.gdbinit` on startup:
+```bash
+christiansargusingh  22:07:08 Projects/dronectl/raptor % arm-none-eabi-gdb build/core/raptor.elf
+```
+
+You may get an auto-load warning:
+```bash
+warning: File "/Users/christiansargusingh/Projects/dronectl/raptor/.gdbinit" auto-loading has been declined by your `auto-load safe-path' set to "$debugdir:$datadir/auto-load".
+To enable execution of this file add
+        add-auto-load-safe-path /Users/christiansargusingh/Projects/dronectl/raptor/.gdbinit
+line to your configuration file "/Users/christiansargusingh/Library/Preferences/gdb/gdbinit".
+To completely disable this security protection add
+        set auto-load safe-path /
+line to your configuration file "/Users/christiansargusingh/Library/Preferences/gdb/gdbinit".
+For more information about this security protection see the
+"Auto-loading safe path" section in the GDB manual.  E.g., run from the shell:
+        info "(gdb)Auto-loading safe path"
+```
+
+If so follow the instructions to add the path to the repository root as an auto-load safe path.
+
+### Debug Adapter Protocol (VSCode)
+To debug test binaries you will need to select the `Test Debug (OpenOCD)` launch configuration and change the `executable` field to point to the correct test binary. For example if testing the bme280 binary:
+```json
+{
+    ...
+    "executable": "${workspaceRoot}/build/tests/bme280/test.elf",
+    ...
+}
+```
+
+> I am looking for a way to specify the folder as a prompt in vscode. If anyone knows how to achieve this feel free to submit a PR.
+
 
 ### VSCode
 Once the project binary is built, we can launch the vscode debugger using the `F5` key. Under the hood VSCode references the `launch.json` configuration file to use OpenOCD to flash the firmware and open a GDB server. To setup this configuration be sure to follow the steps in the [VSCode Setup](#vscode-setup) Here is a sample view of the debugger view:
