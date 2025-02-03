@@ -89,6 +89,7 @@ struct hsm_context {
   enum hsm_state next_state;
   enum DTCID pending_dtc;
   uint32_t enter_timestamp;
+  uint32_t exit_timestamp;
   uint32_t hsm_tick_rate_ms;
   uint8_t event_queue_buffer[HSM_EVENT_QUEUE_SIZE];
   TaskHandle_t task_handle;
@@ -133,6 +134,9 @@ enum hsm_status hsm_post_event_isr(const enum hsm_event *event, bool* req_ctx_sw
 #ifdef UNITTEST
 struct hsm_context *test_hsm_get_context(void);
 TaskFunction_t test_hsm_get_main(void);
+void test_hsm_service_event_queue(void);
+void test_hsm_enter_state(void);
+void test_hsm_exit_state(void);
 #endif // UNITTEST
 
 #endif // __HSM_H__

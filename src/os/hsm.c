@@ -25,7 +25,6 @@ enum event_handle_result {
 };
 
 struct state_table_entry {
-  enum hsm_state state;
   enum hsm_state parent;
   void (*enter)(void);
   void (*tick)(void);
@@ -90,19 +89,19 @@ static enum event_handle_result handle_event_calibration(const enum hsm_event ev
 static struct hsm_context ctx = {0};
 
 static const struct state_table_entry state_table[HSM_STATE_COUNT] = {
-    {HSM_STATE_ROOT, .parent = HSM_STATE_ROOT, .enter = NULL, .tick = NULL, .exit = NULL, .handle_event = handle_event_root},
-    {HSM_STATE_RESET, .parent = HSM_STATE_ROOT, .enter = enter_reset, .tick = tick_reset, .exit = exit_reset, .handle_event = NULL},
-    {HSM_STATE_INIT, .parent = HSM_STATE_ROOT, .enter = NULL, .tick = tick_init, .exit = NULL, .handle_event = NULL},
-    {HSM_STATE_IDLE, .parent = HSM_STATE_ROOT, .enter = enter_idle, .tick = tick_idle, .exit = exit_idle, .handle_event = handle_event_idle},
+    [HSM_STATE_ROOT] = { .parent = HSM_STATE_ROOT, .enter = NULL, .tick = NULL, .exit = NULL, .handle_event = handle_event_root },
+    [HSM_STATE_RESET] = { .parent = HSM_STATE_ROOT, .enter = enter_reset, .tick = tick_reset, .exit = exit_reset, .handle_event = NULL },
+    [HSM_STATE_INIT] = { .parent = HSM_STATE_ROOT, .enter = NULL, .tick = tick_init, .exit = NULL, .handle_event = NULL },
+    [HSM_STATE_IDLE] = { .parent = HSM_STATE_ROOT, .enter = enter_idle, .tick = tick_idle, .exit = exit_idle, .handle_event = handle_event_idle },
 
-    {HSM_STATE_RUN, .parent = HSM_STATE_ROOT, .enter = enter_run, .tick = tick_run, .exit = exit_run, .handle_event = handle_event_run},
-    {HSM_STATE_RUN_STARTUP, .parent = HSM_STATE_RUN, .enter = enter_run_startup, .tick = tick_run_startup, .exit = exit_run_startup, .handle_event = handle_event_run_startup},
-    {HSM_STATE_RUN_PROFILE, .parent = HSM_STATE_RUN, .enter = enter_run_profile, .tick = tick_run_profile, .exit = exit_run_profile, .handle_event = handle_event_run_profile},
+    [HSM_STATE_RUN] = { .parent = HSM_STATE_ROOT, .enter = enter_run, .tick = tick_run, .exit = exit_run, .handle_event = handle_event_run },
+    [HSM_STATE_RUN_STARTUP] = { .parent = HSM_STATE_RUN, .enter = enter_run_startup, .tick = tick_run_startup, .exit = exit_run_startup, .handle_event = handle_event_run_startup },
+    [HSM_STATE_RUN_PROFILE] = { .parent = HSM_STATE_RUN, .enter = enter_run_profile, .tick = tick_run_profile, .exit = exit_run_profile, .handle_event = handle_event_run_profile },
 
-    {HSM_STATE_STOP, .parent = HSM_STATE_ROOT, .enter = enter_stop, .tick = tick_stop, .exit = exit_stop, .handle_event = handle_event_stop},
-    {HSM_STATE_ERROR, .parent = HSM_STATE_ROOT, .enter = enter_error, .tick = tick_error, .exit = exit_error, .handle_event = handle_event_error},
+    [HSM_STATE_STOP] = { .parent = HSM_STATE_ROOT, .enter = enter_stop, .tick = tick_stop, .exit = exit_stop, .handle_event = handle_event_stop },
+    [HSM_STATE_ERROR] = { .parent = HSM_STATE_ROOT, .enter = enter_error, .tick = tick_error, .exit = exit_error, .handle_event = handle_event_error },
 
-    {HSM_STATE_CALIBRATION, .parent = HSM_STATE_ROOT, .enter = enter_calibration, .tick = tick_calibration, .exit = exit_calibration, .handle_event = handle_event_calibration},
+    [HSM_STATE_CALIBRATION] = { .parent = HSM_STATE_ROOT, .enter = enter_calibration, .tick = tick_calibration, .exit = exit_calibration, .handle_event = handle_event_calibration },
 };
 
 // root state handlers
@@ -320,44 +319,48 @@ static enum event_handle_result handle_event_calibration(const enum hsm_event ev
 static void service_event_queue(void) {
   enum hsm_state current_state = ctx.current_state;
   enum hsm_event event = HSM_EVENT_NONE;
-  xQueueReceive(ctx.event_queue, &event, 0);
-  if (event == HSM_EVENT_NONE) {
+  BaseType_t status = xQueueReceive(ctx.event_queue, &event, 0);
+  if (status == pdFALSE) {
     return;
   }
   while (current_state != HSM_STATE_ROOT) {
-    if (state_table[current_state].handle_event != NULL) {
-      enum event_handle_result result = state_table[ctx.current_state].handle_event(event);
+    const struct state_table_entry *state = &state_table[current_state];
+    if (state->handle_event != NULL) {
+      enum event_handle_result result = state->handle_event(event);
       if (result == EVENT_HANDLED) {
         break;
       }
     }
-    current_state = state_table[current_state].parent;
+    current_state = state->parent;
   }
 }
 
 static void exit_state(void) {
-  enum hsm_state current_state = ctx.current_state;
-  while (current_state != HSM_STATE_ROOT) {
-    if (state_table[current_state].exit != NULL) {
-      state_table[current_state].exit();
+  enum hsm_state state_iterator = ctx.current_state;
+  while (state_iterator != HSM_STATE_ROOT) {
+    const struct state_table_entry *state = &state_table[state_iterator];
+    if (state->exit != NULL) {
+      state->exit();
+      ctx.exit_timestamp = HAL_GetTick();
     }
-    current_state = state_table[current_state].parent;
+    state_iterator = state->parent;
   }
 }
 
 static void enter_state(void) {
   ctx.current_state = ctx.next_state;
-  enum hsm_state current_state = ctx.current_state;
-  while (current_state != HSM_STATE_ROOT) {
-    if (state_table[current_state].enter != NULL) {
+  enum hsm_state state_iterator = ctx.current_state;
+  while (state_iterator != HSM_STATE_ROOT) {
+    const struct state_table_entry *state = &state_table[state_iterator];
+    if (state->enter != NULL) {
       ctx.enter_timestamp = HAL_GetTick();
-      state_table[current_state].enter();
+      state->enter();
     }
-    current_state = state_table[current_state].parent;
+    state_iterator = state->parent;
   }
 }
 
-static void hsm_main(void* argument) {
+static void hsm_main(void* __attribute__((unused)) argument) {
   info("Starting HSM\n");
   while (1) {
     service_event_queue();
@@ -441,6 +444,18 @@ struct hsm_context *test_hsm_get_context(void) {
 
 TaskFunction_t test_hsm_get_main(void) {
   return (TaskFunction_t)hsm_main;
+}
+
+void test_hsm_service_event_queue(void) {
+  service_event_queue();
+}
+
+void test_hsm_enter_state(void) {
+  enter_state();
+}
+
+void test_hsm_exit_state(void) {
+  exit_state();
 }
 
 #endif // UNITTEST
