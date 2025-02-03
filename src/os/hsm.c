@@ -24,14 +24,14 @@ enum event_handle_result {
   EVENT_HANDLED = 1,
 };
 
-struct state_table {
+struct state_table_entry {
   enum hsm_state state;
   enum hsm_state parent;
   void (*enter)(void);
   void (*tick)(void);
   void (*exit)(void);
   enum event_handle_result (*handle_event)(const enum hsm_event event);
-} _hsm_state_table;
+};
 
 /* raptor state handlers */
 static enum event_handle_result handle_event_root(const enum hsm_event event);
@@ -89,7 +89,7 @@ static enum event_handle_result handle_event_calibration(const enum hsm_event ev
 // static hsm context
 static struct hsm_context ctx = {0};
 
-static const struct state_table state_table[HSM_STATE_COUNT] = {
+static const struct state_table_entry state_table[HSM_STATE_COUNT] = {
     {HSM_STATE_ROOT, .parent = HSM_STATE_ROOT, .enter = NULL, .tick = NULL, .exit = NULL, .handle_event = handle_event_root},
     {HSM_STATE_RESET, .parent = HSM_STATE_ROOT, .enter = enter_reset, .tick = tick_reset, .exit = exit_reset, .handle_event = NULL},
     {HSM_STATE_INIT, .parent = HSM_STATE_ROOT, .enter = NULL, .tick = tick_init, .exit = NULL, .handle_event = NULL},
@@ -367,10 +367,11 @@ static void hsm_main(void* argument) {
     }
     enum hsm_state current_state = ctx.current_state;
     while (current_state != HSM_STATE_ROOT) {
-      if (state_table[current_state].tick != NULL) {
-        state_table[current_state].tick();
+      const struct state_table_entry *state = &state_table[current_state];
+      if (state->tick != NULL) {
+        state->tick();
       }
-      current_state = state_table[current_state].parent;
+      current_state = state->parent;
     }
     vTaskDelay(ctx.hsm_tick_rate_ms);
   }
@@ -378,7 +379,7 @@ static void hsm_main(void* argument) {
 
 enum hsm_status hsm_post_event_isr(const enum hsm_event *event, bool* req_ctx_switch) {
   enum hsm_status status = HSM_STATUS_EVE_QUEUE_FULL;
-  BaseType_t ctx_switch;
+  BaseType_t ctx_switch = pdFALSE;
   uassert(event != NULL);
   uassert(req_ctx_switch != NULL);
   *req_ctx_switch = false;
