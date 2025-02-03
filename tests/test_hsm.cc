@@ -45,6 +45,9 @@ protected:
     mock_dtc = &m_dtc;
     mock_esc_engine = &m_esc_engine;
     mock_power_manager = &m_power_manager;
+    struct hsm_context *ctx = test_hsm_get_context();
+    ctx->current_state = HSM_STATE_RESET;
+    ctx->next_state = HSM_STATE_RESET;
   }
 
   void TearDown() override {
@@ -152,7 +155,71 @@ TEST_F(HsmTestFixture, HsmEventPostISRFail) {
   EXPECT_FALSE(req_ctx_switch);
 }
 
-TEST(HsmTest, HSMGetState) {
+TEST_F(HsmTestFixture, HsmServiceEventNonePending) {
+  struct hsm_context *ctx = test_hsm_get_context();
+  const enum hsm_state current_state = HSM_STATE_RUN_STARTUP;
+  ctx->current_state = current_state;
+  ctx->next_state = current_state;
+
+  EXPECT_CALL(*mock_freertos, xQueueReceive(ctx->event_queue, ::testing::_, 0))
+    .Times(1)
+    .WillOnce(::testing::Return(pdFALSE));
+
+  test_hsm_service_event_queue();
+
+  EXPECT_EQ(ctx->next_state, current_state);
+}
+
+ACTION_P(SetArg1ToHsmEvent, param) { *static_cast<enum hsm_event*>(arg1) = param; }
+
+TEST_F(HsmTestFixture, HsmServiceEventProcessPending) {
+  // simulate inbound abort event from queue during startup sequence
+  struct hsm_context *ctx = test_hsm_get_context();
+  ctx->current_state = HSM_STATE_RUN_STARTUP;
+  EXPECT_CALL(*mock_freertos, xQueueReceive(ctx->event_queue, ::testing::_, 0))
+    .Times(1)
+    .WillOnce(::testing::DoAll(
+      SetArg1ToHsmEvent(HSM_EVENT_ABORT),
+      ::testing::Return(pdTRUE)
+    ));
+
+  // run startup should defer to the parent run state to handle the abort event
+  test_hsm_service_event_queue();
+
+  EXPECT_EQ(ctx->next_state, HSM_STATE_STOP);
+}
+
+TEST_F(HsmTestFixture, HsmEnterState) {
+  struct hsm_context *ctx = test_hsm_get_context();
+  ctx->current_state = HSM_STATE_INIT;
+  ctx->next_state = HSM_STATE_IDLE;
+  const uint32_t enter_ts = 10000;
+  EXPECT_CALL(*mock_stm32_hal, HAL_GetTick())
+    .Times(1)
+    .WillOnce(::testing::Return(enter_ts));
+  EXPECT_CALL(*mock_led, led_enable(&ctx->led_ctx[HSM_LED_ID_IDLE])).Times(1);
+
+  test_hsm_enter_state();
+
+  EXPECT_EQ(ctx->enter_timestamp, enter_ts);
+  EXPECT_EQ(ctx->current_state, ctx->next_state);
+}
+
+TEST_F(HsmTestFixture, HsmExitState) {
+  struct hsm_context *ctx = test_hsm_get_context();
+  ctx->current_state = HSM_STATE_IDLE;
+  const uint32_t exit_ts = 10000;
+  EXPECT_CALL(*mock_stm32_hal, HAL_GetTick())
+    .Times(1)
+    .WillOnce(::testing::Return(exit_ts));
+  EXPECT_CALL(*mock_led, led_disable(&ctx->led_ctx[HSM_LED_ID_IDLE])).Times(1);
+
+  test_hsm_exit_state();
+
+  EXPECT_EQ(ctx->exit_timestamp, exit_ts);
+}
+
+TEST(HsmTest, HsmGetState) {
   struct hsm_context *ctx = test_hsm_get_context();
   ctx->current_state = HSM_STATE_RUN;
   EXPECT_EQ(ctx->current_state, hsm_get_current_state()) << "fetched hsm state does not match current state";
