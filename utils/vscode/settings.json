@@ -1,0 +1,9 @@
+{
+    "cortex-debug.variableUseNaturalFormat": false,
+    "coverage-gutters.showLineCoverage": true,
+    "coverage-gutters.showGutterCoverage": true,
+    "coverage-gutters.remotePathResolve": [
+      "../src",
+      "./src"
+    ]
+}
