@@ -2,23 +2,27 @@
 #ifndef __SYSTEM_H__
 #define __SYSTEM_H__
 
-typedef int system_status_t;
+#define SYSTEM_MAX_TASKS 10
+#define SYSTEM_MAX_TASK_NAME_LEN 10
 
-#define SYSTEM_OK (system_status_t)0
-#define SYSTEM_MOD_FAIL (system_status_t)1
-
-/**
- * @brief Hardware spinlock with red led notification
- * @note uses `HAL_Delay` directly to decouple from successful RTOS instantiation
- *
- */
-void system_spinlock(void);
+#include <stdint.h>
 
 /**
- * @brief System operating system health indicator (HID)
- *
+ * @brief Task initialization parameters
  */
-void system_health_indicator(void);
+struct system_task_context {
+  const char name[SYSTEM_MAX_TASK_NAME_LEN];
+  const uint16_t priority;
+  const uint16_t stack_size;
+  const void *init_ctx;
+};
+
+typedef void (*system_task_start)(const struct system_task_context*);
+
+struct system_task {
+  struct system_task_context task_context;
+  const system_task_start start;
+};
 
 /**
  * @brief Operating system startup entry

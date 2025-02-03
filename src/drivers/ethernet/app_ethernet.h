@@ -15,8 +15,9 @@
 
 /**
  * @brief Initialize LWIP TCPIP network stack
- * @note CS: LWIP `tcpip_init` implements `LWIP_ASSERT` which implements its own spinlock
+ * 
+ * @param[in] task_ctx task context
  */
-system_status_t app_ethernet_init(void);
+void app_ethernet_init(const struct system_task_context *task_ctx);
 
 #endif /* __APP_ETHERNET_H */

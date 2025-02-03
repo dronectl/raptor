@@ -37,14 +37,11 @@ add_library(
   common/cbuffer.c
   common/logger.c
   common/sysreg.c
-  os/health.c
+  common/dtc.c
+  os/power_manager.c
+  os/esc_engine.c
+  os/hsm.c
   os/system.c
-  os/scpi/err.c
-  os/scpi/utf8.c
-  os/scpi/lexer.c
-  os/scpi/parser.c
-  os/scpi/commands.c
-  os/scpi/server.c
 )
 
 target_include_directories(${LIB_RAPTOR} PUBLIC drivers os common)

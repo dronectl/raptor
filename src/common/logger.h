@@ -12,12 +12,14 @@
 #define __LOGGER_H__
 
 #include "system.h"
+#include <FreeRTOS.h>
+#include <queue.h>
+#include <task.h>
 #include <stdint.h>
 
 #define LOGGER_DEFAULT_PORT 3000
 #define LOGGER_DEFAULT_LEVEL (enum logger_level)1
 
-// logging levels
 enum logger_level {
   LOGGER_TRACE,
   LOGGER_INFO,
@@ -27,10 +29,22 @@ enum logger_level {
   LOGGER_DISABLE
 };
 
+struct logger_init_context {
+  const enum logger_level log_level;
+  const uint16_t port;
+};
+
+struct logger_context {
+  const struct logger_init_context *init;
+  enum logger_level log_level;
+  TaskHandle_t task_handle;
+  QueueHandle_t log_queue;
+};
+
 enum logger_level logger_get_level(void);
 void logger_set_level(const enum logger_level level);
 void logger_out(const enum logger_level level, const char *fmt, ...);
-system_status_t logger_init(const enum logger_level level);
+void logger_start(const struct system_task_context *task_ctx);
 
 #ifndef critical
 #define critical(...) __CRITICAL(__VA_ARGS__, "")

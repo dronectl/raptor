@@ -174,9 +174,9 @@ static void netif_config(void) {
   DHCPHandle = osThreadNew(dhcp_task, &gnetif, &attr);
 #endif
 }
-system_status_t app_ethernet_init(void) {
+
+void app_ethernet_init(const struct system_task_context *task_ctx) {
   // invoke netconfig_init once tcpip init is complete
   tcpip_init(NULL, NULL);
   netif_config();
-  return SYSTEM_OK;
 }

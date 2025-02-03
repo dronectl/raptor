@@ -1,11 +1,13 @@
 
+#include "common.h"
 #include "main.h"
 #include "system.h"
 #include "ethernet/app_ethernet.h"
-#include "health.h"
+#include "hsm.h"
+#include "led.h"
 #include "logger.h"
-#include "scpi/server.h"
 #include "uassert.h"
+
 #include <FreeRTOS.h>
 #include <task.h>
 
@@ -27,25 +29,65 @@ extern UART_HandleTypeDef huart7;
 extern UART_HandleTypeDef huart9;
 extern UART_HandleTypeDef huart3;
 
-static struct health_ctx health_context = {
-    .bme280 = {
-        .i2c = &hi2c2,
+static const struct hsm_init_context hsm_init_ctx = {
+  .led_init_ctx = {
+    [HSM_LED_ID_ERROR] = { .port = LED_RED_GPIO_Port, .pin = LED_RED_Pin, .active_high = true },
+    [HSM_LED_ID_IDLE] = { .port = LED_GREEN_GPIO_Port, .pin = LED_GREEN_Pin, .active_high = true },
+    [HSM_LED_ID_RUN] = { .port = LED_YELLOW_GPIO_Port, .pin = LED_YELLOW_Pin, .active_high = true }
+  },
+  .num_led_init_ctx = 3
+};
+
+static const struct logger_init_context logger_init_ctx = {
+  .log_level = LOGGER_DEFAULT_LEVEL,
+  .port = LOGGER_DEFAULT_PORT,
+};
+
+
+// order defines spawn order
+static struct system_task system_task_registry[] = {
+  // TODO: homogenize app ethernet initialization
+  {
+    .task_context = {
+      .name = "ethif",
+      .priority = tskIDLE_PRIORITY,
+      .stack_size = configMINIMAL_STACK_SIZE,
+      .init_ctx = NULL,
     },
-    .tick_rate_ms = HEALTH_TASK_DEFAULT_TICK_RATE_MS,
-    .leds = {
-        [HEALTH_STATUS_LED_OK] = {.active_high = true, .port = LED_GREEN_GPIO_Port, .pin = LED_GREEN_Pin},
-        [HEALTH_STATUS_LED_ERR] = {.active_high = true, .port = LED_RED_GPIO_Port, .pin = LED_RED_Pin},
-        [HEALTH_STATUS_LED_EVENT] = {.active_high = true, .port = LED_YELLOW_GPIO_Port, .pin = LED_YELLOW_Pin},
-    }};
+    .start = app_ethernet_init
+  },
+  {
+    .task_context = {
+      .name = "logger",
+      .priority = tskIDLE_PRIORITY + 1,
+      .stack_size = configMINIMAL_STACK_SIZE,
+      .init_ctx = &logger_init_ctx,
+    },
+    .start = logger_start 
+  },
+  {
+    .task_context = {
+      .name = "hsm",
+      .priority = tskIDLE_PRIORITY + 20,
+      .stack_size = configMINIMAL_STACK_SIZE,
+      .init_ctx = &hsm_init_ctx,
+    },
+    .start = hsm_start
+  }
+};
 
 static TaskHandle_t system_boostrap;
 
 static void system_bootstrap_task(void __attribute__((unused)) * argument) {
-  system_status_t status = SYSTEM_OK;
-  status = app_ethernet_init();
-  uassert(status == SYSTEM_OK);
-  logger_init(LOGGER_TRACE);
-  health_init(&health_context);
+  uint8_t task_count = 0;
+  struct system_task *task = system_task_registry;
+  for (; task < system_task_registry + SYSTEM_MAX_TASKS; task++) {
+    if (task->start != NULL) {
+      task->start(&task->task_context);
+      task_count++;
+    }
+  }
+  info("system boostrap spawned %u tasks", task_count);
   vTaskDelete(system_boostrap);
 }
 
@@ -53,7 +95,5 @@ void system_boot(void) {
   BaseType_t ret = xTaskCreate(system_bootstrap_task, "bootstrap", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 20, &system_boostrap);
   uassert(ret == pdPASS);
   vTaskStartScheduler();
-  // clang-format off
-  uassert(0); // should never reach here
-  // clang-format on
+  uassert(0);
 }

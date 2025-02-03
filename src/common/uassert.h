@@ -24,8 +24,13 @@ extern struct assert_trace g_assert_info;
 
 extern void assert_handler(const uint32_t line, const uint32_t *pc, const uint32_t *lr);
 
+#ifdef UNITTEST
+#define GET_LR() 0
+#define GET_PC(_a) 0
+#else
 #define GET_LR() __builtin_return_address(0)
 #define GET_PC(_a) __asm volatile("mov %0, pc" : "=r"(_a))
+#endif // UNITTEST
 
 #define __uassert_record(__LINE__)    \
   do {                                \
