@@ -77,6 +77,7 @@ static struct system_task system_task_registry[] = {
   }
 };
 
+
 static TaskHandle_t system_boostrap;
 
 static void system_bootstrap_task(void __attribute__((unused)) * argument) {

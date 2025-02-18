@@ -1,10 +1,10 @@
 /**
- * @file grpc.c
- * @brief grpc server
+ * @file uhci.c
+ * @brief Micro Host Controller Interface Server
  * @version 0.1
- * @date 2024-06
+ * @date 2025-02
  *
- * @copyright Copyright © 2024 dronectl
+ * @copyright Copyright © 2025 dronectl
  *
  */
 
@@ -12,7 +12,7 @@
 #include "pb_encode.h"
 #include "uassert.h"
 #include "logger.h"
-#include "grpc.h"
+#include "uhci.h"
 #include "raptor/v1/commands.pb.h"
 
 #include <lwip/inet.h>
@@ -25,9 +25,7 @@ const char *hardware_version_str = "0.1.0";
 
 #define STACK_SIZE 4000
 
-__attribute__((section(".ram_d3"))) static StackType_t grpc_srv_task_stk[STACK_SIZE];
-__attribute__((section(".ram_d3"))) static StaticTask_t grpc_srv_task_buffer;
-static TaskHandle_t grpc_srv_task_handle;
+struct uhci_stream_session_handle stream_handle = {0};
 
 static bool decode_command_request(uint8_t *data, const size_t len, raptor_v1_CommandRequest *request) {
   pb_istream_t stream = pb_istream_from_buffer(data, len);
@@ -90,7 +88,20 @@ static void process_request(const int client_fd) {
   }
 }
 
-static void grpc_srv_task(__attribute__((unused)) void *argument) {
+static void initialize_stream(const char *ip_address, const size_t ip_addr_len, const uint16_t port, const uint16_t stream_key) {
+  // ensure previous session is cleared
+  memset(&stream_handle, 0, sizeof(stream_handle));
+  stream_handle.client_fd = -1;
+  stream_handle.port = port;
+  stream_handle.stream_key = stream_key;
+  stream_handle.sequence_number = 0;
+}
+
+static void shutdown_stream(void) {
+  memset(&stream_handle, 0, sizeof(stream_handle));
+}
+
+static void uhci_srv_task(void) {
   int sock, size, client_fd;
   struct sockaddr_in address, remotehost;
   if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
@@ -117,11 +128,17 @@ static void grpc_srv_task(__attribute__((unused)) void *argument) {
     close(client_fd);
   }
 error:
-  critical("grpc server socket init failed with %i\n", errno);
+  critical("uhci server socket init failed with %i\n", errno);
   vTaskDelete(NULL);
 }
 
-void grpc_init(void) {
-  grpc_srv_task_handle = xTaskCreateStatic(grpc_srv_task, "grpc", STACK_SIZE, NULL, tskIDLE_PRIORITY + 10, grpc_srv_task_stk, &grpc_srv_task_buffer);
-  uassert(grpc_srv_task_handle != NULL);
+enum uhci_status_code uhci_set_stream_control(const enum uhci_stream_control control) {
+}
+
+void uhci_start(const struct system_task_context *task_ctx) {
+  // header guards
+  uassert(task_ctx != NULL);
+  // start task
+  BaseType_t ret = xTaskCreate(uhci_srv_task, task_ctx->name, task_ctx->stack_size, NULL, task_ctx->priority, &ctx.task_handle);
+  uassert(ret == pdPASS);
 }

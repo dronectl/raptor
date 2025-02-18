@@ -8,6 +8,7 @@
 
 #include "hsm.h"
 #include "logger.h"
+#include "uhci.h"
 #include "esc_engine.h"
 #include "uassert.h"
 #include "power_manager.h"
@@ -17,6 +18,7 @@
 #include <task.h>
 
 #define IDLE_LED_TOGGLE_RATE_MS 1000
+#define ERROR_LED_TOGGLE_RATE_MS 500
 #define RUN_LED_TOGGLE_RATE_MS 500
 
 enum event_handle_result {
@@ -34,6 +36,8 @@ struct state_table_entry {
 
 /* raptor state handlers */
 static enum event_handle_result handle_event_root(const enum hsm_event event);
+static enum event_handle_result handle_event_busy(const enum hsm_event event);
+static enum event_handle_result handle_event_standby(const enum hsm_event event);
 
 // reset state callbacks
 static void enter_reset(void);
@@ -90,18 +94,21 @@ static struct hsm_context ctx = {0};
 
 static const struct state_table_entry state_table[HSM_STATE_COUNT] = {
     [HSM_STATE_ROOT] = { .parent = HSM_STATE_ROOT, .enter = NULL, .tick = NULL, .exit = NULL, .handle_event = handle_event_root },
-    [HSM_STATE_RESET] = { .parent = HSM_STATE_ROOT, .enter = enter_reset, .tick = tick_reset, .exit = exit_reset, .handle_event = NULL },
-    [HSM_STATE_INIT] = { .parent = HSM_STATE_ROOT, .enter = NULL, .tick = tick_init, .exit = NULL, .handle_event = NULL },
-    [HSM_STATE_IDLE] = { .parent = HSM_STATE_ROOT, .enter = enter_idle, .tick = tick_idle, .exit = exit_idle, .handle_event = handle_event_idle },
+    [HSM_STATE_STANDBY] = { .parent = HSM_STATE_ROOT, .enter = NULL, .tick = NULL, .exit = NULL, .handle_event = handle_event_standby },
+    [HSM_STATE_BUSY] = { .parent = HSM_STATE_ROOT, .enter = NULL, .tick = NULL, .exit = NULL, .handle_event = handle_event_busy },
 
-    [HSM_STATE_RUN] = { .parent = HSM_STATE_ROOT, .enter = enter_run, .tick = tick_run, .exit = exit_run, .handle_event = handle_event_run },
+    [HSM_STATE_RESET] = { .parent = HSM_STATE_BUSY, .enter = enter_reset, .tick = tick_reset, .exit = exit_reset, .handle_event = NULL },
+    [HSM_STATE_INIT] = { .parent = HSM_STATE_BUSY, .enter = NULL, .tick = tick_init, .exit = NULL, .handle_event = NULL },
+    [HSM_STATE_IDLE] = { .parent = HSM_STATE_STANDBY, .enter = enter_idle, .tick = tick_idle, .exit = exit_idle, .handle_event = handle_event_idle },
+
+    [HSM_STATE_RUN] = { .parent = HSM_STATE_STANDBY, .enter = enter_run, .tick = tick_run, .exit = exit_run, .handle_event = handle_event_run },
     [HSM_STATE_RUN_STARTUP] = { .parent = HSM_STATE_RUN, .enter = enter_run_startup, .tick = tick_run_startup, .exit = exit_run_startup, .handle_event = handle_event_run_startup },
     [HSM_STATE_RUN_PROFILE] = { .parent = HSM_STATE_RUN, .enter = enter_run_profile, .tick = tick_run_profile, .exit = exit_run_profile, .handle_event = handle_event_run_profile },
 
-    [HSM_STATE_STOP] = { .parent = HSM_STATE_ROOT, .enter = enter_stop, .tick = tick_stop, .exit = exit_stop, .handle_event = handle_event_stop },
-    [HSM_STATE_ERROR] = { .parent = HSM_STATE_ROOT, .enter = enter_error, .tick = tick_error, .exit = exit_error, .handle_event = handle_event_error },
+    [HSM_STATE_STOP] = { .parent = HSM_STATE_BUSY, .enter = enter_stop, .tick = tick_stop, .exit = exit_stop, .handle_event = handle_event_stop },
+    [HSM_STATE_ERROR] = { .parent = HSM_STATE_STANDBY, .enter = enter_error, .tick = tick_error, .exit = exit_error, .handle_event = handle_event_error },
 
-    [HSM_STATE_CALIBRATION] = { .parent = HSM_STATE_ROOT, .enter = enter_calibration, .tick = tick_calibration, .exit = exit_calibration, .handle_event = handle_event_calibration },
+    [HSM_STATE_CALIBRATION] = { .parent = HSM_STATE_STANDBY, .enter = enter_calibration, .tick = tick_calibration, .exit = exit_calibration, .handle_event = handle_event_calibration },
 };
 
 // root state handlers
@@ -115,6 +122,36 @@ static enum event_handle_result handle_event_root(const enum hsm_event event) {
       result = EVENT_HANDLED;
       break;
   }
+  return result;
+}
+
+// standby state handlers
+
+static enum event_handle_result handle_event_standby(const enum hsm_event event) {
+  enum event_handle_result result = EVENT_UNHANDLED;
+  switch (event) {
+    case HSM_EVENT_START_STREAM:
+      uhci_set_stream_control(UHCI_STREAM_START);
+      result = EVENT_HANDLED;
+      break;
+    case HSM_EVENT_STOP_STREAM:
+      uhci_set_stream_control(UHCI_STREAM_STOP);
+      result = EVENT_HANDLED;
+      break;
+    case HSM_EVENT_WAIT_STREAM:
+      uhci_set_stream_control(UHCI_STREAM_STOP);
+      result = EVENT_HANDLED;
+      break;
+    default:
+      break;
+  }
+  return result;
+}
+
+// busy state handlers
+
+static enum event_handle_result handle_event_busy(const enum hsm_event event) {
+  enum event_handle_result result = EVENT_UNHANDLED;
   return result;
 }
 
@@ -272,7 +309,7 @@ static void enter_error(void) {
 }
 
 static void tick_error(void) {
-  led_toggle(&ctx.led_ctx[HSM_LED_ID_ERROR]);
+  led_periodic_toggle(&ctx.led_ctx[HSM_LED_ID_ERROR], ERROR_LED_TOGGLE_RATE_MS);
 }
 
 static void exit_error(void) {

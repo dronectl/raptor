@@ -46,6 +46,9 @@ enum hsm_event {
   HSM_EVENT_SOFT_RESET,
   HSM_EVENT_HARD_RESET,
   HSM_EVENT_RUN,
+  HSM_EVENT_START_STREAM,
+  HSM_EVENT_STOP_STREAM,
+  HSM_EVENT_WAIT_STREAM,
   HSM_EVENT_STOP,
   HSM_EVENT_ABORT,
   HSM_EVENT_CLEAR_ERROR,
@@ -57,15 +60,20 @@ enum hsm_event {
  * @brief HSM states
  */
 enum hsm_state {
-  // root states
+  // root state - do not use directly
   HSM_STATE_ROOT,
+  // system is operational and can proccess requests
+  HSM_STATE_STANDBY,
+  // system is in a transition state or cannot process requests
+  HSM_STATE_BUSY,
+
+  HSM_STATE_ERROR,
   HSM_STATE_RESET,
   HSM_STATE_INIT,
   HSM_STATE_IDLE,
   HSM_STATE_RUN,
   HSM_STATE_START,
   HSM_STATE_STOP,
-  HSM_STATE_ERROR,
   HSM_STATE_CALIBRATION,
 
   // run substates

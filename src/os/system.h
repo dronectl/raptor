@@ -2,7 +2,7 @@
 #ifndef __SYSTEM_H__
 #define __SYSTEM_H__
 
-#define SYSTEM_MAX_TASKS 10
+#define SYSTEM_MAX_TASKS 3
 #define SYSTEM_MAX_TASK_NAME_LEN 10
 
 #include <stdint.h>
