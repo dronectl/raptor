@@ -1,4 +1,5 @@
 
+#include "common.h"
 #include "main.h"
 #include "system.h"
 #include "ethernet/app_ethernet.h"
@@ -10,7 +11,6 @@
 
 #include <FreeRTOS.h>
 #include <task.h>
-#include <stdbool.h>
 
 extern ADC_HandleTypeDef hadc1;
 extern ADC_HandleTypeDef hadc2;
@@ -30,57 +30,65 @@ extern UART_HandleTypeDef huart7;
 extern UART_HandleTypeDef huart9;
 extern UART_HandleTypeDef huart3;
 
-// Hardware driver module resources
-static const struct led_init_ctx led_error_init = {
-    .port = LED_RED_GPIO_Port,
-    .pin = LED_RED_Pin,
-    .active_high = true,
+static const struct hsm_init_context hsm_init_ctx = {
+  .led_init_ctx = {
+    [HSM_LED_ID_ERROR] = { .port = LED_RED_GPIO_Port, .pin = LED_RED_Pin, .active_high = true },
+    [HSM_LED_ID_IDLE] = { .port = LED_GREEN_GPIO_Port, .pin = LED_GREEN_Pin, .active_high = true },
+    [HSM_LED_ID_RUN] = { .port = LED_YELLOW_GPIO_Port, .pin = LED_YELLOW_Pin, .active_high = true }
+  },
+  .num_led_init_ctx = 3
 };
 
-static const struct led_init_ctx led_idle_init = {
-    .port = LED_GREEN_GPIO_Port,
-    .pin = LED_GREEN_Pin,
-    .active_high = true,
+static const struct logger_init_context logger_init_ctx = {
+  .log_level = LOGGER_DEFAULT_LEVEL,
+  .port = LOGGER_DEFAULT_PORT,
 };
 
-static const struct led_init_ctx led_run_init = {
-    .port = LED_YELLOW_GPIO_Port,
-    .pin = LED_YELLOW_Pin,
-    .active_high = true,
-};
 
-static struct led_ctx led_error_ctx = {
-    .init_ctx = &led_error_init,
-    .last_toggle_ms = 0,
-};
-
-static struct led_ctx led_run_ctx = {
-    .init_ctx = &led_run_init,
-    .last_toggle_ms = 0,
-};
-
-static struct led_ctx led_idle_ctx = {
-    .init_ctx = &led_idle_init,
-    .last_toggle_ms = 0,
-};
-
-// Module contexts
-
-const struct hsm_init_params hsm_init_params = {
-    .led_ctxs = {
-        [HSM_LED_ID_ERROR] = &led_error_ctx,
-        [HSM_LED_ID_IDLE] = &led_idle_ctx,
-        [HSM_LED_ID_RUN] = &led_run_ctx,
+// order defines spawn order
+static struct system_task system_task_registry[] = {
+  // TODO: homogenize app ethernet initialization
+  {
+    .task_context = {
+      .name = "ethif",
+      .priority = tskIDLE_PRIORITY,
+      .stack_size = configMINIMAL_STACK_SIZE,
+      .init_ctx = NULL,
     },
+    .start = app_ethernet_init
+  },
+  {
+    .task_context = {
+      .name = "logger",
+      .priority = tskIDLE_PRIORITY + 1,
+      .stack_size = configMINIMAL_STACK_SIZE,
+      .init_ctx = &logger_init_ctx,
+    },
+    .start = logger_start 
+  },
+  {
+    .task_context = {
+      .name = "hsm",
+      .priority = tskIDLE_PRIORITY + 20,
+      .stack_size = configMINIMAL_STACK_SIZE,
+      .init_ctx = &hsm_init_ctx,
+    },
+    .start = hsm_start
+  }
 };
 
 static TaskHandle_t system_boostrap;
 
 static void system_bootstrap_task(void __attribute__((unused)) * argument) {
-  app_ethernet_init();
-  logger_init(LOGGER_TRACE);
-  hsm_init(&hsm_init_params);
-  grpc_init();
+  uint8_t task_count = 0;
+  struct system_task *task = system_task_registry;
+  for (; task < system_task_registry + SYSTEM_MAX_TASKS; task++) {
+    if (task->start != NULL) {
+      task->start(&task->task_context);
+      task_count++;
+    }
+  }
+  info("system boostrap spawned %u tasks", task_count);
   vTaskDelete(system_boostrap);
 }
 
@@ -88,7 +96,5 @@ void system_boot(void) {
   BaseType_t ret = xTaskCreate(system_bootstrap_task, "bootstrap", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 20, &system_boostrap);
   uassert(ret == pdPASS);
   vTaskStartScheduler();
-  // clang-format off
-  uassert(0); // should never reach here
-  // clang-format on
+  uassert(0);
 }

@@ -11,9 +11,6 @@ void assert_handler(const uint32_t line, const uint32_t *pc, const uint32_t *lr)
 #ifdef RAPTOR_DEBUG
   // halt CPU core for easier debugging
   __asm("bkpt 5");
-#elif UNITTEST
-  #include <assert.h>
-  assert(0);
 #else
   // spinlock and wait for hardware watchdog to trigger reset
   while (1);
