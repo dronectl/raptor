@@ -8,12 +8,14 @@ nanopb_generate_cpp(
   TARGET lib-protocols
   RELPATH protocols/protobuf
   protocols/protobuf/raptor/v1/battery.proto
-  protocols/protobuf/raptor/v1/bldc.proto
-  protocols/protobuf/raptor/v1/env.proto
-  protocols/protobuf/raptor/v1/metadata.proto
-  protocols/protobuf/raptor/v1/raptor.proto
-  protocols/protobuf/raptor/v1/relay.proto
   protocols/protobuf/raptor/v1/commands.proto
+  protocols/protobuf/raptor/v1/device.proto
+  protocols/protobuf/raptor/v1/env.proto
+  protocols/protobuf/raptor/v1/profile.proto
+  protocols/protobuf/raptor/v1/registers.proto
+  protocols/protobuf/raptor/v1/relay.proto
+  protocols/protobuf/raptor/v1/signals.proto
+  protocols/protobuf/raptor/v1/uhci.proto
 )
 
 # create third party libraries
@@ -39,7 +41,7 @@ add_library(
   common/logger.c
   common/sysreg.c
   common/dtc.c
-  os/grpc.c
+  os/uhci.c
   os/power_manager.c
   os/esc_engine.c
   os/hsm.c
