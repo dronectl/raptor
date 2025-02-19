@@ -44,12 +44,4 @@ struct uhci_context {
  */
 void uhci_start(const struct system_task_context *task_ctx);
 
-/**
- * @brief Set the stream control state
- *
- * @param[in] control Stream control state
- * @return UHCI_STATUS_OK on success
- */
-enum uhci_status_code uhci_set_stream_control(const enum uhci_stream_control control);
-
 #endif // __UHCI_H__

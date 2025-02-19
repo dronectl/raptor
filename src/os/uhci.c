@@ -13,132 +13,248 @@
 #include "uassert.h"
 #include "logger.h"
 #include "uhci.h"
-#include "raptor/v1/commands.pb.h"
+#include "raptor/v1/uhci.pb.h"
 
 #include <lwip/inet.h>
 #include <lwip/sockets.h>
 #include <FreeRTOS.h>
 #include <task.h>
 
-const char *firmware_version_str = "1.0.0";
-const char *hardware_version_str = "0.1.0";
+#define UHCI_MAX_CLIENTS 1
 
-#define STACK_SIZE 4000
+static struct uhci_context ctx = {0};
 
-struct uhci_stream_session_handle stream_handle = {0};
+/**
+ * @brief Decode bytes to UHCI request.
+ *
+ * @param[in] buffer Encoded bytes
+ * @param[in] buffer_len buffer length in bytes
+ * @param[out] request Protobuf request struct
+ * @return true if decode successful, false otherwise
+ */
+static bool decode_uhci_request(const uint8_t *buffer, const size_t buffer_len, raptor_v1_UHCIBaseRequest *request);
 
-static bool decode_command_request(uint8_t *data, const size_t len, raptor_v1_CommandRequest *request) {
-  pb_istream_t stream = pb_istream_from_buffer(data, len);
-  return pb_decode(&stream, raptor_v1_CommandRequest_fields, request);
+/**
+ * @brief Encode bytes to UHCI response.
+ *
+ * @param[out] buffer Buffer to store encoded bytes
+ * @param[in] buffer_len Buffer length in bytes
+ * @param[in] response Protobuf response struct
+ * @param[out] encode_bytes Number of bytes encoded
+ * @return true if encode successful, false otherwise
+ */
+static bool encode_uhci_response(uint8_t *buffer, const size_t buffer_len, const raptor_v1_UHCIBaseResponse *response, size_t *encoded_bytes);
+
+/**
+ * @brief Process User request and build response payload
+ *
+ * @param[in] req User request payload
+ * @param[in,out] resp User response payload
+ */
+static void process_user_request(const raptor_v1_UserRequest *req, raptor_v1_UserResponse *resp);
+
+/**
+ * @brief Process elevated permissions request and build response payload. Perform neccessary authentication.
+ *
+ * @param[in] req Root request payload
+ * @param[in,out] resp Root response payload
+ */
+static void process_root_request(const raptor_v1_RootRequest *req, raptor_v1_RootResponse *resp);
+
+/**
+ * @brief Process UHCI protocol request and build response payload
+ *
+ * @param[in] req UHCI request payload
+ * @param[in,out] resp UHCI response payload
+ */
+static void process_uhci_request(const raptor_v1_UHCIProtocolRequest *req, raptor_v1_UHCIProtocolResponse *resp);
+
+/**
+ * @brief Handle UDP discovery service event.
+ * @todo This function should implement ddos protection rate limit.
+ *
+ * @param[in] udp_socket UDP socket file descriptor
+ */
+static void handle_udp_discovery_service_event(const int udp_socket);
+
+/**
+ * @brief Handle new TCP client session.
+ *
+ * @param[in] tcp_socket TCP socket file descriptor
+ */
+static void handle_tcp_base_request(const int tcp_socket);
+
+static bool decode_uhci_request(const uint8_t *buffer, const size_t buffer_len, raptor_v1_UHCIBaseRequest *request) {
+  uassert(buffer != NULL);
+  uassert(request != NULL);
+  pb_istream_t stream = pb_istream_from_buffer(buffer, buffer_len);
+  return pb_decode(&stream, raptor_v1_UHCIBaseRequest_fields, request);
 }
 
-static bool encode_command_response(uint8_t *buffer, size_t buffer_size, raptor_v1_CommandResponse *response, size_t *encoded_size) {
-  pb_ostream_t stream = pb_ostream_from_buffer(buffer, buffer_size);
-  if (!pb_encode(&stream, raptor_v1_CommandResponse_fields, response)) {
-    return false;
-  }
-  *encoded_size = stream.bytes_written;
-  return true;
+static bool encode_uhci_response(uint8_t *buffer, const size_t buffer_len, const raptor_v1_UHCIBaseResponse *response, size_t *encoded_bytes) {
+  uassert(buffer != NULL);
+  uassert(response != NULL);
+  uassert(encoded_bytes != NULL);
+  pb_ostream_t stream = pb_ostream_from_buffer(buffer, buffer_len);
+  const bool status = pb_encode(&stream, raptor_v1_UHCIBaseRequest_fields, response);
+  *encoded_bytes = stream.bytes_written;
+  return status;
 }
 
-static bool encode_string_callback(pb_ostream_t *stream, const pb_field_iter_t *field, void *const *arg) {
-  const char *str = (const char *)(*arg);
-  if (!pb_encode_tag_for_field(stream, field)) {
-    return false; // Failed to encode tag
-  }
-  return pb_encode_string(stream, (uint8_t *)str, strlen(str));
+static void process_root_request(const raptor_v1_RootRequest *req, raptor_v1_RootResponse *resp)
+{
+  (void)req;
+  (void)resp;
 }
 
-static int process_get_version(const raptor_v1_GetVersionRequest *req, raptor_v1_GetVersionResponse *resp) {
-  resp->firmware_version.funcs.encode = &encode_string_callback;
-  resp->firmware_version.arg = (void *)firmware_version_str;
-  resp->hardware_version.funcs.encode = &encode_string_callback;
-  resp->hardware_version.arg = (void *)hardware_version_str;
-  return raptor_v1_CommandStatus_COMMAND_STATUS_OK;
+static void process_user_request(const raptor_v1_UserRequest *req, raptor_v1_UserResponse *resp)
+{
+  (void)req;
+  (void)resp;
 }
 
-static void process_grpc_command(const raptor_v1_CommandRequest *req, raptor_v1_CommandResponse *resp) {
-  switch (req->which_request_mux) {
-    case raptor_v1_CommandRequest_get_version_tag:
-      // to get version handling
-      resp->status = process_get_version(&req->request_mux.get_version, &resp->response_mux.get_version);
-      break;
-    default:
-      warning("Unknown request mux value.");
-      resp->status = raptor_v1_CommandStatus_COMMAND_STATUS_GEN_ERR;
-      break;
-  }
+static void process_uhci_request(const raptor_v1_UHCIProtocolRequest *req, raptor_v1_UHCIProtocolResponse *resp)
+{
+  (void)req;
+  (void)resp;
 }
 
-static void process_request(const int client_fd) {
-  uint8_t rx_buffer[256];
-  uint8_t tx_buffer[256];
-  raptor_v1_CommandRequest req = {0};
-  raptor_v1_CommandResponse resp = {
-      .status = raptor_v1_CommandStatus_COMMAND_STATUS_UNSPECIFIED};
-  size_t buflen = read(client_fd, rx_buffer, sizeof(rx_buffer));
-  if (decode_command_request(rx_buffer, buflen, &req)) {
-    process_grpc_command(&req, &resp);
-  } else {
-    resp.status = raptor_v1_CommandStatus_COMMAND_STATUS_GEN_ERR;
-  }
-  size_t encoded_bytes;
-  if (encode_command_response(tx_buffer, sizeof(tx_buffer), &resp, &encoded_bytes)) {
-    write(client_fd, tx_buffer, encoded_bytes);
-  }
-}
+static void handle_udp_discovery_service_event(const int udp_socket) {
+  uint8_t buffer[256];
+  size_t encoded_bytes = 0;
+  struct sockaddr_in client_addr;
+  socklen_t client_addr_len = sizeof(client_addr);
+  raptor_v1_UHCIBaseRequest req = raptor_v1_UHCIBaseRequest_init_zero;
+  raptor_v1_UHCIBaseResponse resp = raptor_v1_UHCIBaseResponse_init_zero;
 
-static void initialize_stream(const char *ip_address, const size_t ip_addr_len, const uint16_t port, const uint16_t stream_key) {
-  // ensure previous session is cleared
-  memset(&stream_handle, 0, sizeof(stream_handle));
-  stream_handle.client_fd = -1;
-  stream_handle.port = port;
-  stream_handle.stream_key = stream_key;
-  stream_handle.sequence_number = 0;
-}
+  const ssize_t buflen = recvfrom(udp_socket, buffer, sizeof(buffer), 0, (struct sockaddr *)&client_addr, &client_addr_len);
+  info("Received discovery packet from %s\n", inet_ntoa(client_addr.sin_addr));
 
-static void shutdown_stream(void) {
-  memset(&stream_handle, 0, sizeof(stream_handle));
-}
+  if (buflen <= 0) {
+    error("Failed to receive UDP packet\n");
+    return;
+  }
 
-static void uhci_srv_task(void) {
-  int sock, size, client_fd;
-  struct sockaddr_in address, remotehost;
-  if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-    goto error;
-  }
-  address.sin_family = AF_INET;
-  address.sin_port = htons(50051);
-  address.sin_addr.s_addr = INADDR_ANY;
-  if (bind(sock, (struct sockaddr *)&address, sizeof(address)) < 0) {
-    goto error;
-  }
-  if (listen(sock, 5) < 0) {
-    goto error;
-  }
-  while (1) {
-    client_fd = accept(sock, (struct sockaddr *)&remotehost, (socklen_t *)&size);
-    if (client_fd < 0) {
-      taskYIELD();
-      continue;
+  if (decode_uhci_request(buffer, buflen, &req)) {
+    switch (req.which_request_mux) {
+      case raptor_v1_UHCIBaseRequest_uhci_tag:
+        process_uhci_request(&req.request_mux.uhci, &resp.response_mux.uhci);
+        break;
+      default:
+        resp.status = raptor_v1_UHCIStatus_UHCI_STATUS_NOT_FOUND;
+        break;
     }
-    info("fd (%d) accepting connection\n", client_fd);
-    process_request(client_fd);
-    info("fd (%d) closing session\n", client_fd);
-    close(client_fd);
+  } else {
+    resp.status = raptor_v1_UHCIStatus_UHCI_STATUS_DECODE_ERR;
   }
-error:
-  critical("uhci server socket init failed with %i\n", errno);
+
+  memset(buffer, 0, sizeof(buffer));
+  if (encode_uhci_response(buffer, sizeof(buffer), &resp, &encoded_bytes)) {
+    if (sendto(udp_socket, buffer, encoded_bytes, 0, (struct sockaddr *)&client_addr, client_addr_len) < 0) {
+      error("Failed to send response to client\n");
+    }
+  }
+}
+
+static void handle_tcp_base_request(const int tcp_socket) {
+  uint8_t buffer[256];
+  size_t encoded_bytes = 0;
+  int client_fd = -1;
+  struct sockaddr_in client_addr;
+  socklen_t client_addr_len = sizeof(client_addr);
+  raptor_v1_UHCIBaseRequest req = raptor_v1_UHCIBaseRequest_init_zero;
+  raptor_v1_UHCIBaseResponse resp = raptor_v1_UHCIBaseResponse_init_zero;
+
+  client_fd = accept(tcp_socket, (struct sockaddr *)&client_addr, &client_addr_len);
+  if (client_fd < 0) {
+    error("Failed to accept client connection\n");
+    return;
+  }
+  info("Accepted client connection from %s\n", inet_ntoa(client_addr.sin_addr));
+
+  const ssize_t buflen = read(client_fd, buffer, sizeof(buffer));
+
+  if (decode_uhci_request(buffer, buflen, &req)) {
+    switch (req.which_request_mux) {
+      case raptor_v1_UHCIBaseRequest_uhci_tag:
+        process_uhci_request(&req.request_mux.uhci, &resp.response_mux.uhci);
+        break;
+      case raptor_v1_UHCIBaseRequest_root_tag:
+        process_root_request(&req.request_mux.root, &resp.response_mux.root);
+        break;
+      case raptor_v1_UHCIBaseRequest_user_tag:
+        process_user_request(&req.request_mux.user, &resp.response_mux.user);
+        break;
+      default:
+        resp.status = raptor_v1_UHCIStatus_UHCI_STATUS_NOT_FOUND;
+        break;
+    }
+  } else {
+    resp.status = raptor_v1_UHCIStatus_UHCI_STATUS_DECODE_ERR;
+  }
+
+  memset(buffer, 0, sizeof(buffer));
+  if (encode_uhci_response(buffer, sizeof(buffer), &resp, &encoded_bytes)) {
+    if (write(client_fd, buffer, encoded_bytes) < 0) {
+      // TODO: handle write error
+      error("Failed to write response to client\n");
+    }
+  }
+  close(client_fd);
+}
+
+static void uhci_srv_task(void*  __attribute__((unused)) argument) {
+  fd_set read_fds;
+  int udp_socket, tcp_socket, result;
+  struct sockaddr_in udp_addr, tcp_addr;
+  
+  // initialize and bind udp socket
+  udp_socket = socket(AF_INET, SOCK_DGRAM, 0);
+  memset(&udp_addr, 0, sizeof(udp_addr));
+  udp_addr.sin_family = AF_INET;
+  udp_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+  udp_addr.sin_port = htons(raptor_v1_UHCIPort_UHCI_PORT_DISCOVERY);
+  result = bind(udp_socket, (struct sockaddr *)&udp_addr, sizeof(udp_addr));
+  uassert(result >= 0);
+  info("UHCI discovery service bound to UDP port %d\n", raptor_v1_UHCIPort_UHCI_PORT_DISCOVERY);
+
+  // initialize and bind tcp socket
+  tcp_socket = socket(AF_INET, SOCK_STREAM, 0);
+  memset(&tcp_addr, 0, sizeof(tcp_addr));
+  tcp_addr.sin_family = AF_INET;
+  tcp_addr.sin_port = htons(raptor_v1_UHCIPort_UHCI_PORT_COMMAND);
+  tcp_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+  result = bind(tcp_socket, (struct sockaddr *)&tcp_addr, sizeof(tcp_addr));
+  uassert(result >= 0);
+  info("UHCI command server bound to TCP port %d\n", raptor_v1_UHCIPort_UHCI_PORT_COMMAND);
+
+  // listen on tcp socket
+  result = listen(tcp_socket, UHCI_MAX_CLIENTS);
+  uassert(result >= 0);
+
+  while (1) {
+    // initialize file descriptor set
+    FD_ZERO(&read_fds);
+    FD_SET(udp_socket, &read_fds);
+    FD_SET(tcp_socket, &read_fds);
+    const int max_fd = (udp_socket > tcp_socket) ? udp_socket : tcp_socket;
+
+    // wait for activity on either UDP or TCP socket
+    select(max_fd + 1, &read_fds, NULL, NULL, NULL);
+
+    if (FD_ISSET(udp_socket, &read_fds)) {
+      handle_udp_discovery_service_event(udp_socket);
+    }
+
+    if (FD_ISSET(tcp_socket, &read_fds)) {
+      handle_tcp_base_request(tcp_socket);
+    }
+  }
   vTaskDelete(NULL);
 }
 
-enum uhci_status_code uhci_set_stream_control(const enum uhci_stream_control control) {
-}
-
 void uhci_start(const struct system_task_context *task_ctx) {
-  // header guards
   uassert(task_ctx != NULL);
-  // start task
   BaseType_t ret = xTaskCreate(uhci_srv_task, task_ctx->name, task_ctx->stack_size, NULL, task_ctx->priority, &ctx.task_handle);
   uassert(ret == pdPASS);
 }
