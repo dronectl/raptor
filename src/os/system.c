@@ -1,13 +1,11 @@
 
-#include "common.h"
 #include "main.h"
 #include "system.h"
 #include "ethernet/app_ethernet.h"
 #include "hsm.h"
-#include "led.h"
 #include "logger.h"
 #include "uassert.h"
-#include "grpc.h"
+#include "uhci.h"
 
 #include <FreeRTOS.h>
 #include <task.h>
@@ -74,6 +72,15 @@ static struct system_task system_task_registry[] = {
       .init_ctx = &hsm_init_ctx,
     },
     .start = hsm_start
+  },
+  {
+    .task_context = {
+      .name = "uhci",
+      .priority = tskIDLE_PRIORITY + 10,
+      .stack_size = configMINIMAL_STACK_SIZE,
+      .init_ctx = NULL,
+    },
+    .start = uhci_start
   }
 };
 

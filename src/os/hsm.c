@@ -129,22 +129,6 @@ static enum event_handle_result handle_event_root(const enum hsm_event event) {
 
 static enum event_handle_result handle_event_standby(const enum hsm_event event) {
   enum event_handle_result result = EVENT_UNHANDLED;
-  switch (event) {
-    case HSM_EVENT_START_STREAM:
-      uhci_set_stream_control(UHCI_STREAM_START);
-      result = EVENT_HANDLED;
-      break;
-    case HSM_EVENT_STOP_STREAM:
-      uhci_set_stream_control(UHCI_STREAM_STOP);
-      result = EVENT_HANDLED;
-      break;
-    case HSM_EVENT_WAIT_STREAM:
-      uhci_set_stream_control(UHCI_STREAM_STOP);
-      result = EVENT_HANDLED;
-      break;
-    default:
-      break;
-  }
   return result;
 }
 
