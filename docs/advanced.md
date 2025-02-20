@@ -75,3 +75,5 @@ Now we can run OpenOCD without root permissions.
 
 ## Resources
 https://community.st.com/t5/stm32-mcus/how-to-debug-a-hardfault-on-an-arm-cortex-m-stm32/ta-p/672235
+
+https://wiki.wireshark.org/Protobuf
