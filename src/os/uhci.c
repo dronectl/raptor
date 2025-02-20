@@ -124,7 +124,7 @@ static bool encode_uhci_base_response(uint8_t *buffer, const size_t buffer_len, 
   uassert(response != NULL);
   uassert(encoded_bytes != NULL);
   pb_ostream_t stream = pb_ostream_from_buffer(buffer, buffer_len);
-  const bool status = pb_encode(&stream, RAPTOR_V1_UHCI_BASE_REQUEST_FIELDS, response);
+  const bool status = pb_encode(&stream, RAPTOR_V1_UHCI_BASE_RESPONSE_FIELDS, response);
   *encoded_bytes = stream.bytes_written;
   return status;
 }
@@ -145,7 +145,22 @@ static void process_uhci_request(const struct raptor_v1_uhci_protocol_request *r
       resp->which_response_mux = RAPTOR_V1_UHCI_PROTOCOL_RESPONSE_DISCOVERY_TAG;
       resp->status = RAPTOR_V1_UHCI_PROTOCOL_STATUS_UHCI_PROTOCOL_STATUS_OK;
       resp->response_mux.discovery.has_device = true;
-      memcpy(&resp->response_mux.discovery.device, &device, sizeof(device));
+      resp->response_mux.discovery.device.digital_twin = device.digital_twin;
+      resp->response_mux.discovery.device.uuid = device.uuid;
+
+      // populate hardware version
+      resp->response_mux.discovery.device.has_hardware_version = true;
+      resp->response_mux.discovery.device.hardware_version.patch = device.hardware_version.patch;
+      resp->response_mux.discovery.device.hardware_version.minor = device.hardware_version.minor;
+      resp->response_mux.discovery.device.hardware_version.major = device.hardware_version.major;
+      resp->response_mux.discovery.device.hardware_version.release_candidate = device.hardware_version.release_candidate;
+
+      // populate firmware version
+      resp->response_mux.discovery.device.has_firmware_version = true;
+      resp->response_mux.discovery.device.firmware_version.major = device.firmware_version.major;
+      resp->response_mux.discovery.device.firmware_version.minor = device.firmware_version.minor;
+      resp->response_mux.discovery.device.firmware_version.patch = device.firmware_version.patch;
+      resp->response_mux.discovery.device.firmware_version.release_candidate = device.firmware_version.release_candidate;
       break;
     default:
       resp->status = RAPTOR_V1_UHCI_PROTOCOL_STATUS_UHCI_PROTOCOL_STATUS_NOT_FOUND;
