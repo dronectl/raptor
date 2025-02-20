@@ -4,6 +4,7 @@ add_subdirectory(bsp)
 
 # protocols nanopb
 include(nanopb)
+set(NANOPB_OPTIONS "--verbose --c-style --strip-path")
 nanopb_generate_cpp(
   TARGET lib-protocols
   RELPATH protocols/protobuf
