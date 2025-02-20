@@ -1,7 +1,30 @@
 # Advanced Troubleshooting
 
-If you are here you clearly need help. Hopefully this collection of fixes will address your problem.
+This document describes some more advanced debugging utilities which are useful for more involved problems.
 
+## Protobuf UDP Dissectors in Wireshark
+We can configure wireshark (version 3.2.0 and later) to decode UDP packets by passing it the root protobuf package path.
+
+![alt text](/docs/img/wireshark-protobuf.png)
+
+Open wireshark and navigate to `Preferences > Protocols > ProtoBuf` then select the following options:
+
+![alt text](/docs/img/wireshark-pb-settings.png)
+
+Select `Edit` on the `Protobuf Search Paths` and configure the path to point to the `protobuf` package root in the `protocols` submodule (or in the base repository):
+
+![alt text](/docs/img/wireshark-pb-search-paths.png)
+
+Select `Edit` on the `Protobuf UDP message types` and configure the uhci base message and response types on the UHCI UDP discovery port (for example):
+
+![alt text](/docs/img/wireshark-pb-msg.png)
+
+ > We also need a TCP dissector!
+
+## Cortex M7 Hard Fault Diagnostics
+We can determine the root cause of a hardfault by inspecting the `SCB->CFSR_UFSR_BFSR_MMFSR` register. For example, an address misalignment in LWIP caused an intermittent hard fault in the past. This could be identified by unaligned bit being set.
+
+![alt text](/docs/img/cortex-hardfault-diag.png)
 
 ## Cortex Debugger in WSL
 
@@ -49,3 +72,6 @@ Bus 001 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub
 ```
 
 Now we can run OpenOCD without root permissions.
+
+## Resources
+https://community.st.com/t5/stm32-mcus/how-to-debug-a-hardfault-on-an-arm-cortex-m-stm32/ta-p/672235
