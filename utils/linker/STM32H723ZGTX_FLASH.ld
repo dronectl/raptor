@@ -175,10 +175,10 @@ SECTIONS
     . = ABSOLUTE(0x30000000);
     *(.RxDescripSection) 
     
-    . = ABSOLUTE(0x30000080);
+    . = ABSOLUTE(0x30000100);
     *(.TxDescripSection)
     
-    . = ABSOLUTE(0x30000100);
+    . = ABSOLUTE(0x30000400);
     *(.Rx_PoolSection) 
   } >RAM_D1 AT> FLASH1
 

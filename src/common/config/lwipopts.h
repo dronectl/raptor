@@ -48,10 +48,10 @@
 
 /* MEM_SIZE: the size of the heap memory. If the application will send
 a lot of data that needs to be copied, this should be set high. */
-#define MEM_SIZE (14 * 1024)
+#define MEM_SIZE 32232
 
 /* Relocate the LwIP RAM heap pointer */
-#define LWIP_RAM_HEAP_POINTER (0x30004000)
+#define LWIP_RAM_HEAP_POINTER (0x30000200)
 
 /* MEMP_NUM_TCP_PCB: the number of simultaneously active TCP
    connections. */
@@ -66,7 +66,7 @@ a lot of data that needs to be copied, this should be set high. */
    @ note: used to allocate Tx pbufs only */
 
 /* PBUF_POOL_BUFSIZE: the size of each pbuf in the pbuf pool. */
-#define PBUF_POOL_BUFSIZE 1536
+#define PBUF_POOL_BUFSIZE 1600 
 
 /* LWIP_SUPPORT_CUSTOM_PBUF == 1: to pass directly MAC Rx buffers to the stack
    no copy is needed */
