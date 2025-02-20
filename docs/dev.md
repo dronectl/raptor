@@ -7,7 +7,7 @@ Modified: 2024-01
 2. [Coding Standards](https://www.notion.so/kolapo/Embedded-Coding-Standards-d452c4ca126343859bda92dd85376bc1?pvs=4)
 3. [Firmware Build Configurations](/docs/build.md)
 4. [Test Environments](/docs/testing.md)
-5. [Advanced Troubleshooting](/docs/troubleshooting.md)
+5. [Advanced Debugging](/docs/advanced.md)
 
 > Note that some of our project agnostic documentation exists on our notion page. For access to our notion page please request a link from christian911@sympatico.ca.
 
