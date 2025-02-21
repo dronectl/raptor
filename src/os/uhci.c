@@ -135,8 +135,30 @@ static void process_root_request(const struct raptor_v1_root_request *req, struc
 }
 
 static void process_user_request(const struct raptor_v1_user_request *req, struct raptor_v1_user_response *resp) {
-  (void)req;
-  (void)resp;
+  resp->which_response_mux = req->which_request_mux;
+  switch (req->which_request_mux) {
+    case RAPTOR_V1_USER_REQUEST_DEVICE_METADATA_TAG:
+      resp->response_mux.device_metadata.has_device = true;
+      resp->response_mux.device_metadata.device.digital_twin = device.digital_twin;
+      resp->response_mux.device_metadata.device.uuid = device.uuid;
+
+      // populate hardware version
+      resp->response_mux.device_metadata.device.has_hardware_version = true;
+      resp->response_mux.device_metadata.device.hardware_version.patch = device.hardware_version.patch;
+      resp->response_mux.device_metadata.device.hardware_version.minor = device.hardware_version.minor;
+      resp->response_mux.device_metadata.device.hardware_version.major = device.hardware_version.major;
+      resp->response_mux.device_metadata.device.hardware_version.release_candidate = device.hardware_version.release_candidate;
+
+      // populate firmware version
+      resp->response_mux.device_metadata.device.has_firmware_version = true;
+      resp->response_mux.device_metadata.device.firmware_version.major = device.firmware_version.major;
+      resp->response_mux.device_metadata.device.firmware_version.minor = device.firmware_version.minor;
+      resp->response_mux.device_metadata.device.firmware_version.patch = device.firmware_version.patch;
+      resp->response_mux.device_metadata.device.firmware_version.release_candidate = device.firmware_version.release_candidate;
+      break;
+    default:
+      break;
+  }
 }
 
 static void process_uhci_request(const struct raptor_v1_uhci_protocol_request *req, struct raptor_v1_uhci_protocol_response *resp) {
