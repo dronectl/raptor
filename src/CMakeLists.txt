@@ -33,18 +33,14 @@ add_library(
   drivers/bme280.c
   drivers/pwm.c
   drivers/led.c
-  common/uassert.c
-  common/cbuffer.c
-  common/logger.c
-  common/sysreg.c
-  common/dtc.c
   os/power_manager.c
   os/esc_engine.c
   os/hsm.c
   os/system.c
 )
 
-target_include_directories(${LIB_RAPTOR} PUBLIC drivers os common)
+add_subdirectory(common)
+target_include_directories(${LIB_RAPTOR} PUBLIC drivers os)
 
 target_compile_options(
   ${LIB_RAPTOR}
