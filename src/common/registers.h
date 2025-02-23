@@ -14,6 +14,10 @@
 #include <stdint.h>
 #include <stddef.h>
 
+/**
+ * @brief Register identifiers
+ * @warning Do not remove / modify the order of the elements.
+ */
 enum register_id {
   REGISTER_UUID,
   REGISTER_HW_VERSION,
