@@ -1,3 +1,12 @@
+/**
+ * @file system.c
+ * @brief System core control module. This module is responsible for spawning the system tasks and distributing hardware resources.
+ * @version 2.0
+ * @date 2025-02
+ *
+ * @copyright Copyright © 2025 dronectl
+ *
+ */
 
 #include "main.h"
 #include "system.h"
