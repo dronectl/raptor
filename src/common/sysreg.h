@@ -24,6 +24,8 @@ enum sysreg_status {
   SYSREG_STATUS_DTYPE_ERR,
   // memory access error
   SYSREG_STATUS_MEMORY_ERR,
+  // out of memory error
+  SYSREG_STATUS_OUT_OF_MEMORY_ERR,
   // requested access is not permitted
   SYSREG_STATUS_ACCESS_ERR,
   // requested write out of range
@@ -36,9 +38,9 @@ enum sysreg_status {
 };
 
 enum sysreg_status sysreg_init(void);
-enum sysreg_status sysreg_reset(void);
-enum sysreg_status sysreg_save(void);
-enum sysreg_status sysreg_load(void);
+enum sysreg_status sysreg_factory_reset(void);
+enum sysreg_status sysreg_save_nvm(void);
+enum sysreg_status sysreg_load_nvm(void);
 enum sysreg_status sysreg_read_u8(const enum register_id id, uint8_t *data);
 enum sysreg_status sysreg_write_u8(const enum register_id id, const uint8_t *data);
 enum sysreg_status sysreg_read_u16(const enum register_id id, uint16_t *data);
