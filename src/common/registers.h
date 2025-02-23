@@ -14,19 +14,13 @@
 #include <stdint.h>
 #include <stddef.h>
 
-union register_value {
-  uint8_t u8;
-  uint16_t u16;
-  uint32_t u32;
-  float f32;
-  uint64_t u64;
-};
+enum register_id {
+  REGISTER_UUID,
+  REGISTER_HW_VERSION,
+  REGISTER_FW_VERSION,
+  REGISTER_FW_COMMIT_SHA,
 
-struct register_meta {
-  uint8_t read:1;
-  uint8_t write:1;
-  uint8_t nvm:1;
-  uint8_t lock:1;
+  REGISTER_COUNT
 };
 
 enum register_dtype {
@@ -39,63 +33,57 @@ enum register_dtype {
   REGISTER_DTYPE_COUNT
 };
 
-enum register_id {
-  // device UUID
-  REGISTER_UUID,
-  // device status register
-  REGISTER_SYS_STAT,
+union register_value {
+  uint8_t u8;
+  uint16_t u16;
+  uint32_t u32;
+  float f32;
+  uint64_t u64;
+};
 
-  REGISTER_HW_VERSION,
-  REGISTER_FW_VERSION,
-  REGISTER_FW_COMMIT_SHA,
+struct register_meta {
+  uint8_t read:1;
+  uint8_t write:1;
+  uint8_t nvm:1;
+};
 
-  REGISTER_IP_ADDR,
-  REGISTER_NETMASK_ADDR,
-  REGISTER_GATEWAY_ADDR,
+enum register_status {
+  // Operation was successful
+  REGISTER_STATUS_OK,
+  // Failed to complete the operation
+  REGISTER_STATUS_OP_ERR,
+  // Disallowed the operation due to state
+  REGISTER_STATUS_BUSY,
 
-  REGISTER_GPU8,
-  REGISTER_GPU16,
-  REGISTER_GPU32,
-  REGISTER_GPF32,
-  REGISTER_GPU64,
+  // reserved as final element
+  REGISTER_STATUS_COUNT
+};
 
-  REGISTER_COUNT
+struct register_callbacks {
+  union {
+    enum register_status (*u8)(uint8_t *);
+    enum register_status (*u16)(uint16_t *);
+    enum register_status (*u32)(uint32_t *);
+    enum register_status (*f32)(float *);
+    enum register_status (*u64)(uint64_t *);
+  } read;
+  union {
+    enum register_status (*u8)(const uint8_t);
+    enum register_status (*u16)(const uint16_t);
+    enum register_status (*u32)(const uint32_t);
+    enum register_status (*f32)(const float);
+    enum register_status (*u64)(const uint64_t);
+  } write;
 };
 
 struct register_config {
-  // register id
   const enum register_id id; 
-  // register offset
-  const size_t offset; 
-  // properties
-  struct register_meta meta;
-  // data type
+  const struct register_meta meta;
   const enum register_dtype dtype;
-  // value on reset
   const union register_value reset;
-  // minimum value
   const union register_value min;   
-  // maximum value
   const union register_value max;
-};
-
-struct registers {
-  uint32_t uuid;
-  uint8_t sys_stat;
-
-  uint32_t hw_version;
-  uint32_t fw_version;
-  uint64_t fw_commit_sha;
-
-  uint32_t ip_addr;
-  uint32_t netmask_addr;
-  uint32_t gateway_addr;
-
-  uint8_t gpu8;
-  uint16_t gpu16;
-  uint32_t gpu32;
-  float gpf32;
-  float gpu64;
+  const struct register_callbacks callbacks;
 };
 
 extern const struct register_config register_config[];
