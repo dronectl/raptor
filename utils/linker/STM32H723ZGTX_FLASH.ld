@@ -25,7 +25,9 @@ MEMORY
 {
   RAM_ITCM            (xrw)    : ORIGIN = 0x00000000,   LENGTH = 64K            /* 0x00000000 - 0x0000FFFF */
   RAM_ITCM_AXI1       (xrw)    : ORIGIN = 0x00010000,   LENGTH = 192K           /* 0x00010000 - 0x0003FFFF */
-  FLASH1              (rx)     : ORIGIN = 0x08000000,   LENGTH = 1024K          /* 0x08000000 - 0x080FFFFF */
+  FLASH1              (rx)     : ORIGIN = 0x08000000,   LENGTH = 1020K          /* 0x08000000 - 0x080FF000 */
+  PROD_DATA           (r)      : ORIGIN = 0x080FF000,   LENGTH = 1K             /* 0x080FF000 - 0x080FF3FF */
+  USER_DATA           (rw)     : ORIGIN = 0x080FF400,   LENGTH = 3K             /* 0x080FF400 - 0x080FFFFF */
   RAM_DTCM            (xrw)    : ORIGIN = 0x20000000,   LENGTH = 128K           /* 0x20000000 - 0x2001FFFF */
   RAM_AXI             (xrw)    : ORIGIN = 0x24000000,   LENGTH = 128K           /* 0x24000000 - 0x2401FFFF */
   RAM_ITCM_AXI2       (xrw)    : ORIGIN = 0x24020000,   LENGTH = 192K           /* 0x24020000 - 0x2404FFFF */
@@ -81,6 +83,28 @@ SECTIONS
     *(.rodata*)        /* .rodata* sections (constants, strings, etc.) */
     . = ALIGN(4);
   } >FLASH1 : rodata
+  
+  /* Production data section */
+  .prod_data (READONLY):
+  {
+    . = ALIGN(4);
+    _prod_data_start = .;
+    *(.prod_data)      /* .prod_data sections */
+    *(.prod_data*)     /* .prod_data* sections */
+    _prod_data_end = .;
+    . = ALIGN(4);
+  } >PROD_DATA
+
+  /* User data section */
+  .user_data :
+  {
+    . = ALIGN(4);
+    _user_data_start = .;
+    *(.user_data)      /* .user_data sections */
+    *(.user_data*)     /* .user_data* sections */
+    _user_data_end = .;
+    . = ALIGN(4);
+  } >USER_DATA
 
   /* ARM exception table */
   .ARM.extab (READONLY):
