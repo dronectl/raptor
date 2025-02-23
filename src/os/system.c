@@ -1,15 +1,10 @@
 
-#include "common.h"
 #include "main.h"
 #include "system.h"
 #include "ethernet/app_ethernet.h"
 #include "hsm.h"
-#include "led.h"
 #include "logger.h"
 #include "uassert.h"
-
-#include <FreeRTOS.h>
-#include <task.h>
 
 extern ADC_HandleTypeDef hadc1;
 extern ADC_HandleTypeDef hadc2;
@@ -76,7 +71,7 @@ static struct system_task system_task_registry[] = {
   }
 };
 
-static TaskHandle_t system_boostrap;
+static struct system_context ctx = {0};
 
 static void system_bootstrap_task(void __attribute__((unused)) * argument) {
   uint8_t task_count = 0;
@@ -88,12 +83,68 @@ static void system_bootstrap_task(void __attribute__((unused)) * argument) {
     }
   }
   info("system boostrap spawned %u tasks", task_count);
-  vTaskDelete(system_boostrap);
+  vTaskDelete(ctx.system_boostrap);
 }
 
 void system_boot(void) {
-  BaseType_t ret = xTaskCreate(system_bootstrap_task, "bootstrap", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 20, &system_boostrap);
+  BaseType_t ret = xTaskCreate(system_bootstrap_task, "bootstrap", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 20, &ctx.system_boostrap);
   uassert(ret == pdPASS);
   vTaskStartScheduler();
   uassert(0);
+}
+
+enum register_status system_write_uuid(const uint32_t uuid) {
+  ctx.uuid = uuid;
+  return REGISTER_STATUS_OK;
+}
+
+enum register_status system_read_uuid(uint32_t* uuid) {
+  enum register_status status = REGISTER_STATUS_OP_ERR;
+  if (uuid != NULL) {
+    *uuid = ctx.uuid;
+    status = REGISTER_STATUS_OK;
+  }
+  return status;
+}
+
+enum register_status system_write_hw_version(const uint32_t hw_version) {
+  ctx.hw_version = hw_version;
+  return REGISTER_STATUS_OK;
+}
+
+enum register_status system_read_hw_version(uint32_t* hw_version) {
+  enum register_status status = REGISTER_STATUS_OP_ERR;
+  if (hw_version != NULL) {
+    *hw_version = ctx.hw_version;
+    status = REGISTER_STATUS_OK;
+  }
+  return status;
+}
+
+enum register_status system_write_fw_version(const uint32_t fw_version) {
+  ctx.fw_version = fw_version;
+  return REGISTER_STATUS_OK;
+}
+
+enum register_status system_read_fw_version(uint32_t* fw_version) {
+  enum register_status status = REGISTER_STATUS_OP_ERR;
+  if (fw_version != NULL) {
+    *fw_version = ctx.fw_version;
+    status = REGISTER_STATUS_OK;
+  }
+  return status;
+}
+
+enum register_status system_write_fw_commit_sha(const uint64_t fw_commit_sha) {
+  ctx.fw_commit_sha = fw_commit_sha;
+  return REGISTER_STATUS_OK;
+}
+
+enum register_status system_read_fw_commit_sha(uint64_t* fw_commit_sha) {
+  enum register_status status = REGISTER_STATUS_OP_ERR;
+  if (fw_commit_sha != NULL) {
+    *fw_commit_sha = ctx.fw_commit_sha;
+    status = REGISTER_STATUS_OK;
+  }
+  return status;
 }

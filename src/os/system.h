@@ -5,7 +5,20 @@
 #define SYSTEM_MAX_TASKS 10
 #define SYSTEM_MAX_TASK_NAME_LEN 10
 
+#include "registers.h"
+
 #include <stdint.h>
+#include <FreeRTOS.h>
+#include <task.h>
+
+struct system_context {
+  uint32_t uuid;
+  uint32_t hw_version;
+  uint32_t fw_version;
+  uint64_t fw_commit_sha;
+
+  TaskHandle_t system_boostrap;
+};
 
 /**
  * @brief Task initialization parameters
@@ -29,5 +42,14 @@ struct system_task {
  *
  */
 void system_boot(void);
+
+enum register_status system_write_uuid(const uint32_t uuid);
+enum register_status system_read_uuid(uint32_t* uuid);
+enum register_status system_write_hw_version(const uint32_t hw_version);
+enum register_status system_read_hw_version(uint32_t* hw_version);
+enum register_status system_write_fw_version(const uint32_t hw_version);
+enum register_status system_read_fw_version(uint32_t* fw_version);
+enum register_status system_write_fw_commit_sha(const uint64_t hw_version);
+enum register_status system_read_fw_commit_sha(uint64_t* fw_commit_sha);
 
 #endif // __SYSTEM_H__
