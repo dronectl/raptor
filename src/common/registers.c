@@ -48,7 +48,7 @@ const struct register_config register_config[] = {
   [REGISTER_FW_VERSION] = {
     .id = REGISTER_FW_VERSION,
     .dtype = REGISTER_DTYPE_U32,
-    .meta = { .read = 1, .write = 0, .nvm = 1 },
+    .meta = { .read = 1, .write = 0, .nvm = 0 },
     .reset.u32 = 0,
     .min.u32 = 0,
     .max.u32 = UINT32_MAX,
@@ -61,7 +61,7 @@ const struct register_config register_config[] = {
   [REGISTER_FW_COMMIT_SHA] = {
     .id = REGISTER_FW_COMMIT_SHA,
     .dtype = REGISTER_DTYPE_U64,
-    .meta = { .read = 1, .write = 0, .nvm = 1 },
+    .meta = { .read = 1, .write = 0, .nvm = 0 },
     .reset.u64 = 0,
     .min.u64 = 0,
     .max.u64 = UINT64_MAX,

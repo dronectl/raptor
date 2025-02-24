@@ -19,6 +19,9 @@
  * @warning Do not remove / modify the order of the elements.
  */
 enum register_id {
+  // reserved as first element
+  REGISTER_NULL = 0,
+
   REGISTER_UUID,
   REGISTER_HW_VERSION,
   REGISTER_FW_VERSION,
@@ -46,8 +49,11 @@ union register_value {
 };
 
 struct register_meta {
+  // read access flag 
   uint8_t read:1;
+  // write access flag
   uint8_t write:1;
+  // non-volatile memory flag
   uint8_t nvm:1;
 };
 
