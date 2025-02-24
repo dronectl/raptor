@@ -13,6 +13,6 @@
 
 #define min(a, b) a > b ? b : a
 #define max(a, b) a > b ? a : b
-#define array_size(a) (int)(sizeof(a) / sizeof(a[0]))
+#define array_size(a) (size_t)(sizeof(a) / sizeof(a[0]))
 
 #endif // __COMMON_H__
