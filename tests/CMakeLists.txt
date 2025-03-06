@@ -69,7 +69,7 @@ endfunction()
 
 # add tests here
 add_gtest(test_hsm ${PROJECT_ROOT}/src/os/hsm.c)
-add_gtest(test_sysreg ${PROJECT_ROOT}/src/common/sysreg.c)
+add_gtest(test_register_config ${PROJECT_ROOT}/src/common/registers.c)
 
 message(STATUS "Registered tests: ${REGISTERED_TESTS}")
 
