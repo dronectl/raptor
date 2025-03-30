@@ -72,6 +72,10 @@ static enum sysreg_status hal_to_sysreg_status(const HAL_StatusTypeDef status);
 static bool is_user_register(const struct register_config *config);
 static void serialize_user_registers(uint8_t *encoded_data);
 static void deserialize_registers(const uint8_t *encoded_data, const size_t max_size);
+
+/**
+ * @brief Validate register configuration values are 
+ */
 static void validate_register_config(void);
 
 static void validate_register_config(void) {
