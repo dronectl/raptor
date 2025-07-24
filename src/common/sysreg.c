@@ -470,12 +470,12 @@ enum sysreg_status sysreg_load_nvm(void) {
   uint32_t prod_data[PROD_DATA_SIZE];
   uint32_t user_data[USER_DATA_SIZE];
   for (size_t i = 0; i < array_size(user_data); i++) {
-    user_data[i] = *((__IO uint32_t*)USER_DATA_START_ADDR + i);
-  }
-  for (size_t i = 0; i < array_size(user_data); i++) {
     prod_data[i] = *((__IO uint32_t*)PROD_DATA_START_ADDR + i);
   }
   deserialize_registers((uint8_t *)prod_data, PROD_DATA_SIZE);
+  for (size_t i = 0; i < array_size(user_data); i++) {
+    user_data[i] = *((__IO uint32_t*)USER_DATA_START_ADDR + i);
+  }
   deserialize_registers((uint8_t *)user_data, USER_DATA_SIZE);
   return SYSREG_STATUS_OK;
 }

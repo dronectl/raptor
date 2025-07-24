@@ -8,8 +8,7 @@
  *
  */
 
-#ifndef __REGISTERS_H__
-#define __REGISTERS_H__
+#pragma once
 
 #include <stdint.h>
 #include <stddef.h>
@@ -27,6 +26,7 @@ enum register_id {
   REGISTER_FW_VERSION,
   REGISTER_FW_COMMIT_SHA,
 
+  // reserved as final element
   REGISTER_COUNT
 };
 
@@ -37,6 +37,7 @@ enum register_dtype {
   REGISTER_DTYPE_F32,
   REGISTER_DTYPE_U64,
 
+  // reserved as final element
   REGISTER_DTYPE_COUNT
 };
 
@@ -97,5 +98,3 @@ struct register_config {
 };
 
 extern const struct register_config register_config[];
-
-#endif // __REGISTERS_H__

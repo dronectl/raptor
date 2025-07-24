@@ -1,16 +1,17 @@
 #
-# Common Firmware
+# Operating System Firmware
 #
 
 target_sources(
     ${PROJECT_NAME}
     PRIVATE
-    uassert.c
-    cbuffer.c
-    logger.c
-    sysreg.c
-    registers.c
-    dtc.c
+    esc_engine.c
+    freertos.c
+    hsm.c
+    power_manager.c
+    syscalls.c
+    sysmem.c
+    system.c
 )
 
 target_include_directories(

@@ -14,6 +14,7 @@
 #include "hsm.h"
 #include "logger.h"
 #include "uassert.h"
+#include "sysreg.h"
 
 extern ADC_HandleTypeDef hadc1;
 extern ADC_HandleTypeDef hadc2;
@@ -96,6 +97,8 @@ static void system_bootstrap_task(void __attribute__((unused)) * argument) {
 }
 
 void system_boot(void) {
+  // initialize system state
+  sysreg_init();
   BaseType_t ret = xTaskCreate(system_bootstrap_task, "bootstrap", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 20, &ctx.system_boostrap);
   uassert(ret == pdPASS);
   vTaskStartScheduler();
@@ -108,12 +111,9 @@ enum register_status system_write_uuid(const uint32_t uuid) {
 }
 
 enum register_status system_read_uuid(uint32_t* uuid) {
-  enum register_status status = REGISTER_STATUS_OP_ERR;
-  if (uuid != NULL) {
-    *uuid = ctx.uuid;
-    status = REGISTER_STATUS_OK;
-  }
-  return status;
+  uassert(uuid != NULL);
+  *uuid = ctx.uuid;
+  return REGISTER_STATUS_OK;
 }
 
 enum register_status system_write_hw_version(const uint32_t hw_version) {
@@ -122,12 +122,9 @@ enum register_status system_write_hw_version(const uint32_t hw_version) {
 }
 
 enum register_status system_read_hw_version(uint32_t* hw_version) {
-  enum register_status status = REGISTER_STATUS_OP_ERR;
-  if (hw_version != NULL) {
-    *hw_version = ctx.hw_version;
-    status = REGISTER_STATUS_OK;
-  }
-  return status;
+  uassert(hw_version != NULL);
+  *hw_version = ctx.hw_version;
+  return REGISTER_STATUS_OK;
 }
 
 enum register_status system_write_fw_version(const uint32_t fw_version) {
@@ -136,12 +133,9 @@ enum register_status system_write_fw_version(const uint32_t fw_version) {
 }
 
 enum register_status system_read_fw_version(uint32_t* fw_version) {
-  enum register_status status = REGISTER_STATUS_OP_ERR;
-  if (fw_version != NULL) {
-    *fw_version = ctx.fw_version;
-    status = REGISTER_STATUS_OK;
-  }
-  return status;
+  uassert(fw_version != NULL);
+  *fw_version = ctx.fw_version;
+  return REGISTER_STATUS_OK;
 }
 
 enum register_status system_write_fw_commit_sha(const uint64_t fw_commit_sha) {
@@ -150,10 +144,7 @@ enum register_status system_write_fw_commit_sha(const uint64_t fw_commit_sha) {
 }
 
 enum register_status system_read_fw_commit_sha(uint64_t* fw_commit_sha) {
-  enum register_status status = REGISTER_STATUS_OP_ERR;
-  if (fw_commit_sha != NULL) {
-    *fw_commit_sha = ctx.fw_commit_sha;
-    status = REGISTER_STATUS_OK;
-  }
-  return status;
+  uassert(fw_commit_sha != NULL);
+  *fw_commit_sha = ctx.fw_commit_sha;
+  return REGISTER_STATUS_OK;
 }

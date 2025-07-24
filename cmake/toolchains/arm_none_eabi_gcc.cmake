@@ -1,34 +1,6 @@
 ##
-## STM32H723 Toolchain
+## Toolchain file for the arm-none-eabi-gcc compiler
 ## 
-set(CMAKE_SYSTEM_NAME Generic)
-set(CMAKE_SYSTEM_VERSION 1)
-set(CMAKE_C_COMPILER_ID GNU)
-set(CMAKE_CXX_COMPILER_ID GNU)
-set(CMAKE_SYSTEM_PROCESSOR arm-eabi)
-set(TOOLCHAIN_PREFIX arm-none-eabi)
-# get the binary search command for the host platform and set toolchain extensions
-if(MINGW OR CYGWIN OR WIN32)
-  find_program(
-    CMAKE_MAKE_PROGRAM
-    NAMES make
-          make.exe
-    DOC "Find a suitable make program for building under Windows/MinGW"
-    HINTS c:/MinGW-32/bin
-  )
-  set(UTIL_SEARCH_CMD where.exe)
-  set(TOOLCHAIN_EXT ".exe" )
-elseif(UNIX OR APPLE)
-  set(UTIL_SEARCH_CMD which)
-  set(TOOLCHAIN_EXT "" )
-endif()
-
-# search for arm toolchain binary and get its absolute path
-execute_process(
-  COMMAND ${UTIL_SEARCH_CMD} ${TOOLCHAIN_PREFIX}-gcc
-  OUTPUT_VARIABLE BINUTILS_PATH
-  OUTPUT_STRIP_TRAILING_WHITESPACE
-)
 
 # add handler for unfound resources
 if ("${BINUTILS_PATH}" STREQUAL "")
@@ -60,7 +32,7 @@ get_filename_component(LINKER_SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/utils/linker/ST
 message(DEBUG "Linker script: ${LINKER_SCRIPT}")
 set(STM32H723_LINKER_FLAGS -T${LINKER_SCRIPT} ${STM32H723_COMPILE_FLAGS} -Wl,--print-memory-usage -Wl,--gc-sections -Wl,--undefined=uxTopUsedPriority --specs=nosys.specs --specs=nano.specs -static -z muldefs -Wl,-Map=${CMAKE_PROJECT_NAME}.map -Wl,--start-group -lc -lm -Wl,--end-group CACHE INTERNAL "STM32H723_LINKER_FLAGS")
 message(STATUS "Setting compilers.")
-set(CMAKE_C_COMPILER ${TOOLCHAIN_PREFIX}-gcc${TOOLCHAIN_EXT} CACHE INTERNAL "C Compiler")
+set(CMAKE_C_COMPILER ${ARM}-gcc${TOOLCHAIN_EXT} CACHE INTERNAL "C Compiler")
 set(CMAKE_CXX_COMPILER ${TOOLCHAIN_PREFIX}-g++${TOOLCHAIN_EXT} CACHE INTERNAL "C++ Compiler")
 set(CMAKE_ASM_COMPILER ${TOOLCHAIN_PREFIX}-gcc${TOOLCHAIN_EXT} CACHE INTERNAL "ASM Compiler")
 

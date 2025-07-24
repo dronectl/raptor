@@ -3,6 +3,6 @@ AllowShortLoopsOnASingleLine: true
 IndentCaseLabels: true
 UseTab: Never
 UseCRLF: false
-IndentWidth: 2
+IndentWidth: 4
 ColumnLimit: 0
 SortIncludes: false
