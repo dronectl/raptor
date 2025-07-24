@@ -1,3 +1,4 @@
+  
 /**
  * @file registers.h
  * @brief Register public data containers 
@@ -70,20 +71,60 @@ enum register_status {
   REGISTER_STATUS_COUNT
 };
 
+
+enum register_dtype {
+  REGISTER_DTYPE_U8,
+  REGISTER_DTYPE_I8,
+  REGISTER_DTYPE_U16,
+  REGISTER_DTYPE_I16,
+  REGISTER_DTYPE_U32,
+  REGISTER_DTYPE_I32,
+  REGISTER_DTYPE_F32,
+  REGISTER_DTYPE_F64,
+  REGISTER_DTYPE_U64,
+  REGISTER_DTYPE_I64,
+
+  // reserved as final element
+  REGISTER_DTYPE_COUNT
+};
+
+union register_value {
+  uint8_t u8;
+  int8_t i8;
+  uint16_t u16;
+  int16_t i16;
+  uint32_t u32;
+  int32_t i32;
+  float f32;
+  double f64;
+  uint64_t u64;
+  int64_t i64;
+};
+
 struct register_callbacks {
   union {
     enum register_status (*u8)(uint8_t *);
+    enum register_status (*i8)(int8_t *);
     enum register_status (*u16)(uint16_t *);
+    enum register_status (*i16)(int16_t *);
     enum register_status (*u32)(uint32_t *);
+    enum register_status (*i32)(int32_t *);
     enum register_status (*f32)(float *);
+    enum register_status (*f64)(double *);
     enum register_status (*u64)(uint64_t *);
+    enum register_status (*i64)(int64_t *);
   } read;
   union {
     enum register_status (*u8)(const uint8_t);
+    enum register_status (*i8)(const int8_t);
     enum register_status (*u16)(const uint16_t);
+    enum register_status (*i16)(const int16_t);
     enum register_status (*u32)(const uint32_t);
+    enum register_status (*i32)(const int32_t);
     enum register_status (*f32)(const float);
+    enum register_status (*f64)(const double);
     enum register_status (*u64)(const uint64_t);
+    enum register_status (*i64)(const int64_t);
   } write;
 };
 
